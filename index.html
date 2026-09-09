@@ -15,6 +15,10 @@
 <meta name="apple-mobile-web-app-title" content="Third Space" />
 <meta name="mobile-web-app-capable" content="yes" />
 
+<!-- real map: Mapbox GL JS + Geocoder search plugin -->
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css" rel="stylesheet" />
+<link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.1/mapbox-gl-geocoder.css" rel="stylesheet" />
+
 <style>
   :root{
     --ink:#0B1220;
@@ -280,44 +284,41 @@
   .btn.small{padding:10px;font-size:13px;}
   .onb-footer{margin-top:auto;}
 
-  /* ---------- map / home ---------- */
-  .map-wrap{
+  /* ---------- map / home (real Mapbox map) ---------- */
+  .map-card{
     margin:14px 18px 0;
-    height:220px;
     border-radius:16px;
-    background:linear-gradient(135deg,#E9EEF3,#DCE6EA);
-    position:relative;
     overflow:hidden;
     border:1px solid var(--line);
+    background:var(--light);
   }
-  .map-grid-line{position:absolute;background:rgba(15,23,42,.05);}
-  .pin{
-    position:absolute;
-    width:15px;height:15px;
-    border-radius:50%;
-    border:2px solid #fff;
-    box-shadow:0 1px 4px rgba(0,0,0,.25);
-    cursor:pointer;
-    transform:translate(-50%,-50%);
+  .geocoder-slot{padding:8px;background:var(--white);border-bottom:1px solid var(--line);}
+  .geocoder-slot .mapboxgl-ctrl-geocoder{
+    width:100%;max-width:none;box-shadow:none;border:1px solid var(--line);border-radius:999px;
+    font-family:inherit;
   }
-  .pin.live{background:var(--alert);}
-  .pin.event{background:var(--accent);}
-  .pin.other{background:#94A3B8;}
-  .pin-label{
-    position:absolute;
-    top:100%;left:50%;
-    transform:translateX(-50%);
-    font-size:7px;font-weight:800;
-    color:var(--alert);
-    margin-top:1px;
-    white-space:nowrap;
+  .geocoder-slot .mapboxgl-ctrl-geocoder input{font-size:12.5px;height:34px;}
+  .geocoder-slot .mapboxgl-ctrl-geocoder--icon-search{top:8px;left:10px;fill:var(--muted);}
+  .geocoder-slot .mapboxgl-ctrl-geocoder--button{top:5px;}
+  .mapbox-real-map{height:210px;position:relative;background:var(--light);}
+  .mapbox-real-map .mapboxgl-ctrl-top-right{top:6px;right:6px;}
+  .mapbox-real-map .mapboxgl-ctrl-group{border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.15);}
+  .map-config-note{
+    height:100%;display:flex;align-items:center;justify-content:center;
+    padding:18px;text-align:center;font-size:11px;color:var(--muted);line-height:1.5;
   }
-  .you-pin{
-    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    text-align:center;
+  .mb-pin{
+    width:16px;height:16px;border-radius:50%;
+    border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);
+    cursor:pointer;position:relative;
   }
-  .you-pin .dot{width:11px;height:11px;border-radius:50%;background:var(--ink-2);border:2px solid #fff;margin:0 auto;}
-  .you-pin span{font-size:7px;font-weight:800;color:var(--ink-2);}
+  .mb-pin.live{background:var(--alert);}
+  .mb-pin.event{background:var(--accent);}
+  .mb-pin-label{
+    position:absolute;top:100%;left:50%;transform:translateX(-50%);
+    font-size:7px;font-weight:800;color:var(--alert);
+    margin-top:1px;white-space:nowrap;
+  }
   .list-title{font-size:13px;font-weight:700;margin:16px 18px 8px;}
   .ev-card{
     display:flex;
@@ -770,7 +771,10 @@
             </button>
           </div>
           <div class="screen-scroll">
-            <div class="map-wrap" id="mapWrap"></div>
+            <div class="map-card">
+              <div class="geocoder-slot" id="geocoderContainer"></div>
+              <div class="mapbox-real-map" id="mapContainer"></div>
+            </div>
             <div class="list-title">Happening now near you</div>
             <div id="homeList"></div>
           </div>
@@ -971,6 +975,9 @@
   </div>
 </div>
 
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.1/mapbox-gl-geocoder.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
 (function(){
   "use strict";
@@ -985,14 +992,32 @@
     "linear-gradient(135deg,#6366F1,#312E81)"
   ];
 
-  const events = [
-    {id:1, title:"Rooftop Jazz Session", venue:"The Oviatt Penthouse", time:"Tue · 8:00 PM", distance:"0.4 mi", live:true, startsIn:"starts in 12 min", going:12, fromGroup:3, host:"Hosted by Maya R. — Culture Keeper", desc:"Small-group table, live trio, one round included. Cameras welcome — tag the event to share.", g:0},
-    {id:2, title:"Sunday Ceramics Pop-up", venue:"Otherwild Studio", time:"Sun · 2:00 PM", distance:"0.9 mi", live:false, startsIn:"6 spots left", going:6, fromGroup:2, host:"Hosted by Devon L. — Culture Keeper", desc:"Hand-build a small bowl, glaze included. No experience needed, all materials provided.", g:1},
-    {id:3, title:"Griffith Park Sunrise Hike", venue:"Griffith Observatory Trailhead", time:"Sat · 6:30 AM", distance:"1.2 mi", live:false, startsIn:"9 going", going:9, fromGroup:1, host:"Hosted by Priya K. — Culture Keeper", desc:"Easy 3-mile loop, coffee after at the trailhead. Bring layers, it's cold before sunrise.", g:2},
-    {id:4, title:"Silver Lake Supper Club", venue:"Ten Speed Coffee", time:"Thu · 7:00 PM", distance:"0.5 mi", live:false, startsIn:"7 going", going:7, fromGroup:4, host:"Hosted by Jordan M. — Culture Keeper", desc:"A rotating dinner series in a different member's neighborhood spot each week.", g:3},
-    {id:5, title:"Vinyl & Wine Night", venue:"Bar Chelou", time:"Fri · 8:30 PM", distance:"1.5 mi", live:false, startsIn:"5 going", going:5, fromGroup:0, host:"Hosted by Marcus T. — Culture Keeper", desc:"Bring a record or just come listen. Small pours, small group, big speakers.", g:4},
-    {id:6, title:"Sunset Volleyball", venue:"Will Rogers State Beach", time:"Wed · 6:00 PM", distance:"2.1 mi", live:false, startsIn:"8 going", going:8, fromGroup:2, host:"Hosted by Ghazi A. — Culture Keeper", desc:"Casual co-ed games, all levels. We wrap before it gets dark and grab tacos after.", g:5}
+  /* ================= CONFIG — fill these in to go live =================
+     1. MAPBOX_TOKEN — sign up free at mapbox.com, then Account >
+        "Access tokens" and copy your default public token (starts pk.).
+     2. SHEET_CSV_URL — in your Google Sheet: File > Share > Publish to
+        web > choose the events sheet/tab > format "Comma-separated
+        values (.csv)" > Publish. Copy the URL it gives you.
+     Until both are filled in, the app runs on the 6 demo LA events
+     below so nothing breaks while this is being set up.
+     Sheet columns expected (header row, any order):
+     title, venue, address, lat, lng, day_time, live, going,
+     from_group, host, description, status_note, category
+  ========================================================================= */
+  const MAPBOX_TOKEN = "YOUR_MAPBOX_PUBLIC_TOKEN";
+  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRk_0p6stmfzdl4hpX-Y1WANrcjzZIanA4iCOLVZoPT8Oy_mumavhY8upsadmV5fiU7qTgumjliNBTV/pub?output=csv";
+  const DEFAULT_CENTER = { lat: 34.0870, lng: -118.2702 }; // Silver Lake, LA
+
+  const FALLBACK_EVENTS = [
+    {id:1, title:"Rooftop Jazz Session", venue:"The Oviatt Penthouse", lat:34.0478, lng:-118.2563, time:"Tue · 8:00 PM", live:true, startsIn:"starts in 12 min", going:12, fromGroup:3, host:"Hosted by Maya R. — Culture Keeper", desc:"Small-group table, live trio, one round included. Cameras welcome — tag the event to share.", g:0},
+    {id:2, title:"Sunday Ceramics Pop-up", venue:"Otherwild Studio", lat:34.0928, lng:-118.2515, time:"Sun · 2:00 PM", live:false, startsIn:"6 spots left", going:6, fromGroup:2, host:"Hosted by Devon L. — Culture Keeper", desc:"Hand-build a small bowl, glaze included. No experience needed, all materials provided.", g:1},
+    {id:3, title:"Griffith Park Sunrise Hike", venue:"Griffith Observatory Trailhead", lat:34.1184, lng:-118.3004, time:"Sat · 6:30 AM", live:false, startsIn:"9 going", going:9, fromGroup:1, host:"Hosted by Priya K. — Culture Keeper", desc:"Easy 3-mile loop, coffee after at the trailhead. Bring layers, it's cold before sunrise.", g:2},
+    {id:4, title:"Silver Lake Supper Club", venue:"Ten Speed Coffee", lat:34.0869, lng:-118.2702, time:"Thu · 7:00 PM", live:false, startsIn:"7 going", going:7, fromGroup:4, host:"Hosted by Jordan M. — Culture Keeper", desc:"A rotating dinner series in a different member's neighborhood spot each week.", g:3},
+    {id:5, title:"Vinyl & Wine Night", venue:"Bar Chelou", lat:34.1046, lng:-118.2727, time:"Fri · 8:30 PM", live:false, startsIn:"5 going", going:5, fromGroup:0, host:"Hosted by Marcus T. — Culture Keeper", desc:"Bring a record or just come listen. Small pours, small group, big speakers.", g:4},
+    {id:6, title:"Sunset Volleyball", venue:"Will Rogers State Beach", lat:34.0367, lng:-118.5309, time:"Wed · 6:00 PM", live:false, startsIn:"8 going", going:8, fromGroup:2, host:"Hosted by Ghazi A. — Culture Keeper", desc:"Casual co-ed games, all levels. We wrap before it gets dark and grab tacos after.", g:5}
   ];
+
+  let events = FALLBACK_EVENTS.slice();
 
   const feedSeed = [
     {title:"Sunday Ceramics Pop-up", user:"Priya K.", time:"4 min ago", live:true, g:1, isNew:false},
@@ -1001,6 +1026,7 @@
 
   const state = {
     interests: new Set(),
+    userLocation: null,
     points: 1240,
     streak: 4,
     tier: "Silver",
@@ -1045,6 +1071,10 @@
     bottomnav.style.display = (onboarding || id === "venue") ? "none" : "flex";
     navItems.forEach(n=> n.classList.toggle("active", n.dataset.goto === id));
     document.querySelectorAll(".jump-btn").forEach(b=> b.classList.toggle("active", b.dataset.goto === id));
+    if(id === "home"){
+      initMap(); // safe now — the map container is actually visible
+      if(map) setTimeout(()=> map.resize(), 60); // catches size changes since last shown
+    }
     if(id === "alerts"){ state.unreadAlerts = 0; renderBell(); }
     if(id === "feed") renderFeed();
     if(id === "discover") renderDeck();
@@ -1064,6 +1094,14 @@
 
   function restartDemo(){
     state.interests.clear();
+    state.userLocation = null;
+    // only revert to demo data if no real Google Sheet is connected —
+    // a connected sheet's events aren't part of the "demo" being reset
+    if(!SHEET_CSV_URL || SHEET_CSV_URL.indexOf("YOUR_") === 0){
+      events = FALLBACK_EVENTS.slice();
+    }
+    recomputeDistances();
+    if(map) updateMapMarkers();
     state.points = initialState.points;
     state.streak = initialState.streak;
     state.eventsAttended = initialState.eventsAttended;
@@ -1098,37 +1136,171 @@
     if(state.interests.has(val)) state.interests.delete(val); else state.interests.add(val);
   });
 
-  /* ---------------- home / map ---------------- */
-  function renderHome(){
-    const mapWrap = document.getElementById("mapWrap");
-    mapWrap.innerHTML = '<div class="you-pin"><div class="dot"></div><span>YOU</span></div>';
-    const positions = [[22,28],[78,24],[62,66],[30,72],[85,58]];
-    events.slice(0,5).forEach((ev,i)=>{
-      const [x,y] = positions[i];
-      const pin = document.createElement("div");
-      pin.className = "pin " + (ev.live ? "live" : (i%2===0?"event":"other"));
-      pin.style.left = x+"%"; pin.style.top = y+"%";
-      pin.title = ev.title;
-      pin.addEventListener("click", ()=> openSheet(ev.id));
-      if(ev.live){
-        const lbl = document.createElement("div");
-        lbl.className = "pin-label"; lbl.textContent = "LIVE";
-        pin.appendChild(lbl);
+  /* ---------------- home / map (real Mapbox map + Google Sheet data) ---------------- */
+  let map = null, geolocateControl = null, mapMarkers = [];
+
+  function haversineMiles(lat1, lon1, lat2, lon2){
+    const R = 3958.8;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  function recomputeDistances(){
+    const origin = state.userLocation || DEFAULT_CENTER;
+    events.forEach(ev=>{
+      if(typeof ev.lat === "number" && typeof ev.lng === "number"){
+        const d = haversineMiles(origin.lat, origin.lng, ev.lat, ev.lng);
+        ev.distance = d < 0.1 ? "< 0.1 mi" : d.toFixed(1) + " mi";
+      } else {
+        ev.distance = "";
       }
-      mapWrap.appendChild(pin);
     });
+  }
+  recomputeDistances(); // initial pass using DEFAULT_CENTER, before geolocation resolves
+
+  function initMap(){
+    if(map) return;
+    const container = document.getElementById("mapContainer");
+    if(!window.mapboxgl){
+      container.innerHTML = '<div class="map-config-note">The map library didn\'t load (offline, blocked script, or a network issue). Reconnect and reopen the app to try again.</div>';
+      return;
+    }
+    if(!MAPBOX_TOKEN || MAPBOX_TOKEN.indexOf("YOUR_") === 0){
+      container.innerHTML = '<div class="map-config-note">Add your free Mapbox token in the CONFIG block at the top of the script to load the real map here.</div>';
+      return;
+    }
+    mapboxgl.accessToken = MAPBOX_TOKEN;
+    map = new mapboxgl.Map({
+      container: "mapContainer",
+      style: "mapbox://styles/mapbox/light-v11",
+      center: [DEFAULT_CENTER.lng, DEFAULT_CENTER.lat],
+      zoom: 12.3
+    });
+    map.addControl(new mapboxgl.NavigationControl({ showCompass:false }), "top-right");
+
+    geolocateControl = new mapboxgl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true },
+      trackUserLocation: true,
+      showUserHeading: true
+    });
+    map.addControl(geolocateControl, "top-right");
+    geolocateControl.on("geolocate", (e)=>{
+      state.userLocation = { lat: e.coords.latitude, lng: e.coords.longitude };
+      recomputeDistances();
+      renderHome();
+      const discoverActive = document.querySelector('.screen[data-screen="discover"]').classList.contains("active");
+      if(discoverActive) renderDeck();
+    });
+
+    if(window.MapboxGeocoder){
+      const geocoder = new MapboxGeocoder({
+        accessToken: MAPBOX_TOKEN,
+        mapboxgl: mapboxgl,
+        marker: false,
+        placeholder: "Search neighborhoods, addresses…",
+        proximity: { longitude: DEFAULT_CENTER.lng, latitude: DEFAULT_CENTER.lat },
+        bbox: [-118.6682, 33.7037, -118.1553, 34.3373] // rough LA county bounding box
+      });
+      document.getElementById("geocoderContainer").appendChild(geocoder.onAdd(map));
+    }
+
+    map.on("load", ()=>{
+      updateMapMarkers();
+      // best-effort: prompt for real location once, matches the onboarding promise
+      setTimeout(()=>{ try{ geolocateControl.trigger(); }catch(err){} }, 500);
+    });
+  }
+
+  function updateMapMarkers(){
+    if(!map) return;
+    mapMarkers.forEach(m=> m.remove());
+    mapMarkers = [];
+    events.forEach(ev=>{
+      if(typeof ev.lat !== "number" || typeof ev.lng !== "number") return;
+      const el = document.createElement("div");
+      el.className = "mb-pin " + (ev.live ? "live" : "event");
+      el.title = ev.title;
+      if(ev.live){
+        const lbl = document.createElement("span");
+        lbl.className = "mb-pin-label";
+        lbl.textContent = "LIVE";
+        el.appendChild(lbl);
+      }
+      el.addEventListener("click", ()=> openSheet(ev.id));
+      const marker = new mapboxgl.Marker({ element: el }).setLngLat([ev.lng, ev.lat]).addTo(map);
+      mapMarkers.push(marker);
+    });
+  }
+
+  function loadEventsFromSheet(){
+    if(!window.Papa || !SHEET_CSV_URL || SHEET_CSV_URL.indexOf("YOUR_") === 0){
+      return; // no sheet configured yet — stays on FALLBACK_EVENTS
+    }
+    Papa.parse(SHEET_CSV_URL, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (results)=>{
+        const parsed = (results.data || []).map((row, i)=>{
+          const lat = parseFloat(row.lat);
+          const lng = parseFloat(row.lng);
+          if(isNaN(lat) || isNaN(lng) || !row.title) return null;
+          return {
+            id: i + 1,
+            title: String(row.title).trim(),
+            venue: String(row.venue || "").trim(),
+            address: String(row.address || "").trim(),
+            lat, lng,
+            time: String(row.day_time || "").trim(),
+            live: String(row.live || "").trim().toUpperCase() === "TRUE",
+            going: parseInt(row.going, 10) || 0,
+            fromGroup: parseInt(row.from_group, 10) || 0,
+            host: String(row.host || "").trim(),
+            desc: String(row.description || "").trim(),
+            startsIn: String(row.status_note || "").trim(),
+            category: String(row.category || "").trim(),
+            g: i % gradients.length
+          };
+        }).filter(Boolean);
+
+        if(parsed.length){
+          events = parsed;
+          state.deckIndex = 0;
+          recomputeDistances();
+          if(map) updateMapMarkers();
+          renderHome();
+          const discoverActive = document.querySelector('.screen[data-screen="discover"]').classList.contains("active");
+          if(discoverActive) renderDeck();
+          showToast(`Loaded ${parsed.length} events from your sheet`);
+        }
+      },
+      error: ()=>{ /* stays on FALLBACK_EVENTS, no need to alarm anyone testing */ }
+    });
+  }
+
+  function renderHome(){
+    if(map) updateMapMarkers();
 
     const list = document.getElementById("homeList");
     list.innerHTML = "";
-    events.slice(0,4).forEach(ev=>{
+    const sorted = events.slice().sort((a,b)=>{
+      if(a.live !== b.live) return a.live ? -1 : 1;
+      const da = parseFloat(a.distance) || 999;
+      const db = parseFloat(b.distance) || 999;
+      return da - db;
+    });
+    sorted.slice(0,4).forEach(ev=>{
       const row = document.createElement("div");
       row.className = "ev-card";
       row.addEventListener("click", ()=> openSheet(ev.id));
+      const sub = [ev.distance, ev.startsIn].filter(Boolean).join(" · ");
       row.innerHTML = `
         <div class="ev-thumb" style="background:${gradients[ev.g]}">${ev.title[0]}</div>
         <div class="ev-info">
           <p class="t">${ev.title}</p>
-          <p class="s">${ev.distance} · ${ev.startsIn}</p>
+          <p class="s">${sub}</p>
         </div>
         ${ev.live ? '<span class="pill live">LIVE</span>' : (state.rsvped.has(ev.id) ? '<span class="pill soft">Going</span>' : '')}
       `;
@@ -1509,6 +1681,7 @@
   renderHome();
   renderBell();
   showScreen("onb-1");
+  loadEventsFromSheet();
 })();
 </script>
 </body>
