@@ -592,6 +592,10 @@
   @keyframes sheetup{from{transform:translateY(24px);opacity:.5;}to{transform:translateY(0);opacity:1;}}
   .sheet-grab{width:38px;height:4px;border-radius:3px;background:var(--line);margin:10px auto;}
   .sheet-photo{height:150px;margin:0 16px;border-radius:14px;position:relative;display:flex;align-items:flex-end;padding:10px;color:#fff;overflow:hidden;}
+  .sheet-badges{position:absolute;left:16px;top:12px;display:flex;gap:6px;flex-wrap:wrap;z-index:2;}
+  .sheet-badge{font-size:9px;font-weight:800;letter-spacing:.2px;padding:5px 8px;border-radius:999px;color:#fff;background:rgba(0,0,0,.36);}
+  .sheet-badge.live{background:var(--alert);}
+  .sheet-badge.category{background:rgba(15,157,140,.88);}
   .sheet-photo .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(0,0,0,.5) 100%);}
   .sheet-body{padding:14px 18px 20px;overflow-y:auto;}
   .sheet-body h2{font-size:17px;margin:0 0 3px;}
@@ -600,6 +604,9 @@
   .avatars .a{width:26px;height:26px;border-radius:50%;background:var(--light);border:2px solid #fff;margin-right:-8px;}
   .going-line{font-size:11.5px;color:var(--muted);margin:6px 0 12px 34px;}
   .host-box{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12px;margin-bottom:12px;}
+  .sheet-extras{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px;}
+  .sheet-note{font-size:11px;color:var(--muted);background:var(--light);border:1px solid var(--line);border-radius:999px;padding:6px 10px;}
+  .sheet-21{font-size:10px;font-weight:800;letter-spacing:.2px;color:#fff;background:var(--alert);border-radius:999px;padding:6px 9px;}
   .whattoexpect{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:0 0 4px;}
   .desc-text{font-size:12.5px;line-height:1.5;color:var(--ink-2);margin:0 0 16px;}
   .close-sheet{position:absolute;top:12px;right:14px;background:rgba(0,0,0,.35);color:#fff;width:26px;height:26px;border-radius:50%;border:none;font-size:14px;cursor:pointer;z-index:3;}
@@ -921,13 +928,17 @@
         <div class="sheet">
           <button class="close-sheet" id="closeSheet">✕</button>
           <div class="sheet-grab"></div>
-          <div class="sheet-photo" id="sheetPhoto"><div class="veil"></div></div>
+          <div class="sheet-photo" id="sheetPhoto">
+            <div class="sheet-badges" id="sheetBadges"></div>
+            <div class="veil"></div>
+          </div>
           <div class="sheet-body">
             <h2 id="sheetTitle"></h2>
             <p class="meta" id="sheetMeta"></p>
             <div class="avatars"><div class="a"></div><div class="a"></div><div class="a"></div><div class="a"></div></div>
             <p class="going-line" id="sheetGoing"></p>
             <div class="host-box" id="sheetHost"></div>
+            <div class="sheet-extras" id="sheetExtras"></div>
             <p class="whattoexpect">What to expect</p>
             <p class="desc-text" id="sheetDesc"></p>
             <button class="btn" id="sheetRsvp">RSVP — Free with Membership</button>
@@ -1004,19 +1015,20 @@
      below so nothing breaks while this is being set up.
      Sheet columns expected (header row, any order):
      title, venue, address, lat, lng, day_time, live, going,
-     from_group, host, description, status_note, category
+     from_group, host, description, status_note, category, parking,
+     alcohol
   ========================================================================= */
   const MAPBOX_TOKEN = "pk.eyJ1IjoibWl0Y2hlbGxraW1iYWxsOTQiLCJhIjoiY210dHNsenB6MDZxaDJ6cTNxamUxcTVybCJ9.1-J_H9klBRnP4I14GnPDxQ";
   const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRk_0p6stmfzdl4hpX-Y1WANrcjzZIanA4iCOLVZoPT8Oy_mumavhY8upsadmV5fiU7qTgumjliNBTV/pub?output=csv";
   const DEFAULT_CENTER = { lat: 34.0870, lng: -118.2702 }; // Silver Lake, LA
 
   const FALLBACK_EVENTS = [
-    {id:1, title:"Rooftop Jazz Session", venue:"The Oviatt Penthouse", lat:34.0478, lng:-118.2563, time:"Tue · 8:00 PM", live:true, startsIn:"starts in 12 min", going:12, fromGroup:3, host:"Hosted by Maya R. — Culture Keeper", desc:"Small-group table, live trio, one round included. Cameras welcome — tag the event to share.", g:0},
-    {id:2, title:"Sunday Ceramics Pop-up", venue:"Otherwild Studio", lat:34.0928, lng:-118.2515, time:"Sun · 2:00 PM", live:false, startsIn:"6 spots left", going:6, fromGroup:2, host:"Hosted by Devon L. — Culture Keeper", desc:"Hand-build a small bowl, glaze included. No experience needed, all materials provided.", g:1},
-    {id:3, title:"Griffith Park Sunrise Hike", venue:"Griffith Observatory Trailhead", lat:34.1184, lng:-118.3004, time:"Sat · 6:30 AM", live:false, startsIn:"9 going", going:9, fromGroup:1, host:"Hosted by Priya K. — Culture Keeper", desc:"Easy 3-mile loop, coffee after at the trailhead. Bring layers, it's cold before sunrise.", g:2},
-    {id:4, title:"Silver Lake Supper Club", venue:"Ten Speed Coffee", lat:34.0869, lng:-118.2702, time:"Thu · 7:00 PM", live:false, startsIn:"7 going", going:7, fromGroup:4, host:"Hosted by Jordan M. — Culture Keeper", desc:"A rotating dinner series in a different member's neighborhood spot each week.", g:3},
-    {id:5, title:"Vinyl & Wine Night", venue:"Bar Chelou", lat:34.1046, lng:-118.2727, time:"Fri · 8:30 PM", live:false, startsIn:"5 going", going:5, fromGroup:0, host:"Hosted by Marcus T. — Culture Keeper", desc:"Bring a record or just come listen. Small pours, small group, big speakers.", g:4},
-    {id:6, title:"Sunset Volleyball", venue:"Will Rogers State Beach", lat:34.0367, lng:-118.5309, time:"Wed · 6:00 PM", live:false, startsIn:"8 going", going:8, fromGroup:2, host:"Hosted by Ghazi A. — Culture Keeper", desc:"Casual co-ed games, all levels. We wrap before it gets dark and grab tacos after.", g:5}
+    {id:1, title:"Rooftop Jazz Session", venue:"The Oviatt Penthouse", lat:34.0478, lng:-118.2563, time:"Tue · 8:00 PM", live:true, startsIn:"starts in 12 min", going:12, fromGroup:3, host:"Maya R.", desc:"Small-group table, live trio, one round included. Cameras welcome — tag the event to share.", category:"Live Music", parking:"Street parking after 8pm", alcohol:true, g:0},
+    {id:2, title:"Sunday Ceramics Pop-up", venue:"Otherwild Studio", lat:34.0928, lng:-118.2515, time:"Sun · 2:00 PM", live:false, startsIn:"6 spots left", going:6, fromGroup:2, host:"Devon L.", desc:"Hand-build a small bowl, glaze included. No experience needed, all materials provided.", category:"Art & Making", parking:"Free garage behind the studio", alcohol:false, g:1},
+    {id:3, title:"Griffith Park Sunrise Hike", venue:"Griffith Observatory Trailhead", lat:34.1184, lng:-118.3004, time:"Sat · 6:30 AM", live:false, startsIn:"9 going", going:9, fromGroup:1, host:"Priya K.", desc:"Easy 3-mile loop, coffee after at the trailhead. Bring layers, it's cold before sunrise.", category:"Outdoors", parking:"Lot parking at sunrise", alcohol:false, g:2},
+    {id:4, title:"Silver Lake Supper Club", venue:"Ten Speed Coffee", lat:34.0869, lng:-118.2702, time:"Thu · 7:00 PM", live:false, startsIn:"7 going", going:7, fromGroup:4, host:"Jordan M.", desc:"A rotating dinner series in a different member's neighborhood spot each week.", category:"Food & Drink", parking:"Metered street parking nearby", alcohol:true, g:3},
+    {id:5, title:"Vinyl & Wine Night", venue:"Bar Chelou", lat:34.1046, lng:-118.2727, time:"Fri · 8:30 PM", live:false, startsIn:"5 going", going:5, fromGroup:0, host:"Marcus T.", desc:"Bring a record or just come listen. Small pours, small group, big speakers.", category:"Music & Nightlife", parking:"Validated parking at the lot behind the bar", alcohol:true, g:4},
+    {id:6, title:"Sunset Volleyball", venue:"Will Rogers State Beach", lat:34.0367, lng:-118.5309, time:"Wed · 6:00 PM", live:false, startsIn:"8 going", going:8, fromGroup:2, host:"Ghazi A.", desc:"Casual co-ed games, all levels. We wrap before it gets dark and grab tacos after.", category:"Wellness & Fitness", parking:"Free lot near the beach entrance", alcohol:false, g:5}
   ];
 
   let events = FALLBACK_EVENTS.slice();
@@ -1236,6 +1248,14 @@
     });
   }
 
+  function cleanHostName(value){
+    return String(value || "")
+      .trim()
+      .replace(/^Hosted by\s+/i, "")
+      .replace(/\s*—\s*Culture Keeper\s*$/i, "")
+      .trim();
+  }
+
   function loadEventsFromSheet(){
     if(!window.Papa || !SHEET_CSV_URL || SHEET_CSV_URL.indexOf("YOUR_") === 0){
       return; // no sheet configured yet — stays on FALLBACK_EVENTS
@@ -1259,10 +1279,12 @@
             live: String(row.live || "").trim().toUpperCase() === "TRUE",
             going: parseInt(row.going, 10) || 0,
             fromGroup: parseInt(row.from_group, 10) || 0,
-            host: String(row.host || "").trim(),
+            host: cleanHostName(row.host),
             desc: String(row.description || "").trim(),
             startsIn: String(row.status_note || "").trim(),
             category: String(row.category || "").trim(),
+            parking: String(row.parking || "").trim(),
+            alcohol: String(row.alcohol || "").trim().toUpperCase() === "TRUE",
             g: i % gradients.length
           };
         }).filter(Boolean);
@@ -1319,10 +1341,30 @@
     if(!ev) return;
     sheetEventId = id;
     document.getElementById("sheetPhoto").style.background = gradients[ev.g];
+    const badgesWrap = document.getElementById("sheetBadges");
+    const badgeParts = [];
+    if(ev.live) badgeParts.push('<span class="sheet-badge live">LIVE</span>');
+    if(ev.category) badgeParts.push('<span class="sheet-badge category">' + ev.category + '</span>');
+    badgesWrap.innerHTML = badgeParts.join("");
     document.getElementById("sheetTitle").textContent = ev.title;
     document.getElementById("sheetMeta").textContent = `${ev.venue} · ${ev.time}`;
     document.getElementById("sheetGoing").textContent = `${ev.going} going · ${ev.fromGroup} from your group`;
-    document.getElementById("sheetHost").textContent = ev.host;
+    document.getElementById("sheetHost").textContent = `Hosted by ${cleanHostName(ev.host)}`;
+    const extrasWrap = document.getElementById("sheetExtras");
+    extrasWrap.innerHTML = "";
+    if(ev.parking){
+      const p = document.createElement("div");
+      p.className = "sheet-note";
+      p.textContent = `Parking: ${ev.parking}`;
+      extrasWrap.appendChild(p);
+    }
+    if(ev.alcohol){
+      const badge = document.createElement("span");
+      badge.className = "sheet-21";
+      badge.textContent = "21+";
+      extrasWrap.appendChild(badge);
+    }
+    extrasWrap.style.display = extrasWrap.innerHTML ? "flex" : "none";
     document.getElementById("sheetDesc").textContent = ev.desc;
     const btn = document.getElementById("sheetRsvp");
     btn.textContent = state.rsvped.has(id) ? "You're going ✓" : "RSVP — Free with Membership";
