@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0" />
-<title>Third Space — Interactive Prototype</title>
+<title>Communa — Interactive Prototype</title>
 
 <!-- installable app / PWA metadata -->
 <link rel="manifest" href="manifest.json" />
@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Third Space" />
+<meta name="apple-mobile-web-app-title" content="Communa" />
 <meta name="mobile-web-app-capable" content="yes" />
 
 <!-- real map: Mapbox GL JS + Geocoder search plugin -->
@@ -692,7 +692,7 @@
 <div class="harness">
   <div class="harness-top">
     <div>
-      <div class="harness-title">Third Space — Interactive Prototype</div>
+      <div class="harness-title">Communa — Interactive Prototype</div>
       <div class="harness-sub">Click through the phone below. Swipe or use the ✕ / ♥ buttons on Discover. Nothing here is saved once you close the tab.</div>
     </div>
     <div class="harness-actions">
@@ -715,8 +715,8 @@
           <button class="onb-skip" data-goto="home">Skip intro →</button>
           <div class="onb">
             <div class="onb-logo">LOGO MARK</div>
-            <h2>Third Space</h2>
-            <p class="tagline">Discover your neighborhood with friends</p>
+            <h2>Communa</h2>
+            <p class="tagline">Discover Events, Experiences, &amp; Pop-ups in your neighborhood</p>
             <div class="onb-footer">
               <button class="btn" data-goto="onb-2">Get Started</button>
             </div>
@@ -730,12 +730,14 @@
             <div class="vibe-title">What are you into?</div>
             <div class="vibe-sub">Pick a few — this shapes your weekly matches.</div>
             <div class="chip-grid" id="chipGrid">
-              <div class="chip" data-chip="Dinners">Dinners</div>
-              <div class="chip" data-chip="Hikes">Hikes</div>
-              <div class="chip" data-chip="Coffee">Coffee</div>
-              <div class="chip" data-chip="Live Music">Live Music</div>
-              <div class="chip" data-chip="Art Pop-ups">Art Pop-ups</div>
-              <div class="chip" data-chip="Wellness">Wellness</div>
+              <div class="chip" data-chip="Food & Drink">Food &amp; Drink</div>
+              <div class="chip" data-chip="Music & Nightlife">Music &amp; Nightlife</div>
+              <div class="chip" data-chip="Wellness & Fitness">Wellness &amp; Fitness</div>
+              <div class="chip" data-chip="Outdoors">Outdoors</div>
+              <div class="chip" data-chip="Art & Making">Art &amp; Making</div>
+              <div class="chip" data-chip="Games & Social">Games &amp; Social</div>
+              <div class="chip" data-chip="Markets & Shopping">Markets &amp; Shopping</div>
+              <div class="chip" data-chip="Community & Causes">Community &amp; Causes</div>
             </div>
             <div class="onb-footer">
               <button class="btn" data-goto="onb-3">Continue</button>
@@ -754,7 +756,7 @@
               <div class="pin" style="left:50%;top:50%;"></div>
             </div>
             <h2 style="font-size:18px;">See what's happening nearby, live</h2>
-            <p class="tagline">Third Space uses your location only while the app is open.</p>
+            <p class="tagline">Communa uses your location only while the app is open.</p>
             <div class="onb-footer">
               <button class="btn" data-goto="home">Allow Location</button>
             </div>
@@ -764,7 +766,7 @@
         <!-- HOME / MAP -->
         <div class="screen" data-screen="home">
           <div class="app-header">
-            <div><h1>Third Space · LA</h1></div>
+            <div><h1>Communa · LA</h1></div>
             <button class="bell-btn" data-goto="alerts">
               <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#111827" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
               <span class="bell-dot" id="bellCount">4</span>
@@ -1381,7 +1383,7 @@
 
   function currentEventTag(){
     const remaining = events.slice(state.deckIndex);
-    return remaining.length ? remaining[0].title : "Third Space";
+    return remaining.length ? remaining[0].title : "Communa";
   }
 
   function renderDeck(){

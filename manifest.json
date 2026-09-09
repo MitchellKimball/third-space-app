@@ -1,6 +1,6 @@
 {
-  "name": "Third Space",
-  "short_name": "Third Space",
+  "name": "Communa",
+  "short_name": "Communa",
   "description": "Gamified local discovery for LA transplants — weekly matched groups, live map, capture, and rewards.",
   "start_url": "./index.html",
   "scope": "./",
