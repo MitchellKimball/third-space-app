@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0" />
+<title>Third Space — Interactive Prototype</title>
+
+<!-- installable app / PWA metadata -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#0F9D8C" />
+<link rel="icon" href="icons/favicon-32.png" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Third Space" />
+<meta name="mobile-web-app-capable" content="yes" />
+
+<style>
+  :root{
+    --ink:#0B1220;
+    --ink-2:#111827;
+    --muted:#6B7280;
+    --line:#E5E7EB;
+    --light:#F3F4F6;
+    --white:#FFFFFF;
+    --accent:#0F9D8C;
+    --accent-dk:#0B7F72;
+    --accent-tint:#E6F5F3;
+    --alert:#E11D48;
+    --alert-tint:#FDE7EC;
+    --radius:22px;
+    font-size:16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:#EEF1F4;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink-2);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:28px 16px 60px;
+  }
+
+  /* ---------- harness (outside the "app") ---------- */
+  .harness{
+    width:100%;
+    max-width:1040px;
+    margin-bottom:22px;
+  }
+  .harness-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-bottom:14px;
+  }
+  .harness-title{font-size:20px;font-weight:700;color:var(--ink-2);}
+  .harness-sub{font-size:13px;color:var(--muted);margin-top:2px;}
+  .harness-actions{display:flex;gap:8px;}
+  .harness-btn{
+    border:1px solid var(--line);
+    background:var(--white);
+    color:var(--ink-2);
+    font-size:12.5px;
+    font-weight:600;
+    padding:8px 12px;
+    border-radius:999px;
+    cursor:pointer;
+  }
+  .harness-btn:hover{border-color:var(--accent);color:var(--accent-dk);}
+  .jumpbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    padding:10px;
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:14px;
+  }
+  .jump-btn{
+    border:1px solid transparent;
+    background:var(--light);
+    color:var(--ink-2);
+    font-size:12px;
+    font-weight:600;
+    padding:7px 11px;
+    border-radius:999px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .jump-btn.active{background:var(--accent);color:var(--white);}
+  .jump-btn:hover:not(.active){background:#E4E7EB;}
+
+  /* ---------- phone ---------- */
+  .stage{
+    display:flex;
+    justify-content:center;
+    width:100%;
+  }
+  .phone{
+    position:relative;
+    width:390px;
+    height:812px;
+    max-height:82vh;
+    background:var(--white);
+    border-radius:46px;
+    border:10px solid var(--ink);
+    box-shadow:0 24px 60px rgba(15,23,42,.28);
+    overflow:hidden;
+    flex-shrink:0;
+  }
+  .notch{
+    position:absolute;
+    top:0; left:50%;
+    transform:translateX(-50%);
+    width:150px; height:26px;
+    background:var(--ink);
+    border-bottom-left-radius:16px;
+    border-bottom-right-radius:16px;
+    z-index:50;
+  }
+  .statusbar{
+    height:44px;
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    padding:0 22px 6px;
+    font-size:13px;
+    font-weight:700;
+    color:var(--ink-2);
+    flex-shrink:0;
+  }
+  .app-body{
+    position:relative;
+    height:calc(100% - 44px);
+    display:flex;
+    flex-direction:column;
+  }
+
+  .screens{
+    position:relative;
+    flex:1;
+    min-height:0;
+  }
+  .screen{
+    position:absolute;
+    inset:0;
+    display:none;
+    flex-direction:column;
+    background:var(--white);
+  }
+  .screen.active{display:flex;}
+  .screen-scroll{
+    flex:1;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .screen-scroll::-webkit-scrollbar{width:0;}
+
+  /* header used on main tab screens */
+  .app-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 18px 12px;
+    border-bottom:1px solid var(--line);
+    flex-shrink:0;
+  }
+  .app-header h1{font-size:17px;margin:0;font-weight:700;}
+  .app-header .sub{font-size:11.5px;color:var(--accent-dk);font-weight:700;margin-top:1px;}
+  .bell-btn{
+    position:relative;
+    width:34px;height:34px;
+    border-radius:50%;
+    background:var(--light);
+    border:none;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+  }
+  .bell-dot{
+    position:absolute;top:4px;right:5px;
+    width:16px;height:16px;border-radius:50%;
+    background:var(--alert);color:#fff;
+    font-size:9px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  /* ---------- bottom nav ---------- */
+  .bottomnav{
+    display:flex;
+    border-top:1px solid var(--line);
+    background:var(--white);
+    flex-shrink:0;
+    padding-bottom:6px;
+  }
+  .navitem{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:3px;
+    padding:8px 2px 2px;
+    background:none;
+    border:none;
+    cursor:pointer;
+    color:var(--muted);
+  }
+  .navitem svg{width:21px;height:21px;stroke:var(--muted);fill:none;stroke-width:1.8;}
+  .navitem span{font-size:10px;font-weight:600;}
+  .navitem.active{color:var(--accent);}
+  .navitem.active svg{stroke:var(--accent);}
+
+  /* ---------- onboarding ---------- */
+  .onb{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    padding:34px 26px 26px;
+  }
+  .onb-logo{
+    width:100%;
+    height:210px;
+    border:1.5px dashed var(--line);
+    border-radius:16px;
+    background:var(--light);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--muted);
+    font-size:12px;font-weight:700;letter-spacing:.5px;
+    margin-bottom:26px;
+  }
+  .onb h2{font-size:24px;text-align:center;margin:0 0 8px;}
+  .onb p.tagline{text-align:center;color:var(--muted);font-size:14px;margin:0 0 auto;line-height:1.5;}
+  .onb-skip{
+    position:absolute;top:16px;right:18px;z-index:5;
+    font-size:11px;color:var(--muted);
+    background:none;border:none;cursor:pointer;
+    text-decoration:underline;
+  }
+  .vibe-title{font-size:19px;font-weight:700;margin:6px 0 4px;}
+  .vibe-sub{font-size:13px;color:var(--muted);margin:0 0 20px;}
+  .chip-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .chip{
+    border:1.5px solid var(--line);
+    background:var(--white);
+    border-radius:14px;
+    padding:16px 10px;
+    text-align:center;
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--ink-2);
+    cursor:pointer;
+    transition:.12s;
+  }
+  .chip.selected{border-color:var(--accent);background:var(--accent-tint);color:var(--accent-dk);}
+  .loc-preview{
+    width:100%;height:190px;border-radius:16px;background:var(--light);
+    border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--muted);font-size:12px;font-weight:600;margin:6px 0 24px;
+    position:relative;overflow:hidden;
+  }
+  .loc-preview .pin{position:absolute;width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 6px rgba(15,157,138,.18);}
+  .btn{
+    border:none;
+    border-radius:999px;
+    background:var(--accent);
+    color:#fff;
+    font-size:15px;
+    font-weight:700;
+    padding:15px;
+    cursor:pointer;
+    width:100%;
+  }
+  .btn:hover{background:var(--accent-dk);}
+  .btn.ghost{background:var(--white);color:var(--accent-dk);border:1.5px solid var(--accent);}
+  .btn.small{padding:10px;font-size:13px;}
+  .onb-footer{margin-top:auto;}
+
+  /* ---------- map / home ---------- */
+  .map-wrap{
+    margin:14px 18px 0;
+    height:220px;
+    border-radius:16px;
+    background:linear-gradient(135deg,#E9EEF3,#DCE6EA);
+    position:relative;
+    overflow:hidden;
+    border:1px solid var(--line);
+  }
+  .map-grid-line{position:absolute;background:rgba(15,23,42,.05);}
+  .pin{
+    position:absolute;
+    width:15px;height:15px;
+    border-radius:50%;
+    border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.25);
+    cursor:pointer;
+    transform:translate(-50%,-50%);
+  }
+  .pin.live{background:var(--alert);}
+  .pin.event{background:var(--accent);}
+  .pin.other{background:#94A3B8;}
+  .pin-label{
+    position:absolute;
+    top:100%;left:50%;
+    transform:translateX(-50%);
+    font-size:7px;font-weight:800;
+    color:var(--alert);
+    margin-top:1px;
+    white-space:nowrap;
+  }
+  .you-pin{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    text-align:center;
+  }
+  .you-pin .dot{width:11px;height:11px;border-radius:50%;background:var(--ink-2);border:2px solid #fff;margin:0 auto;}
+  .you-pin span{font-size:7px;font-weight:800;color:var(--ink-2);}
+  .list-title{font-size:13px;font-weight:700;margin:16px 18px 8px;}
+  .ev-card{
+    display:flex;
+    gap:10px;
+    margin:0 18px 10px;
+    padding:9px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    align-items:center;
+    cursor:pointer;
+    background:var(--white);
+  }
+  .ev-card:hover{border-color:var(--accent);}
+  .ev-thumb{
+    width:52px;height:52px;border-radius:10px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:800;font-size:15px;
+  }
+  .ev-info{flex:1;min-width:0;}
+  .ev-info .t{font-size:13px;font-weight:700;margin:0 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ev-info .s{font-size:11.5px;color:var(--muted);margin:0;}
+  .pill{
+    font-size:9px;font-weight:800;letter-spacing:.3px;
+    padding:4px 8px;border-radius:999px;
+    flex-shrink:0;
+  }
+  .pill.live{background:var(--alert);color:#fff;}
+  .pill.soft{background:var(--accent-tint);color:var(--accent-dk);}
+
+  /* ---------- discover (swipe) ---------- */
+  .discover-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:14px 0 0;position:relative;}
+  .deck{
+    position:relative;
+    width:300px;
+    height:420px;
+    margin-top:6px;
+  }
+  .swipecard{
+    position:absolute;
+    inset:0;
+    border-radius:22px;
+    background:var(--white);
+    border:1px solid var(--line);
+    box-shadow:0 10px 26px rgba(15,23,42,.14);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    touch-action:none;
+    user-select:none;
+    cursor:grab;
+  }
+  .swipecard .photo{
+    height:255px;
+    display:flex;align-items:flex-end;
+    padding:12px;
+    color:#fff;
+    position:relative;
+  }
+  .swipecard .photo .badge{
+    position:absolute;top:12px;left:12px;
+    font-size:9.5px;font-weight:800;
+    background:rgba(0,0,0,.4);
+    padding:5px 9px;border-radius:999px;
+  }
+  .swipecard .photo .veil{
+    position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(0,0,0,.55) 100%);
+  }
+  .swipecard .photo h3{position:relative;z-index:2;font-size:18px;margin:0;font-weight:800;}
+  .swipecard .body{padding:12px 14px;flex:1;display:flex;flex-direction:column;}
+  .swipecard .meta{font-size:12px;color:var(--muted);margin:0 0 8px;}
+  .swipecard .desc{font-size:12.5px;color:var(--ink-2);line-height:1.4;margin:0;}
+  .stamp{
+    position:absolute;top:26px;
+    font-size:20px;font-weight:900;letter-spacing:2px;
+    border:4px solid;border-radius:10px;
+    padding:4px 12px;
+    transform:rotate(-18deg);
+    opacity:0;
+    pointer-events:none;
+  }
+  .stamp.like{left:20px;color:var(--accent);border-color:var(--accent);}
+  .stamp.nope{right:20px;color:var(--alert);border-color:var(--alert);transform:rotate(18deg);}
+  .swipe-controls{
+    display:flex;gap:26px;align-items:center;
+    margin:16px 0 6px;
+  }
+  .round-btn{
+    width:56px;height:56px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    border:1.5px solid var(--line);
+    background:#fff;cursor:pointer;
+    box-shadow:0 4px 10px rgba(15,23,42,.08);
+  }
+  .round-btn.nope svg{stroke:var(--alert);}
+  .round-btn.like{width:64px;height:64px;border-color:var(--accent);}
+  .round-btn.like svg{stroke:var(--accent);fill:var(--accent);}
+  .deck-hint{font-size:11px;color:var(--muted);margin-top:10px;text-align:center;padding:0 30px;}
+  .empty-state{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:30px;text-align:center;color:var(--muted);gap:10px;
+  }
+  .empty-state svg{stroke:var(--line);width:48px;height:48px;}
+  .empty-state h3{color:var(--ink-2);font-size:15px;margin:6px 0 0;}
+  .empty-state p{font-size:12.5px;margin:0;}
+
+  /* ---------- capture ---------- */
+  .capture-screen{flex:1;background:var(--ink);display:flex;flex-direction:column;position:relative;}
+  .viewfinder{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .viewfinder::before{
+    content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(15,157,138,.14), transparent 55%),
+      radial-gradient(circle at 75% 70%, rgba(225,29,72,.10), transparent 50%);
+  }
+  .vf-label{color:#334155;font-size:11px;font-weight:800;letter-spacing:2px;position:relative;}
+  .cap-tag{
+    position:absolute;top:16px;left:16px;
+    background:rgba(255,255,255,.12);
+    color:#fff;font-size:11px;font-weight:700;
+    padding:6px 12px;border-radius:999px;
+    display:flex;align-items:center;gap:6px;
+  }
+  .cap-tag svg{width:12px;height:12px;stroke:#fff;}
+  .rec-badge{
+    position:absolute;top:16px;right:16px;
+    background:var(--alert);color:#fff;font-size:10px;font-weight:800;
+    padding:6px 11px;border-radius:999px;
+    display:none;align-items:center;gap:5px;
+  }
+  .rec-badge.show{display:flex;}
+  .rec-dot{width:6px;height:6px;border-radius:50%;background:#fff;}
+  .autotag{
+    position:relative;text-align:center;color:#64748B;font-size:10.5px;
+    margin-top:8px;
+  }
+  .toggle-row{display:flex;justify-content:center;padding:14px 0 6px;position:relative;}
+  .toggle{
+    display:flex;background:rgba(255,255,255,.1);
+    border-radius:999px;padding:3px;
+  }
+  .toggle button{
+    border:none;background:none;color:#94A3B8;
+    font-size:10.5px;font-weight:800;letter-spacing:.5px;
+    padding:6px 16px;border-radius:999px;cursor:pointer;
+  }
+  .toggle button.active{background:#fff;color:var(--ink-2);}
+  .shutter-row{display:flex;justify-content:center;padding:10px 0 30px;position:relative;}
+  .shutter{
+    width:70px;height:70px;border-radius:50%;
+    border:4px solid #fff;background:transparent;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+  }
+  .shutter .inner{width:56px;height:56px;border-radius:50%;background:#fff;transition:.12s;}
+  .shutter:active .inner{transform:scale(.85);}
+  .flash{
+    position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;
+    transition:opacity .08s;
+  }
+  .flash.show{opacity:.85;}
+
+  /* ---------- feed ---------- */
+  .feed-post{margin:0 18px 16px;border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+  .feed-photo{
+    height:200px;position:relative;display:flex;align-items:flex-end;color:#fff;padding:10px;
+  }
+  .feed-photo .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(0,0,0,.5) 100%);}
+  .feed-photo .live-tag{position:absolute;top:10px;left:10px;background:var(--alert);font-size:9px;font-weight:800;padding:5px 9px;border-radius:999px;z-index:2;}
+  .feed-photo .new-tag{position:absolute;top:10px;left:10px;background:var(--accent);font-size:9px;font-weight:800;padding:5px 9px;border-radius:999px;z-index:2;}
+  .feed-meta{padding:10px 12px 12px;}
+  .feed-meta .t{font-size:13px;font-weight:700;margin:0 0 2px;}
+  .feed-meta .s{font-size:11px;color:var(--muted);margin:0 0 8px;}
+  .feed-actions{display:flex;gap:14px;align-items:center;}
+  .like-btn{display:flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:11.5px;font-weight:700;}
+  .like-btn svg{width:16px;height:16px;stroke:var(--muted);fill:none;}
+  .like-btn.liked svg{stroke:var(--alert);fill:var(--alert);}
+  .like-btn.liked{color:var(--alert);}
+
+  /* ---------- rewards / leaderboard / alerts / profile shared bits ---------- */
+  .stat-card{
+    margin:14px 18px 4px;
+    padding:14px 16px;
+    background:var(--accent-tint);
+    border:1px solid var(--accent);
+    border-radius:14px;
+  }
+  .stat-card .big{font-size:20px;font-weight:800;color:var(--accent-dk);}
+  .stat-card .sub{font-size:11.5px;color:var(--accent-dk);margin-top:2px;}
+  .badge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 18px;}
+  .badge-item{text-align:center;}
+  .badge-circle{
+    width:52px;height:52px;border-radius:50%;margin:0 auto 6px;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:19px;
+  }
+  .badge-circle.locked{background:var(--light);border:1px solid var(--line);color:var(--muted);}
+  .badge-circle.earned{background:var(--accent);}
+  .badge-item span{font-size:9.5px;color:var(--muted);font-weight:700;}
+  .badge-item.earned span{color:var(--ink-2);}
+  .redeem-row{
+    display:flex;align-items:center;justify-content:space-between;
+    margin:0 18px 10px;padding:12px 14px;
+    border:1px solid var(--line);border-radius:12px;
+  }
+  .redeem-row .t{font-size:12.5px;font-weight:700;margin:0;}
+  .redeem-row .s{font-size:11px;color:var(--muted);margin:2px 0 0;}
+  .redeem-btn{
+    border:1.5px solid var(--accent);background:#fff;color:var(--accent-dk);
+    font-size:11px;font-weight:800;padding:7px 12px;border-radius:999px;cursor:pointer;flex-shrink:0;
+  }
+  .redeem-btn:hover{background:var(--accent);color:#fff;}
+  .redeem-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  .lb-row{display:flex;align-items:center;gap:10px;margin:0 18px 8px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;}
+  .lb-row.me{border-color:var(--accent);background:var(--accent-tint);}
+  .lb-rank{font-size:13px;font-weight:800;width:16px;color:var(--muted);}
+  .lb-row.me .lb-rank{color:var(--accent-dk);}
+  .lb-avatar{width:30px;height:30px;border-radius:50%;background:var(--light);border:1px solid var(--line);flex-shrink:0;}
+  .lb-name{flex:1;font-size:12.5px;font-weight:700;}
+  .lb-pts{font-size:11.5px;color:var(--muted);font-weight:700;}
+
+  .alert-row{display:flex;gap:10px;margin:0 18px 10px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;}
+  .alert-row .stripe{width:4px;border-radius:3px;flex-shrink:0;}
+  .alert-row .t{font-size:12.5px;font-weight:700;margin:0 0 2px;}
+  .alert-row .s{font-size:11px;color:var(--muted);margin:0;}
+
+  .profile-head{display:flex;gap:12px;align-items:center;padding:16px 18px 6px;}
+  .avatar-lg{width:56px;height:56px;border-radius:50%;background:var(--light);border:1px solid var(--line);flex-shrink:0;}
+  .profile-name{font-size:16px;font-weight:800;margin:0;}
+  .profile-sub{font-size:11.5px;color:var(--muted);margin:2px 0 6px;}
+  .tier-pill{font-size:10px;font-weight:800;color:var(--accent-dk);background:var(--accent-tint);border:1px solid var(--accent);padding:3px 9px;border-radius:999px;}
+  .stat-row{display:flex;padding:14px 18px 6px;text-align:center;}
+  .stat-row .cell{flex:1;}
+  .stat-row .num{font-size:17px;font-weight:800;}
+  .stat-row .lbl{font-size:10px;color:var(--muted);font-weight:700;margin-top:2px;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 18px 8px;}
+  .grid3 .cell{aspect-ratio:1;border-radius:10px;background:var(--light);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:11px;}
+  .link-row{
+    display:block;margin:16px 18px 6px;
+    font-size:12px;color:var(--accent-dk);font-weight:700;
+    background:none;border:none;cursor:pointer;padding:0;
+    text-decoration:underline;
+  }
+
+  /* ---------- venue view ---------- */
+  .venue-hdr{background:var(--ink);color:#fff;padding:16px 18px;}
+  .venue-hdr h1{font-size:17px;margin:0;}
+  .venue-back{font-size:11.5px;color:var(--accent-tint);background:none;border:none;cursor:pointer;padding:0;margin-top:6px;text-decoration:underline;}
+  .venue-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 18px;}
+  .venue-stats .cell{background:var(--light);border:1px solid var(--line);border-radius:12px;padding:10px 4px;text-align:center;}
+  .venue-stats .num{font-size:15px;font-weight:800;}
+  .venue-stats .lbl{font-size:9px;color:var(--muted);font-weight:700;margin-top:2px;}
+  .venue-money{padding:0 18px;margin-bottom:6px;}
+  .venue-money .lbl{font-size:11px;color:var(--muted);font-weight:700;}
+  .venue-money .num{font-size:24px;font-weight:800;}
+
+  /* ---------- event detail sheet ---------- */
+  .sheet-overlay{
+    position:absolute;inset:0;background:rgba(11,18,32,.45);
+    display:none;align-items:flex-end;z-index:80;
+  }
+  .sheet-overlay.show{display:flex;}
+  .sheet{
+    width:100%;max-height:88%;
+    background:#fff;border-radius:24px 24px 0 0;
+    display:flex;flex-direction:column;
+    overflow:hidden;
+    animation:sheetup .18s ease-out;
+  }
+  @keyframes sheetup{from{transform:translateY(24px);opacity:.5;}to{transform:translateY(0);opacity:1;}}
+  .sheet-grab{width:38px;height:4px;border-radius:3px;background:var(--line);margin:10px auto;}
+  .sheet-photo{height:150px;margin:0 16px;border-radius:14px;position:relative;display:flex;align-items:flex-end;padding:10px;color:#fff;overflow:hidden;}
+  .sheet-photo .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(0,0,0,.5) 100%);}
+  .sheet-body{padding:14px 18px 20px;overflow-y:auto;}
+  .sheet-body h2{font-size:17px;margin:0 0 3px;}
+  .sheet-body .meta{font-size:12px;color:var(--muted);margin:0 0 10px;}
+  .avatars{display:flex;margin-bottom:4px;}
+  .avatars .a{width:26px;height:26px;border-radius:50%;background:var(--light);border:2px solid #fff;margin-right:-8px;}
+  .going-line{font-size:11.5px;color:var(--muted);margin:6px 0 12px 34px;}
+  .host-box{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12px;margin-bottom:12px;}
+  .whattoexpect{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:0 0 4px;}
+  .desc-text{font-size:12.5px;line-height:1.5;color:var(--ink-2);margin:0 0 16px;}
+  .close-sheet{position:absolute;top:12px;right:14px;background:rgba(0,0,0,.35);color:#fff;width:26px;height:26px;border-radius:50%;border:none;font-size:14px;cursor:pointer;z-index:3;}
+
+  /* ---------- check-in overlay ---------- */
+  .checkin-overlay{
+    position:absolute;inset:0;background:var(--ink);
+    display:none;flex-direction:column;align-items:center;justify-content:center;
+    color:#fff;text-align:center;padding:30px;z-index:90;
+  }
+  .checkin-overlay.show{display:flex;}
+  .check-circle{
+    width:96px;height:96px;border-radius:50%;
+    border:3px solid var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:16px;
+    animation:pop .3s ease-out;
+  }
+  @keyframes pop{from{transform:scale(.6);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .check-circle svg{width:42px;height:42px;stroke:var(--accent);}
+  .checkin-overlay h2{font-size:16px;margin:0 0 4px;}
+  .checkin-overlay .pts{color:var(--accent);font-size:12.5px;font-weight:700;margin-bottom:18px;}
+  .flames{display:flex;gap:8px;margin-bottom:14px;}
+  .flame{width:30px;height:30px;border-radius:8px;background:#1A2436;display:flex;align-items:center;justify-content:center;font-size:14px;opacity:.35;}
+  .flame.on{background:var(--accent);opacity:1;}
+  .checkin-overlay .unlock{font-size:11px;color:#94A3B8;margin-bottom:22px;}
+
+  /* ---------- toast ---------- */
+  .toast{
+    position:absolute;left:50%;bottom:82px;transform:translateX(-50%) translateY(10px);
+    background:var(--ink);color:#fff;font-size:12.5px;font-weight:600;
+    padding:11px 18px;border-radius:999px;
+    opacity:0;pointer-events:none;transition:.18s;
+    z-index:95;white-space:nowrap;
+    box-shadow:0 8px 20px rgba(0,0,0,.25);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @media (max-width:460px){
+    .phone{width:100%;max-width:390px;height:78vh;border-radius:32px;border-width:8px;}
+    .deck{width:260px;height:380px;}
+  }
+
+  /* ---------- real phone / installed app mode ---------- */
+  .devtools-toggle{
+    position:fixed;top:10px;right:10px;z-index:200;
+    width:34px;height:34px;border-radius:50%;
+    background:var(--ink);color:#fff;border:none;
+    font-size:15px;cursor:pointer;
+    display:none;
+    align-items:center;justify-content:center;
+    box-shadow:0 4px 12px rgba(0,0,0,.25);
+  }
+  @media (max-width:700px){
+    body{padding:0;min-height:100dvh;}
+    .harness{max-width:100%;padding:14px 14px 0;}
+    .jumpbar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    .jump-btn{flex-shrink:0;}
+    .stage{padding:0 0 14px;}
+    .phone{
+      width:100%;max-width:480px;
+      height:calc(100dvh - 150px);
+      max-height:none;
+      border-radius:0;border:none;box-shadow:none;
+    }
+    .notch{display:none;}
+  }
+  /* launched from home screen: hide dev harness by default, edge-to-edge */
+  body.standalone-app{padding:0;}
+  body.standalone-app .harness{display:none;}
+  body.standalone-app .stage{padding:0;}
+  body.standalone-app .phone{
+    width:100vw;max-width:none;height:100dvh;
+    border-radius:0;border:none;box-shadow:none;
+  }
+  body.standalone-app .notch{display:none;}
+  body.standalone-app .devtools-toggle{display:flex;}
+  body.standalone-app.devtools-open .harness{
+    display:block;position:fixed;inset:0;z-index:150;
+    background:#EEF1F4;overflow-y:auto;padding:54px 16px 24px;
+    max-width:100%;
+  }
+  body.standalone-app.devtools-open .stage{display:none;}
+</style>
+</head>
+<body>
+
+<button class="devtools-toggle" id="devtoolsToggle" title="Dev tools">🛠</button>
+
+<div class="harness">
+  <div class="harness-top">
+    <div>
+      <div class="harness-title">Third Space — Interactive Prototype</div>
+      <div class="harness-sub">Click through the phone below. Swipe or use the ✕ / ♥ buttons on Discover. Nothing here is saved once you close the tab.</div>
+    </div>
+    <div class="harness-actions">
+      <button class="harness-btn" id="restartBtn">↺ Restart demo</button>
+    </div>
+  </div>
+  <div class="jumpbar" id="jumpbar"></div>
+</div>
+
+<div class="stage">
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="statusbar"><span>9:41</span><span>•••</span></div>
+    <div class="app-body">
+
+      <div class="screens">
+
+        <!-- ONBOARDING 1 -->
+        <div class="screen active" data-screen="onb-1">
+          <button class="onb-skip" data-goto="home">Skip intro →</button>
+          <div class="onb">
+            <div class="onb-logo">LOGO MARK</div>
+            <h2>Third Space</h2>
+            <p class="tagline">Discover your neighborhood with friends</p>
+            <div class="onb-footer">
+              <button class="btn" data-goto="onb-2">Get Started</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ONBOARDING 2 -->
+        <div class="screen" data-screen="onb-2">
+          <button class="onb-skip" data-goto="home">Skip intro →</button>
+          <div class="onb" style="padding-top:56px;">
+            <div class="vibe-title">What are you into?</div>
+            <div class="vibe-sub">Pick a few — this shapes your weekly matches.</div>
+            <div class="chip-grid" id="chipGrid">
+              <div class="chip" data-chip="Dinners">Dinners</div>
+              <div class="chip" data-chip="Hikes">Hikes</div>
+              <div class="chip" data-chip="Coffee">Coffee</div>
+              <div class="chip" data-chip="Live Music">Live Music</div>
+              <div class="chip" data-chip="Art Pop-ups">Art Pop-ups</div>
+              <div class="chip" data-chip="Wellness">Wellness</div>
+            </div>
+            <div class="onb-footer">
+              <button class="btn" data-goto="onb-3">Continue</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ONBOARDING 3 -->
+        <div class="screen" data-screen="onb-3">
+          <button class="onb-skip" data-goto="home">Skip intro →</button>
+          <div class="onb" style="padding-top:56px;">
+            <div class="loc-preview">
+              <span>MAP PREVIEW (pins near you)</span>
+              <div class="pin" style="left:34%;top:38%;"></div>
+              <div class="pin" style="left:62%;top:58%;"></div>
+              <div class="pin" style="left:50%;top:50%;"></div>
+            </div>
+            <h2 style="font-size:18px;">See what's happening nearby, live</h2>
+            <p class="tagline">Third Space uses your location only while the app is open.</p>
+            <div class="onb-footer">
+              <button class="btn" data-goto="home">Allow Location</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- HOME / MAP -->
+        <div class="screen" data-screen="home">
+          <div class="app-header">
+            <div><h1>Third Space · LA</h1></div>
+            <button class="bell-btn" data-goto="alerts">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#111827" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+              <span class="bell-dot" id="bellCount">4</span>
+            </button>
+          </div>
+          <div class="screen-scroll">
+            <div class="map-wrap" id="mapWrap"></div>
+            <div class="list-title">Happening now near you</div>
+            <div id="homeList"></div>
+          </div>
+        </div>
+
+        <!-- DISCOVER (swipe) -->
+        <div class="screen" data-screen="discover">
+          <div class="app-header">
+            <div><h1>Discover</h1><div class="sub">Swipe to RSVP</div></div>
+            <button class="bell-btn" data-goto="alerts">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#111827" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+              <span class="bell-dot">4</span>
+            </button>
+          </div>
+          <div class="discover-body">
+            <div class="deck" id="deck"></div>
+            <div class="swipe-controls">
+              <button class="round-btn nope" id="passBtn">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+              </button>
+              <button class="round-btn like" id="likeBtn">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke-width="1.6"><path d="M12 21s-7-4.35-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.65-9.5 9-9.5 9z"/></svg>
+              </button>
+            </div>
+            <div class="deck-hint">Swipe right or tap ♥ to RSVP · swipe left or ✕ to pass</div>
+          </div>
+        </div>
+
+        <!-- CAPTURE -->
+        <div class="screen" data-screen="capture">
+          <div class="capture-screen">
+            <div class="flash" id="flash"></div>
+            <div class="viewfinder">
+              <div class="cap-tag">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke-width="2"><path d="M12 21s-7-7.5-7-12a7 7 0 0 1 14 0c0 4.5-7 12-7 12z"/></svg>
+                <span id="capTagText">Rooftop Jazz Session</span>
+              </div>
+              <div class="rec-badge" id="recBadge"><span class="rec-dot"></span>REC</div>
+              <div class="vf-label">VIEWFINDER</div>
+            </div>
+            <div class="autotag">Auto-tags: venue · group · time</div>
+            <div class="toggle-row">
+              <div class="toggle">
+                <button class="active" id="modePhoto">PHOTO</button>
+                <button id="modeVideo">VIDEO</button>
+              </div>
+            </div>
+            <div class="shutter-row">
+              <button class="shutter" id="shutterBtn"><div class="inner"></div></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FEED -->
+        <div class="screen" data-screen="feed">
+          <div class="app-header"><div><h1>Feed</h1><div class="sub">Near you · live</div></div></div>
+          <div class="screen-scroll" id="feedScroll" style="padding-top:12px;"></div>
+        </div>
+
+        <!-- REWARDS -->
+        <div class="screen" data-screen="rewards">
+          <div class="app-header"><div><h1>Rewards</h1></div></div>
+          <div class="screen-scroll">
+            <div class="stat-card">
+              <div class="big" id="pointsBig">1,240 pts</div>
+              <div class="sub">Silver Tier · 260 to Gold</div>
+            </div>
+            <div class="list-title">Badges</div>
+            <div class="badge-grid" id="badgeGrid"></div>
+            <div class="list-title">Redeem now</div>
+            <div id="redeemList"></div>
+          </div>
+        </div>
+
+        <!-- LEADERBOARD -->
+        <div class="screen" data-screen="leaderboard">
+          <div class="app-header"><div><h1>Leaderboard</h1><div class="sub">Silver Lake · this month</div></div></div>
+          <div class="screen-scroll" id="lbScroll" style="padding-top:12px;"></div>
+        </div>
+
+        <!-- ALERTS -->
+        <div class="screen" data-screen="alerts">
+          <div class="app-header"><div><h1>Alerts</h1></div></div>
+          <div class="screen-scroll" id="alertsScroll" style="padding-top:12px;"></div>
+        </div>
+
+        <!-- PROFILE -->
+        <div class="screen" data-screen="profile">
+          <div class="app-header"><div><h1>Profile</h1></div></div>
+          <div class="screen-scroll">
+            <div class="profile-head">
+              <div class="avatar-lg"></div>
+              <div>
+                <p class="profile-name">Mitchell K.</p>
+                <p class="profile-sub">Silver Lake · Member since Jan</p>
+                <span class="tier-pill" id="tierPill">Silver Tier</span>
+              </div>
+            </div>
+            <div class="stat-row">
+              <div class="cell"><div class="num" id="profStreak">4wk</div><div class="lbl">Streak</div></div>
+              <div class="cell"><div class="num" id="profPoints">1,240</div><div class="lbl">Points</div></div>
+              <div class="cell"><div class="num" id="profEvents">18</div><div class="lbl">Events</div></div>
+            </div>
+            <div class="list-title">My captures</div>
+            <div class="grid3" id="captureGrid"></div>
+            <button class="link-row" data-goto="rewards">View rewards & badges →</button>
+            <button class="link-row" data-goto="leaderboard">Neighborhood leaderboard →</button>
+            <button class="link-row" data-goto="venue">View as venue partner →</button>
+          </div>
+        </div>
+
+        <!-- VENUE DASHBOARD -->
+        <div class="screen" data-screen="venue">
+          <div class="venue-hdr">
+            <h1>Ten Speed Coffee</h1>
+            <button class="venue-back" data-goto="profile">← Back to member app</button>
+          </div>
+          <div class="screen-scroll">
+            <div class="venue-money">
+              <div class="lbl">Revenue this month</div>
+              <div class="num">$8,940</div>
+            </div>
+            <div class="venue-stats">
+              <div class="cell"><div class="num">87</div><div class="lbl">Attendees</div></div>
+              <div class="cell"><div class="num">4.9</div><div class="lbl">Avg rating</div></div>
+              <div class="cell"><div class="num">312</div><div class="lbl">Reached</div></div>
+            </div>
+            <div class="list-title">Upcoming groups</div>
+            <div class="redeem-row"><div><p class="t">Tue 7:00p</p><p class="s">7 guests</p></div></div>
+            <div class="redeem-row"><div><p class="t">Thu 6:30p</p><p class="s">6 guests</p></div></div>
+            <div class="list-title">Pending redemptions</div>
+            <div class="redeem-row" style="border-color:var(--accent);background:var(--accent-tint);">
+              <div><p class="t">3 members</p><p class="s">$10 credit each</p></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- event detail sheet -->
+      <div class="sheet-overlay" id="sheetOverlay">
+        <div class="sheet">
+          <button class="close-sheet" id="closeSheet">✕</button>
+          <div class="sheet-grab"></div>
+          <div class="sheet-photo" id="sheetPhoto"><div class="veil"></div></div>
+          <div class="sheet-body">
+            <h2 id="sheetTitle"></h2>
+            <p class="meta" id="sheetMeta"></p>
+            <div class="avatars"><div class="a"></div><div class="a"></div><div class="a"></div><div class="a"></div></div>
+            <p class="going-line" id="sheetGoing"></p>
+            <div class="host-box" id="sheetHost"></div>
+            <p class="whattoexpect">What to expect</p>
+            <p class="desc-text" id="sheetDesc"></p>
+            <button class="btn" id="sheetRsvp">RSVP — Free with Membership</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- check-in overlay -->
+      <div class="checkin-overlay" id="checkinOverlay">
+        <div class="check-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <h2 id="checkinEventName">You're checked in</h2>
+        <div class="pts" id="checkinPts">+50 points earned</div>
+        <div class="flames" id="checkinFlames"></div>
+        <div class="unlock" id="checkinUnlock"></div>
+        <button class="btn" style="width:200px;" id="checkinDone">Nice</button>
+      </div>
+
+      <div class="toast" id="toast"></div>
+
+      <!-- bottom nav -->
+      <div class="bottomnav" id="bottomnav">
+        <button class="navitem" data-goto="home">
+          <svg viewBox="0 0 24 24"><path d="M12 21s-7-7.5-7-12a7 7 0 0 1 14 0c0 4.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>
+          <span>Map</span>
+        </button>
+        <button class="navitem" data-goto="discover">
+          <svg viewBox="0 0 24 24"><rect x="4" y="7" width="12" height="14" rx="2.5" transform="rotate(-8 10 14)"/><rect x="7" y="4" width="13" height="15" rx="2.5" fill="#fff"/></svg>
+          <span>Discover</span>
+        </button>
+        <button class="navitem" data-goto="capture">
+          <svg viewBox="0 0 24 24"><path d="M4 8a2 2 0 0 1 2-2h1.2l.8-1.4A1.5 1.5 0 0 1 9.3 4h5.4a1.5 1.5 0 0 1 1.3.75L16.8 6H18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.6"/></svg>
+          <span>Capture</span>
+        </button>
+        <button class="navitem" data-goto="feed">
+          <svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.5"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.5"/><rect x="13" y="13" width="7.5" height="7.5" rx="1.5"/></svg>
+          <span>Feed</span>
+        </button>
+        <button class="navitem" data-goto="profile">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1-4 4-6 7.5-6s6.5 2 7.5 6"/></svg>
+          <span>Profile</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- data ---------------- */
+  const gradients = [
+    "linear-gradient(135deg,#0F9D8C,#0B7F72)",
+    "linear-gradient(135deg,#E11D48,#9F1239)",
+    "linear-gradient(135deg,#334155,#0B1220)",
+    "linear-gradient(135deg,#0EA5B7,#0B7F72)",
+    "linear-gradient(135deg,#F59E0B,#B45309)",
+    "linear-gradient(135deg,#6366F1,#312E81)"
+  ];
+
+  const events = [
+    {id:1, title:"Rooftop Jazz Session", venue:"The Oviatt Penthouse", time:"Tue · 8:00 PM", distance:"0.4 mi", live:true, startsIn:"starts in 12 min", going:12, fromGroup:3, host:"Hosted by Maya R. — Culture Keeper", desc:"Small-group table, live trio, one round included. Cameras welcome — tag the event to share.", g:0},
+    {id:2, title:"Sunday Ceramics Pop-up", venue:"Otherwild Studio", time:"Sun · 2:00 PM", distance:"0.9 mi", live:false, startsIn:"6 spots left", going:6, fromGroup:2, host:"Hosted by Devon L. — Culture Keeper", desc:"Hand-build a small bowl, glaze included. No experience needed, all materials provided.", g:1},
+    {id:3, title:"Griffith Park Sunrise Hike", venue:"Griffith Observatory Trailhead", time:"Sat · 6:30 AM", distance:"1.2 mi", live:false, startsIn:"9 going", going:9, fromGroup:1, host:"Hosted by Priya K. — Culture Keeper", desc:"Easy 3-mile loop, coffee after at the trailhead. Bring layers, it's cold before sunrise.", g:2},
+    {id:4, title:"Silver Lake Supper Club", venue:"Ten Speed Coffee", time:"Thu · 7:00 PM", distance:"0.5 mi", live:false, startsIn:"7 going", going:7, fromGroup:4, host:"Hosted by Jordan M. — Culture Keeper", desc:"A rotating dinner series in a different member's neighborhood spot each week.", g:3},
+    {id:5, title:"Vinyl & Wine Night", venue:"Bar Chelou", time:"Fri · 8:30 PM", distance:"1.5 mi", live:false, startsIn:"5 going", going:5, fromGroup:0, host:"Hosted by Marcus T. — Culture Keeper", desc:"Bring a record or just come listen. Small pours, small group, big speakers.", g:4},
+    {id:6, title:"Sunset Volleyball", venue:"Will Rogers State Beach", time:"Wed · 6:00 PM", distance:"2.1 mi", live:false, startsIn:"8 going", going:8, fromGroup:2, host:"Hosted by Ghazi A. — Culture Keeper", desc:"Casual co-ed games, all levels. We wrap before it gets dark and grab tacos after.", g:5}
+  ];
+
+  const feedSeed = [
+    {title:"Sunday Ceramics Pop-up", user:"Priya K.", time:"4 min ago", live:true, g:1, isNew:false},
+    {title:"Griffith Park Sunrise Hike", user:"Marcus T.", time:"22 min ago", live:false, g:2, isNew:false}
+  ];
+
+  const state = {
+    interests: new Set(),
+    points: 1240,
+    streak: 4,
+    tier: "Silver",
+    eventsAttended: 18,
+    deckIndex: 0,
+    rsvped: new Set(),
+    feed: feedSeed.slice(),
+    likes: {},
+    badges: {Regular:true, Explorer:true, "Host's Pick":false, "Early Riser":false},
+    unreadAlerts: 4,
+    captureMode: "PHOTO"
+  };
+
+  const initialState = JSON.parse(JSON.stringify({
+    points: state.points, streak: state.streak, eventsAttended: state.eventsAttended,
+    badges: state.badges, unreadAlerts: state.unreadAlerts
+  }));
+
+  /* ---------------- nav / screen routing ---------------- */
+  const screens = document.querySelectorAll(".screen");
+  const navItems = document.querySelectorAll(".navitem");
+  const bottomnav = document.getElementById("bottomnav");
+  const jumpbar = document.getElementById("jumpbar");
+
+  const jumpTargets = [
+    ["onb-1","Onboarding"], ["home","Map"], ["discover","Discover"],
+    ["capture","Capture"], ["feed","Feed"], ["rewards","Rewards"],
+    ["leaderboard","Leaderboard"], ["alerts","Alerts"], ["profile","Profile"], ["venue","Venue view"]
+  ];
+  jumpTargets.forEach(([id,label])=>{
+    const b = document.createElement("button");
+    b.className = "jump-btn";
+    b.textContent = label;
+    b.dataset.goto = id;
+    b.addEventListener("click", ()=>showScreen(id));
+    jumpbar.appendChild(b);
+  });
+
+  function showScreen(id){
+    screens.forEach(s=> s.classList.toggle("active", s.dataset.screen === id));
+    const onboarding = id.startsWith("onb-");
+    bottomnav.style.display = (onboarding || id === "venue") ? "none" : "flex";
+    navItems.forEach(n=> n.classList.toggle("active", n.dataset.goto === id));
+    document.querySelectorAll(".jump-btn").forEach(b=> b.classList.toggle("active", b.dataset.goto === id));
+    if(id === "alerts"){ state.unreadAlerts = 0; renderBell(); }
+    if(id === "feed") renderFeed();
+    if(id === "discover") renderDeck();
+    if(id === "rewards") renderRewards();
+    if(id === "leaderboard") renderLeaderboard();
+    if(id === "alerts") renderAlerts();
+    if(id === "profile") renderProfile();
+    if(id === "capture") document.getElementById("capTagText").textContent = currentEventTag();
+  }
+
+  document.body.addEventListener("click", (e)=>{
+    const t = e.target.closest("[data-goto]");
+    if(t){ showScreen(t.dataset.goto); }
+  });
+
+  document.getElementById("restartBtn").addEventListener("click", restartDemo);
+
+  function restartDemo(){
+    state.interests.clear();
+    state.points = initialState.points;
+    state.streak = initialState.streak;
+    state.eventsAttended = initialState.eventsAttended;
+    state.deckIndex = 0;
+    state.rsvped.clear();
+    state.feed = feedSeed.slice();
+    state.likes = {};
+    state.badges = JSON.parse(JSON.stringify(initialState.badges));
+    state.unreadAlerts = initialState.unreadAlerts;
+    document.querySelectorAll(".chip").forEach(c=> c.classList.remove("selected"));
+    renderBell();
+    showScreen("onb-1");
+    showToast("Demo reset");
+  }
+
+  /* ---------------- toast ---------------- */
+  let toastTimer;
+  function showToast(msg){
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> el.classList.remove("show"), 1800);
+  }
+
+  /* ---------------- onboarding chips ---------------- */
+  document.getElementById("chipGrid").addEventListener("click",(e)=>{
+    const chip = e.target.closest(".chip");
+    if(!chip) return;
+    chip.classList.toggle("selected");
+    const val = chip.dataset.chip;
+    if(state.interests.has(val)) state.interests.delete(val); else state.interests.add(val);
+  });
+
+  /* ---------------- home / map ---------------- */
+  function renderHome(){
+    const mapWrap = document.getElementById("mapWrap");
+    mapWrap.innerHTML = '<div class="you-pin"><div class="dot"></div><span>YOU</span></div>';
+    const positions = [[22,28],[78,24],[62,66],[30,72],[85,58]];
+    events.slice(0,5).forEach((ev,i)=>{
+      const [x,y] = positions[i];
+      const pin = document.createElement("div");
+      pin.className = "pin " + (ev.live ? "live" : (i%2===0?"event":"other"));
+      pin.style.left = x+"%"; pin.style.top = y+"%";
+      pin.title = ev.title;
+      pin.addEventListener("click", ()=> openSheet(ev.id));
+      if(ev.live){
+        const lbl = document.createElement("div");
+        lbl.className = "pin-label"; lbl.textContent = "LIVE";
+        pin.appendChild(lbl);
+      }
+      mapWrap.appendChild(pin);
+    });
+
+    const list = document.getElementById("homeList");
+    list.innerHTML = "";
+    events.slice(0,4).forEach(ev=>{
+      const row = document.createElement("div");
+      row.className = "ev-card";
+      row.addEventListener("click", ()=> openSheet(ev.id));
+      row.innerHTML = `
+        <div class="ev-thumb" style="background:${gradients[ev.g]}">${ev.title[0]}</div>
+        <div class="ev-info">
+          <p class="t">${ev.title}</p>
+          <p class="s">${ev.distance} · ${ev.startsIn}</p>
+        </div>
+        ${ev.live ? '<span class="pill live">LIVE</span>' : (state.rsvped.has(ev.id) ? '<span class="pill soft">Going</span>' : '')}
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  /* ---------------- event detail sheet ---------------- */
+  const sheetOverlay = document.getElementById("sheetOverlay");
+  let sheetEventId = null;
+
+  function openSheet(id){
+    const ev = events.find(e=>e.id===id);
+    if(!ev) return;
+    sheetEventId = id;
+    document.getElementById("sheetPhoto").style.background = gradients[ev.g];
+    document.getElementById("sheetTitle").textContent = ev.title;
+    document.getElementById("sheetMeta").textContent = `${ev.venue} · ${ev.time}`;
+    document.getElementById("sheetGoing").textContent = `${ev.going} going · ${ev.fromGroup} from your group`;
+    document.getElementById("sheetHost").textContent = ev.host;
+    document.getElementById("sheetDesc").textContent = ev.desc;
+    const btn = document.getElementById("sheetRsvp");
+    btn.textContent = state.rsvped.has(id) ? "You're going ✓" : "RSVP — Free with Membership";
+    btn.disabled = false;
+    sheetOverlay.classList.add("show");
+  }
+  document.getElementById("closeSheet").addEventListener("click", ()=> sheetOverlay.classList.remove("show"));
+  sheetOverlay.addEventListener("click",(e)=>{ if(e.target===sheetOverlay) sheetOverlay.classList.remove("show"); });
+
+  document.getElementById("sheetRsvp").addEventListener("click", ()=>{
+    if(sheetEventId==null) return;
+    const ev = events.find(e=>e.id===sheetEventId);
+    if(state.rsvped.has(sheetEventId)){
+      sheetOverlay.classList.remove("show");
+      return;
+    }
+    rsvpToEvent(ev);
+    sheetOverlay.classList.remove("show");
+  });
+
+  function rsvpToEvent(ev){
+    state.rsvped.add(ev.id);
+    renderHome();
+    if(ev.live){
+      runCheckIn(ev);
+    } else {
+      showToast(`RSVP'd to ${ev.title}`);
+    }
+  }
+
+  /* ---------------- check-in overlay ---------------- */
+  function runCheckIn(ev){
+    state.streak += 1;
+    state.points += 50;
+    state.eventsAttended += 1;
+    document.getElementById("checkinEventName").textContent = ev.title;
+    document.getElementById("checkinPts").textContent = "+50 points earned";
+    const flamesWrap = document.getElementById("checkinFlames");
+    flamesWrap.innerHTML = "";
+    for(let i=0;i<Math.min(state.streak,6);i++){
+      const f = document.createElement("div");
+      f.className = "flame on";
+      f.textContent = "🔥";
+      flamesWrap.appendChild(f);
+    }
+    document.getElementById("checkinUnlock").textContent =
+      state.streak % 5 === 0 ? "Unlocked: Free bar credit" : `${5 - (state.streak % 5)} more week${(5-(state.streak%5))===1?"":"s"} unlocks: Free bar credit`;
+    document.getElementById("checkinOverlay").classList.add("show");
+  }
+  document.getElementById("checkinDone").addEventListener("click", ()=>{
+    document.getElementById("checkinOverlay").classList.remove("show");
+    renderProfile();
+    showToast("Checked in — streak updated");
+  });
+
+  /* ---------------- discover / swipe deck ---------------- */
+  const deckEl = document.getElementById("deck");
+
+  function currentEventTag(){
+    const remaining = events.slice(state.deckIndex);
+    return remaining.length ? remaining[0].title : "Third Space";
+  }
+
+  function renderDeck(){
+    deckEl.innerHTML = "";
+    const remaining = events.slice(state.deckIndex, state.deckIndex + 3);
+    if(remaining.length === 0){
+      deckEl.innerHTML = `
+        <div class="empty-state" style="position:absolute;inset:0;">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M12 21s-7-4.35-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.65-9.5 9-9.5 9z"/></svg>
+          <h3>You're all caught up</h3>
+          <p>New recommendations drop Monday morning. Check your RSVPs on the Map tab.</p>
+          <button class="btn small" style="margin-top:10px;width:auto;padding:9px 18px;" data-goto="home">Go to Map</button>
+        </div>`;
+      return;
+    }
+    // render back to front so first item is on top / last in DOM
+    remaining.slice().reverse().forEach((ev, revIdx)=>{
+      const idxFromTop = remaining.length - 1 - revIdx;
+      const card = document.createElement("div");
+      card.className = "swipecard";
+      card.style.zIndex = String(10 - idxFromTop);
+      card.style.transform = `scale(${1 - idxFromTop*0.035}) translateY(${idxFromTop*10}px)`;
+      card.style.opacity = idxFromTop === 2 ? "0.6" : "1";
+      card.innerHTML = `
+        <div class="photo" style="background:${gradients[ev.g]}">
+          ${ev.live ? '<span class="badge">LIVE · '+ev.going+' here</span>' : '<span class="badge">'+ev.distance+'</span>'}
+          <div class="veil"></div>
+          <h3>${ev.title}</h3>
+        </div>
+        <div class="body">
+          <p class="meta">${ev.venue} · ${ev.time}</p>
+          <p class="desc">${ev.desc}</p>
+        </div>
+        <div class="stamp like">RSVP</div>
+        <div class="stamp nope">PASS</div>
+      `;
+      if(idxFromTop === 0){
+        card.addEventListener("click",(e)=>{
+          if(card.dataset.dragged === "1") return;
+          openSheet(ev.id);
+        });
+        enableDrag(card, ev);
+      }
+      deckEl.appendChild(card);
+    });
+  }
+
+  function enableDrag(card, ev){
+    let startX=0, startY=0, dx=0, dy=0, dragging=false;
+    const likeStamp = card.querySelector(".stamp.like");
+    const nopeStamp = card.querySelector(".stamp.nope");
+
+    function pointerDown(e){
+      dragging = true;
+      card.dataset.dragged = "0";
+      card.style.cursor = "grabbing";
+      const p = e.touches ? e.touches[0] : e;
+      startX = p.clientX; startY = p.clientY;
+    }
+    function pointerMove(e){
+      if(!dragging) return;
+      const p = e.touches ? e.touches[0] : e;
+      dx = p.clientX - startX; dy = p.clientY - startY;
+      if(Math.abs(dx) > 6) card.dataset.dragged = "1";
+      const rot = dx/18;
+      card.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+      likeStamp.style.opacity = dx > 20 ? Math.min(dx/90,1) : 0;
+      nopeStamp.style.opacity = dx < -20 ? Math.min(-dx/90,1) : 0;
+    }
+    function pointerUp(){
+      if(!dragging) return;
+      dragging = false;
+      card.style.cursor = "grab";
+      if(dx > 110){ completeSwipe(card, ev, "right"); }
+      else if(dx < -110){ completeSwipe(card, ev, "left"); }
+      else {
+        card.style.transition = "transform .2s";
+        card.style.transform = "translate(0,0) rotate(0)";
+        likeStamp.style.opacity = 0; nopeStamp.style.opacity = 0;
+        setTimeout(()=> card.style.transition = "", 200);
+      }
+      dx = 0; dy = 0;
+    }
+    card.addEventListener("mousedown", pointerDown);
+    window.addEventListener("mousemove", pointerMove);
+    window.addEventListener("mouseup", pointerUp);
+    card.addEventListener("touchstart", pointerDown, {passive:true});
+    card.addEventListener("touchmove", pointerMove, {passive:true});
+    card.addEventListener("touchend", pointerUp);
+  }
+
+  function completeSwipe(card, ev, dir){
+    card.style.transition = "transform .35s ease-in";
+    card.style.transform = `translate(${dir==="right"?600:-600}px, -40px) rotate(${dir==="right"?30:-30}deg)`;
+    card.style.opacity = "0.4";
+    setTimeout(()=>{
+      state.deckIndex += 1;
+      if(dir === "right"){ rsvpToEvent(ev); if(!ev.live) showToast(`RSVP'd to ${ev.title}`); }
+      else { showToast("Passed"); }
+      renderDeck();
+    }, 260);
+  }
+
+  document.getElementById("likeBtn").addEventListener("click", ()=>{
+    const top = deckEl.querySelector(".swipecard:last-child");
+    const remaining = events.slice(state.deckIndex, state.deckIndex+1);
+    if(top && remaining[0]) completeSwipe(top, remaining[0], "right");
+  });
+  document.getElementById("passBtn").addEventListener("click", ()=>{
+    const top = deckEl.querySelector(".swipecard:last-child");
+    const remaining = events.slice(state.deckIndex, state.deckIndex+1);
+    if(top && remaining[0]) completeSwipe(top, remaining[0], "left");
+  });
+
+  /* ---------------- capture ---------------- */
+  document.getElementById("modePhoto").addEventListener("click", (e)=>{
+    state.captureMode = "PHOTO";
+    e.target.classList.add("active");
+    document.getElementById("modeVideo").classList.remove("active");
+    document.getElementById("recBadge").classList.remove("show");
+  });
+  document.getElementById("modeVideo").addEventListener("click", (e)=>{
+    state.captureMode = "VIDEO";
+    e.target.classList.add("active");
+    document.getElementById("modePhoto").classList.remove("active");
+    document.getElementById("recBadge").classList.add("show");
+  });
+  document.getElementById("shutterBtn").addEventListener("click", ()=>{
+    const flash = document.getElementById("flash");
+    flash.classList.add("show");
+    setTimeout(()=> flash.classList.remove("show"), 110);
+    const tagged = currentEventTag();
+    state.feed.unshift({title: tagged, user:"You", time:"Just now", live:false, g: Math.floor(Math.random()*gradients.length), isNew:true});
+    showToast(state.captureMode === "PHOTO" ? "Photo captured & posted to feed" : "Video captured & posted to feed");
+  });
+
+  /* ---------------- feed ---------------- */
+  function renderFeed(){
+    const wrap = document.getElementById("feedScroll");
+    wrap.innerHTML = "";
+    state.feed.forEach((post, i)=>{
+      const liked = !!state.likes[i];
+      const el = document.createElement("div");
+      el.className = "feed-post";
+      el.innerHTML = `
+        <div class="feed-photo" style="background:${gradients[post.g]}">
+          ${post.isNew ? '<span class="new-tag">YOUR POST</span>' : (post.live ? '<span class="live-tag">LIVE</span>' : '')}
+          <div class="veil"></div>
+        </div>
+        <div class="feed-meta">
+          <p class="t">${post.title}</p>
+          <p class="s">${post.user} · ${post.time}</p>
+          <div class="feed-actions">
+            <button class="like-btn ${liked?'liked':''}" data-idx="${i}">
+              <svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M12 21s-7-4.35-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.65-9.5 9-9.5 9z"/></svg>
+              ${liked ? "Liked" : "Like"}
+            </button>
+          </div>
+        </div>
+      `;
+      wrap.appendChild(el);
+    });
+    wrap.querySelectorAll(".like-btn").forEach(b=>{
+      b.addEventListener("click", ()=>{
+        const idx = b.dataset.idx;
+        state.likes[idx] = !state.likes[idx];
+        renderFeed();
+      });
+    });
+  }
+
+  /* ---------------- rewards ---------------- */
+  function renderRewards(){
+    document.getElementById("pointsBig").textContent = state.points.toLocaleString() + " pts";
+    const badgeGrid = document.getElementById("badgeGrid");
+    badgeGrid.innerHTML = "";
+    const badgeIcons = {Regular:"🔁", Explorer:"🧭", "Host's Pick":"⭐", "Early Riser":"🌅"};
+    Object.entries(state.badges).forEach(([name, earned])=>{
+      const item = document.createElement("div");
+      item.className = "badge-item" + (earned ? " earned":"");
+      item.innerHTML = `<div class="badge-circle ${earned?'earned':'locked'}">${badgeIcons[name]}</div><span>${name}</span>`;
+      badgeGrid.appendChild(item);
+    });
+    const rewards = [
+      {name:"$10 bar credit · Ten Speed Coffee", cost:500},
+      {name:"Free class · Sunday Ceramics", cost:800},
+      {name:"Priority RSVP for a month", cost:1200}
+    ];
+    const list = document.getElementById("redeemList");
+    list.innerHTML = "";
+    rewards.forEach(r=>{
+      const row = document.createElement("div");
+      row.className = "redeem-row";
+      row.innerHTML = `
+        <div><p class="t">${r.name}</p><p class="s">${r.cost} pts</p></div>
+        <button class="redeem-btn" ${state.points < r.cost ? "disabled":""}>Redeem</button>
+      `;
+      row.querySelector("button").addEventListener("click", ()=>{
+        if(state.points >= r.cost){
+          state.points -= r.cost;
+          showToast("Redeemed! Check your email for the code.");
+          renderRewards();
+          renderProfile();
+        }
+      });
+      list.appendChild(row);
+    });
+  }
+
+  /* ---------------- leaderboard ---------------- */
+  function renderLeaderboard(){
+    const base = [
+      {name:"Jordan M.", pts:2140},
+      {name:"Priya K.", pts:1980},
+      {name:"You", pts:state.points, me:true},
+      {name:"Marcus T.", pts:1110},
+      {name:"Ghazi A.", pts:980}
+    ].sort((a,b)=> b.pts - a.pts);
+    const wrap = document.getElementById("lbScroll");
+    wrap.innerHTML = "";
+    base.forEach((p,i)=>{
+      const row = document.createElement("div");
+      row.className = "lb-row" + (p.me ? " me":"");
+      row.innerHTML = `
+        <div class="lb-rank">${i+1}</div>
+        <div class="lb-avatar"></div>
+        <div class="lb-name">${p.name}</div>
+        <div class="lb-pts">${p.pts.toLocaleString()} pts</div>
+      `;
+      wrap.appendChild(row);
+    });
+  }
+
+  /* ---------------- alerts ---------------- */
+  function renderBell(){
+    const dot = document.getElementById("bellCount");
+    dot.textContent = state.unreadAlerts;
+    dot.style.display = state.unreadAlerts > 0 ? "flex" : "none";
+  }
+  function renderAlerts(){
+    const items = [
+      {t:"Your group starts in 30 min", s:"The Oviatt Penthouse", c:"var(--alert)"},
+      {t:"New spot opened near you", s:"Griffith Park Sunrise Hike · 0.6 mi", c:"var(--accent)"},
+      {t:"Priya checked in", s:"Rooftop Jazz Session", c:"var(--muted)"},
+      {t:"You unlocked a badge", s:'"Regular" — 4 weeks in a row', c:"var(--accent)"}
+    ];
+    const wrap = document.getElementById("alertsScroll");
+    wrap.innerHTML = "";
+    items.forEach(it=>{
+      const row = document.createElement("div");
+      row.className = "alert-row";
+      row.innerHTML = `<div class="stripe" style="background:${it.c}"></div><div><p class="t">${it.t}</p><p class="s">${it.s}</p></div>`;
+      wrap.appendChild(row);
+    });
+  }
+
+  /* ---------------- profile ---------------- */
+  function renderProfile(){
+    document.getElementById("profStreak").textContent = state.streak + "wk";
+    document.getElementById("profPoints").textContent = state.points.toLocaleString();
+    document.getElementById("profEvents").textContent = state.eventsAttended;
+    document.getElementById("tierPill").textContent = state.tier + " Tier";
+    const grid = document.getElementById("captureGrid");
+    grid.innerHTML = "";
+    const items = state.feed.slice(0,6);
+    if(items.length === 0){
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--muted);font-size:11.5px;padding:14px 0;">No captures yet — try the Capture tab</div>';
+      return;
+    }
+    items.forEach(p=>{
+      const c = document.createElement("div");
+      c.className = "cell";
+      c.style.background = gradients[p.g];
+      c.textContent = p.title[0];
+      grid.appendChild(c);
+    });
+  }
+
+  /* ---------------- installed-app mode ---------------- */
+  function isStandalone(){
+    return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  }
+  if(isStandalone()){
+    document.body.classList.add("standalone-app");
+  }
+  document.getElementById("devtoolsToggle").addEventListener("click", ()=>{
+    document.body.classList.toggle("devtools-open");
+  });
+
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", ()=>{
+      navigator.serviceWorker.register("service-worker.js").catch(()=>{});
+    });
+  }
+
+  /* ---------------- init ---------------- */
+  renderHome();
+  renderBell();
+  showScreen("onb-1");
+})();
+</script>
+</body>
+</html>
