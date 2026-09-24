@@ -348,83 +348,6 @@
   .pill.live{background:var(--alert);color:#fff;}
   .pill.soft{background:var(--accent-tint);color:var(--accent-dk);}
 
-  /* ---------- discover (swipe) ---------- */
-  .discover-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:14px 0 0;position:relative;}
-  .deck{
-    position:relative;
-    width:300px;
-    height:420px;
-    margin-top:6px;
-  }
-  .swipecard{
-    position:absolute;
-    inset:0;
-    border-radius:22px;
-    background:var(--white);
-    border:1px solid var(--line);
-    box-shadow:0 10px 26px rgba(15,23,42,.14);
-    overflow:hidden;
-    display:flex;
-    flex-direction:column;
-    touch-action:none;
-    user-select:none;
-    cursor:grab;
-  }
-  .swipecard .photo{
-    height:255px;
-    display:flex;align-items:flex-end;
-    padding:12px;
-    color:#fff;
-    position:relative;
-  }
-  .swipecard .photo .badge{
-    position:absolute;top:12px;left:12px;
-    font-size:9.5px;font-weight:800;
-    background:rgba(0,0,0,.4);
-    padding:5px 9px;border-radius:999px;
-  }
-  .swipecard .photo .veil{
-    position:absolute;inset:0;
-    background:linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(0,0,0,.55) 100%);
-  }
-  .swipecard .photo h3{position:relative;z-index:2;font-size:18px;margin:0;font-weight:800;}
-  .swipecard .body{padding:12px 14px;flex:1;display:flex;flex-direction:column;}
-  .swipecard .meta{font-size:12px;color:var(--muted);margin:0 0 8px;}
-  .swipecard .desc{font-size:12.5px;color:var(--ink-2);line-height:1.4;margin:0;}
-  .stamp{
-    position:absolute;top:26px;
-    font-size:20px;font-weight:900;letter-spacing:2px;
-    border:4px solid;border-radius:10px;
-    padding:4px 12px;
-    transform:rotate(-18deg);
-    opacity:0;
-    pointer-events:none;
-  }
-  .stamp.like{left:20px;color:var(--accent);border-color:var(--accent);}
-  .stamp.nope{right:20px;color:var(--alert);border-color:var(--alert);transform:rotate(18deg);}
-  .swipe-controls{
-    display:flex;gap:26px;align-items:center;
-    margin:16px 0 6px;
-  }
-  .round-btn{
-    width:56px;height:56px;border-radius:50%;
-    display:flex;align-items:center;justify-content:center;
-    border:1.5px solid var(--line);
-    background:#fff;cursor:pointer;
-    box-shadow:0 4px 10px rgba(15,23,42,.08);
-  }
-  .round-btn.nope svg{stroke:var(--alert);}
-  .round-btn.like{width:64px;height:64px;border-color:var(--accent);}
-  .round-btn.like svg{stroke:var(--accent);fill:var(--accent);}
-  .deck-hint{font-size:11px;color:var(--muted);margin-top:10px;text-align:center;padding:0 30px;}
-  .empty-state{
-    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    padding:30px;text-align:center;color:var(--muted);gap:10px;
-  }
-  .empty-state svg{stroke:var(--line);width:48px;height:48px;}
-  .empty-state h3{color:var(--ink-2);font-size:15px;margin:6px 0 0;}
-  .empty-state p{font-size:12.5px;margin:0;}
-
   /* ---------- capture ---------- */
   .capture-screen{flex:1;background:var(--ink);display:flex;flex-direction:column;position:relative;}
   .viewfinder{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;}
@@ -480,23 +403,6 @@
     transition:opacity .08s;
   }
   .flash.show{opacity:.85;}
-
-  /* ---------- feed ---------- */
-  .feed-post{margin:0 18px 16px;border:1px solid var(--line);border-radius:16px;overflow:hidden;}
-  .feed-photo{
-    height:200px;position:relative;display:flex;align-items:flex-end;color:#fff;padding:10px;
-  }
-  .feed-photo .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(0,0,0,.5) 100%);}
-  .feed-photo .live-tag{position:absolute;top:10px;left:10px;background:var(--alert);font-size:9px;font-weight:800;padding:5px 9px;border-radius:999px;z-index:2;}
-  .feed-photo .new-tag{position:absolute;top:10px;left:10px;background:var(--accent);font-size:9px;font-weight:800;padding:5px 9px;border-radius:999px;z-index:2;}
-  .feed-meta{padding:10px 12px 12px;}
-  .feed-meta .t{font-size:13px;font-weight:700;margin:0 0 2px;}
-  .feed-meta .s{font-size:11px;color:var(--muted);margin:0 0 8px;}
-  .feed-actions{display:flex;gap:14px;align-items:center;}
-  .like-btn{display:flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:11.5px;font-weight:700;}
-  .like-btn svg{width:16px;height:16px;stroke:var(--muted);fill:none;}
-  .like-btn.liked svg{stroke:var(--alert);fill:var(--alert);}
-  .like-btn.liked{color:var(--alert);}
 
   /* ---------- rewards / leaderboard / alerts / profile shared bits ---------- */
   .stat-card{
@@ -700,7 +606,7 @@
   <div class="harness-top">
     <div>
       <div class="harness-title">Communa — Interactive Prototype</div>
-      <div class="harness-sub">Click through the phone below. Swipe or use the ✕ / ♥ buttons on Discover. Nothing here is saved once you close the tab.</div>
+      <div class="harness-sub">Click through the phone below. Nothing here is saved once you close the tab.</div>
     </div>
     <div class="harness-actions">
       <button class="harness-btn" id="restartBtn">↺ Restart demo</button>
@@ -786,29 +692,6 @@
             </div>
             <div class="list-title">Happening now near you</div>
             <div id="homeList"></div>
-          </div>
-        </div>
-
-        <!-- DISCOVER (swipe) -->
-        <div class="screen" data-screen="discover">
-          <div class="app-header">
-            <div><h1>Discover</h1><div class="sub">Swipe to RSVP</div></div>
-            <button class="bell-btn" data-goto="alerts">
-              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#111827" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-              <span class="bell-dot">4</span>
-            </button>
-          </div>
-          <div class="discover-body">
-            <div class="deck" id="deck"></div>
-            <div class="swipe-controls">
-              <button class="round-btn nope" id="passBtn">
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-              </button>
-              <button class="round-btn like" id="likeBtn">
-                <svg viewBox="0 0 24 24" width="24" height="24" stroke-width="1.6"><path d="M12 21s-7-4.35-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.65-9.5 9-9.5 9z"/></svg>
-              </button>
-            </div>
-            <div class="deck-hint">Swipe right or tap ♥ to RSVP · swipe left or ✕ to pass</div>
           </div>
         </div>
 
@@ -1038,9 +921,9 @@
 
   let events = FALLBACK_EVENTS.slice();
 
-  const feedSeed = [
-    {title:"Sunday Ceramics Pop-up", user:"Priya K.", time:"4 min ago", live:true, g:1, isNew:false},
-    {title:"Griffith Park Sunrise Hike", user:"Marcus T.", time:"22 min ago", live:false, g:2, isNew:false}
+  const captureSeed = [
+    {title:"Sunday Ceramics Pop-up", user:"Priya K.", time:"4 min ago", g:1},
+    {title:"Griffith Park Sunrise Hike", user:"Marcus T.", time:"22 min ago", g:2}
   ];
 
   const state = {
@@ -1050,10 +933,8 @@
     streak: 4,
     tier: "Silver",
     eventsAttended: 18,
-    deckIndex: 0,
     rsvped: new Set(),
-    feed: feedSeed.slice(),
-    likes: {},
+    captures: captureSeed.slice(),
     badges: {Regular:true, Explorer:true, "Host's Pick":false, "Early Riser":false},
     unreadAlerts: 4,
     captureMode: "PHOTO"
@@ -1121,10 +1002,8 @@
     state.points = initialState.points;
     state.streak = initialState.streak;
     state.eventsAttended = initialState.eventsAttended;
-    state.deckIndex = 0;
     state.rsvped.clear();
-    state.feed = feedSeed.slice();
-    state.likes = {};
+    state.captures = captureSeed.slice();
     state.badges = JSON.parse(JSON.stringify(initialState.badges));
     state.unreadAlerts = initialState.unreadAlerts;
     document.querySelectorAll(".chip").forEach(c=> c.classList.remove("selected"));
@@ -1206,8 +1085,6 @@
       state.userLocation = { lat: e.coords.latitude, lng: e.coords.longitude };
       recomputeDistances();
       renderHome();
-      const discoverActive = document.querySelector('.screen[data-screen="discover"]').classList.contains("active");
-      if(discoverActive) renderDeck();
     });
 
     if(window.MapboxGeocoder){
@@ -1293,12 +1170,9 @@
 
         if(parsed.length){
           events = parsed;
-          state.deckIndex = 0;
           recomputeDistances();
           if(map) updateMapMarkers();
           renderHome();
-          const discoverActive = document.querySelector('.screen[data-screen="discover"]').classList.contains("active");
-          if(discoverActive) renderDeck();
           showToast(`Loaded ${parsed.length} events from your sheet`);
         }
       },
@@ -1422,125 +1296,11 @@
     showToast("Checked in — streak updated");
   });
 
-  /* ---------------- discover / swipe deck ---------------- */
-  const deckEl = document.getElementById("deck");
-
   function currentEventTag(){
-    const remaining = events.slice(state.deckIndex);
-    return remaining.length ? remaining[0].title : "Communa";
+    const live = events.find(ev=> ev.live);
+    const ev = live || events[0];
+    return ev ? ev.title : "Communa";
   }
-
-  function renderDeck(){
-    deckEl.innerHTML = "";
-    const remaining = events.slice(state.deckIndex, state.deckIndex + 3);
-    if(remaining.length === 0){
-      deckEl.innerHTML = `
-        <div class="empty-state" style="position:absolute;inset:0;">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M12 21s-7-4.35-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.65-9.5 9-9.5 9z"/></svg>
-          <h3>You're all caught up</h3>
-          <p>New recommendations drop Monday morning. Check your RSVPs on the Map tab.</p>
-          <button class="btn small" style="margin-top:10px;width:auto;padding:9px 18px;" data-goto="home">Go to Map</button>
-        </div>`;
-      return;
-    }
-    // render back to front so first item is on top / last in DOM
-    remaining.slice().reverse().forEach((ev, revIdx)=>{
-      const idxFromTop = remaining.length - 1 - revIdx;
-      const card = document.createElement("div");
-      card.className = "swipecard";
-      card.style.zIndex = String(10 - idxFromTop);
-      card.style.transform = `scale(${1 - idxFromTop*0.035}) translateY(${idxFromTop*10}px)`;
-      card.style.opacity = idxFromTop === 2 ? "0.6" : "1";
-      card.innerHTML = `
-        <div class="photo" style="background:${gradients[ev.g]}">
-          ${ev.live ? '<span class="badge">LIVE · '+ev.going+' here</span>' : '<span class="badge">'+ev.distance+'</span>'}
-          <div class="veil"></div>
-          <h3>${ev.title}</h3>
-        </div>
-        <div class="body">
-          <p class="meta">${ev.venue} · ${ev.time}</p>
-          <p class="desc">${ev.desc}</p>
-        </div>
-        <div class="stamp like">RSVP</div>
-        <div class="stamp nope">PASS</div>
-      `;
-      if(idxFromTop === 0){
-        card.addEventListener("click",(e)=>{
-          if(card.dataset.dragged === "1") return;
-          openSheet(ev.id);
-        });
-        enableDrag(card, ev);
-      }
-      deckEl.appendChild(card);
-    });
-  }
-
-  function enableDrag(card, ev){
-    let startX=0, startY=0, dx=0, dy=0, dragging=false;
-    const likeStamp = card.querySelector(".stamp.like");
-    const nopeStamp = card.querySelector(".stamp.nope");
-
-    function pointerDown(e){
-      dragging = true;
-      card.dataset.dragged = "0";
-      card.style.cursor = "grabbing";
-      const p = e.touches ? e.touches[0] : e;
-      startX = p.clientX; startY = p.clientY;
-    }
-    function pointerMove(e){
-      if(!dragging) return;
-      const p = e.touches ? e.touches[0] : e;
-      dx = p.clientX - startX; dy = p.clientY - startY;
-      if(Math.abs(dx) > 6) card.dataset.dragged = "1";
-      const rot = dx/18;
-      card.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
-      likeStamp.style.opacity = dx > 20 ? Math.min(dx/90,1) : 0;
-      nopeStamp.style.opacity = dx < -20 ? Math.min(-dx/90,1) : 0;
-    }
-    function pointerUp(){
-      if(!dragging) return;
-      dragging = false;
-      card.style.cursor = "grab";
-      if(dx > 110){ completeSwipe(card, ev, "right"); }
-      else if(dx < -110){ completeSwipe(card, ev, "left"); }
-      else {
-        card.style.transition = "transform .2s";
-        card.style.transform = "translate(0,0) rotate(0)";
-        likeStamp.style.opacity = 0; nopeStamp.style.opacity = 0;
-        setTimeout(()=> card.style.transition = "", 200);
-      }
-      dx = 0; dy = 0;
-    }
-    card.addEventListener("mousedown", pointerDown);
-    window.addEventListener("mousemove", pointerMove);
-    window.addEventListener("mouseup", pointerUp);
-    card.addEventListener("touchstart", pointerDown, {passive:true});
-    card.addEventListener("touchmove", pointerMove, {passive:true});
-    card.addEventListener("touchend", pointerUp);
-  }
-
-  function completeSwipe(card, ev, dir){
-    card.style.transition = "transform .35s ease-in";
-    card.style.transform = `translate(${dir==="right"?600:-600}px, -40px) rotate(${dir==="right"?30:-30}deg)`;
-    card.style.opacity = "0.4";
-    setTimeout(()=>{
-      state.deckIndex += 1;
-      if(dir === "right"){ rsvpToEvent(ev); if(!ev.live) showToast(`RSVP'd to ${ev.title}`); }
-      else { showToast("Passed"); }
-      renderDeck();
-    }, 260);
-  }
-
-  document.getElementById("likeBtn").addEventListener("click", ()=>{
-    const top = deckEl.querySelector(".swipecard:last-child");
-    const remaining = events.slice(state.deckIndex, state.deckIndex+1);
-    if(top && remaining[0]) completeSwipe(top, remaining[0], "right");
-  });
-  document.getElementById("passBtn").addEventListener("click", ()=>{
-    const top = deckEl.querySelector(".swipecard:last-child");
-    const remaining = events.slice(state.deckIndex, state.deckIndex+1);
-    if(top && remaining[0]) completeSwipe(top, remaining[0], "left");
-  });
 
   /* ---------------- capture ---------------- */
   document.getElementById("modePhoto").addEventListener("click", (e)=>{
@@ -1560,44 +1320,9 @@
     flash.classList.add("show");
     setTimeout(()=> flash.classList.remove("show"), 110);
     const tagged = currentEventTag();
-    state.feed.unshift({title: tagged, user:"You", time:"Just now", live:false, g: Math.floor(Math.random()*gradients.length), isNew:true});
-    showToast(state.captureMode === "PHOTO" ? "Photo captured & posted to feed" : "Video captured & posted to feed");
+    state.captures.unshift({title: tagged, user:"You", time:"Just now", g: Math.floor(Math.random()*gradients.length)});
+    showToast(state.captureMode === "PHOTO" ? "Photo captured" : "Video captured");
   });
-
-  /* ---------------- feed ---------------- */
-  function renderFeed(){
-    const wrap = document.getElementById("feedScroll");
-    wrap.innerHTML = "";
-    state.feed.forEach((post, i)=>{
-      const liked = !!state.likes[i];
-      const el = document.createElement("div");
-      el.className = "feed-post";
-      el.innerHTML = `
-        <div class="feed-photo" style="background:${gradients[post.g]}">
-          ${post.isNew ? '<span class="new-tag">YOUR POST</span>' : (post.live ? '<span class="live-tag">LIVE</span>' : '')}
-          <div class="veil"></div>
-        </div>
-        <div class="feed-meta">
-          <p class="t">${post.title}</p>
-          <p class="s">${post.user} · ${post.time}</p>
-          <div class="feed-actions">
-            <button class="like-btn ${liked?'liked':''}" data-idx="${i}">
-              <svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M12 21s-7-4.35-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.65-9.5 9-9.5 9z"/></svg>
-              ${liked ? "Liked" : "Like"}
-            </button>
-          </div>
-        </div>
-      `;
-      wrap.appendChild(el);
-    });
-    wrap.querySelectorAll(".like-btn").forEach(b=>{
-      b.addEventListener("click", ()=>{
-        const idx = b.dataset.idx;
-        state.likes[idx] = !state.likes[idx];
-        renderFeed();
-      });
-    });
-  }
 
   /* ---------------- rewards ---------------- */
   function renderRewards(){
@@ -1692,7 +1417,7 @@
     document.getElementById("tierPill").textContent = state.tier + " Tier";
     const grid = document.getElementById("captureGrid");
     grid.innerHTML = "";
-    const items = state.feed.slice(0,6);
+    const items = state.captures.slice(0,6);
     if(items.length === 0){
       grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--muted);font-size:11.5px;padding:14px 0;">No captures yet — try the Capture tab</div>';
       return;
