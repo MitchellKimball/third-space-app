@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0" />
-<title>Communa — Interactive Prototype</title>
+<title>Communa — Local Events &amp; Map</title>
 
 <!-- installable app / PWA metadata -->
 <link rel="manifest" href="manifest.json" />
@@ -244,22 +244,6 @@
     background:none;border:none;cursor:pointer;
     text-decoration:underline;
   }
-  .vibe-title{font-size:19px;font-weight:700;margin:6px 0 4px;}
-  .vibe-sub{font-size:13px;color:var(--muted);margin:0 0 20px;}
-  .chip-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-  .chip{
-    border:1.5px solid var(--line);
-    background:var(--white);
-    border-radius:14px;
-    padding:16px 10px;
-    text-align:center;
-    font-size:13.5px;
-    font-weight:600;
-    color:var(--ink-2);
-    cursor:pointer;
-    transition:.12s;
-  }
-  .chip.selected{border-color:var(--accent);background:var(--accent-tint);color:var(--accent-dk);}
   .loc-preview{
     width:100%;height:190px;border-radius:16px;background:var(--light);
     border:1px solid var(--line);
@@ -640,28 +624,6 @@
         <div class="screen" data-screen="onb-2">
           <button class="onb-skip" data-goto="home">Skip intro →</button>
           <div class="onb" style="padding-top:56px;">
-            <div class="vibe-title">What are you into?</div>
-            <div class="vibe-sub">Pick a few — this shapes your weekly matches.</div>
-            <div class="chip-grid" id="chipGrid">
-              <div class="chip" data-chip="Food & Drink">Food &amp; Drink</div>
-              <div class="chip" data-chip="Music & Nightlife">Music &amp; Nightlife</div>
-              <div class="chip" data-chip="Wellness & Fitness">Wellness &amp; Fitness</div>
-              <div class="chip" data-chip="Outdoors">Outdoors</div>
-              <div class="chip" data-chip="Art & Making">Art &amp; Making</div>
-              <div class="chip" data-chip="Games & Social">Games &amp; Social</div>
-              <div class="chip" data-chip="Markets & Shopping">Markets &amp; Shopping</div>
-              <div class="chip" data-chip="Community & Causes">Community &amp; Causes</div>
-            </div>
-            <div class="onb-footer">
-              <button class="btn" data-goto="onb-3">Continue</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- ONBOARDING 3 -->
-        <div class="screen" data-screen="onb-3">
-          <button class="onb-skip" data-goto="home">Skip intro →</button>
-          <div class="onb" style="padding-top:56px;">
             <div class="loc-preview">
               <span>MAP PREVIEW (pins near you)</span>
               <div class="pin" style="left:34%;top:38%;"></div>
@@ -932,7 +894,6 @@
   ];
 
   const state = {
-    interests: new Set(),
     userLocation: null,
     points: 1240,
     streak: 4,
@@ -995,7 +956,6 @@
   document.getElementById("restartBtn").addEventListener("click", restartDemo);
 
   function restartDemo(){
-    state.interests.clear();
     state.userLocation = null;
     // only revert to demo data if no real Google Sheet is connected —
     // a connected sheet's events aren't part of the "demo" being reset
@@ -1011,7 +971,6 @@
     state.captures = captureSeed.slice();
     state.badges = JSON.parse(JSON.stringify(initialState.badges));
     state.unreadAlerts = initialState.unreadAlerts;
-    document.querySelectorAll(".chip").forEach(c=> c.classList.remove("selected"));
     renderBell();
     showScreen("onb-1");
     showToast("Demo reset");
@@ -1026,15 +985,6 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(()=> el.classList.remove("show"), 1800);
   }
-
-  /* ---------------- onboarding chips ---------------- */
-  document.getElementById("chipGrid").addEventListener("click",(e)=>{
-    const chip = e.target.closest(".chip");
-    if(!chip) return;
-    chip.classList.toggle("selected");
-    const val = chip.dataset.chip;
-    if(state.interests.has(val)) state.interests.delete(val); else state.interests.add(val);
-  });
 
   /* ---------------- home / map (real Mapbox map + Google Sheet data) ---------------- */
   let map = null, geolocateControl = null, mapMarkers = [];

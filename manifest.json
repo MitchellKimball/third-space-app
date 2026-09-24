@@ -1,7 +1,7 @@
 {
   "name": "Communa",
   "short_name": "Communa",
-  "description": "Gamified local discovery for LA transplants — weekly matched groups, live map, capture, and rewards.",
+  "description": "Neighborhood events on a live map — capture the moment, keep your calendar, and earn rewards.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

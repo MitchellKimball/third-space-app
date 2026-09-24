@@ -1,9 +1,9 @@
-# Third Space — Interactive Prototype (installable on iPhone/Android)
+# Communa (installable on iPhone/Android)
 
 ## 1. Get it on GitHub (using VS Code)
 
 1. In VS Code, open this folder (`site/`) or drag these files into a new repo folder.
-2. Open the built-in Source Control panel → **Publish to GitHub** (or run `git init`, `git add .`, `git commit -m "prototype"`, then push to a new repo from github.com).
+2. Open the built-in Source Control panel → **Publish to GitHub** (or run `git init`, `git add .`, `git commit -m "initial commit"`, then push to a new repo from github.com).
 3. Make sure `index.html`, `manifest.json`, `service-worker.js`, and the `icons/` folder all end up in the **root** of the repo (not nested in a subfolder), GitHub Pages serves from the root by default.
 
 ## 2. Turn on GitHub Pages
@@ -23,5 +23,5 @@ Once installed, the dev harness (title, jump bar, restart button) is hidden auto
 
 ## Notes
 
-- This is still a front-end-only prototype: nothing you do in it is saved to a server, and closing/reopening resets it. See the "productizing" conversation for what it takes to wire up a real backend.
+- This is still a front-end-only build: nothing you do in it is saved to a server, and closing/reopening resets anything not backed by the Google Sheet. See the "productizing" conversation for what it takes to wire up a real backend.
 - If you want a shareable link in the next five minutes without touching GitHub Pages settings, you can also drag this whole folder onto https://app.netlify.com/drop for an instant temporary URL, useful for a quick same-day test before wiring up the permanent GitHub Pages link.
