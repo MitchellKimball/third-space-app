@@ -268,15 +268,15 @@
   .btn.small{padding:10px;font-size:13px;}
   .onb-footer{margin-top:auto;}
 
-  /* ---------- map / home (real Mapbox map) ---------- */
+  /* ---------- map / home (real Mapbox map, full-bleed) ---------- */
   .map-card{
-    margin:14px 18px 0;
-    border-radius:16px;
-    overflow:hidden;
-    border:1px solid var(--line);
+    flex:1;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
     background:var(--light);
   }
-  .geocoder-slot{padding:8px;background:var(--white);border-bottom:1px solid var(--line);}
+  .geocoder-slot{flex-shrink:0;padding:8px;background:var(--white);border-bottom:1px solid var(--line);}
   .geocoder-slot .mapboxgl-ctrl-geocoder{
     width:100%;max-width:none;box-shadow:none;border:1px solid var(--line);border-radius:999px;
     font-family:inherit;
@@ -284,9 +284,18 @@
   .geocoder-slot .mapboxgl-ctrl-geocoder input{font-size:12.5px;height:34px;}
   .geocoder-slot .mapboxgl-ctrl-geocoder--icon-search{top:8px;left:10px;fill:var(--muted);}
   .geocoder-slot .mapboxgl-ctrl-geocoder--button{top:5px;}
-  .mapbox-real-map{height:210px;position:relative;background:var(--light);}
+  .mapbox-real-map{flex:1;min-height:0;position:relative;background:var(--light);}
   .mapbox-real-map .mapboxgl-ctrl-top-right{top:6px;right:6px;}
   .mapbox-real-map .mapboxgl-ctrl-group{border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.15);}
+  .home-list{flex:1;min-height:0;}
+  .view-toggle-btn{
+    position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
+    display:flex;align-items:center;gap:7px;
+    background:var(--ink);color:#fff;border:none;border-radius:999px;
+    padding:11px 18px;font-size:12.5px;font-weight:700;
+    box-shadow:0 8px 20px rgba(11,18,32,.3);
+    cursor:pointer;z-index:20;
+  }
   .map-config-note{
     height:100%;display:flex;align-items:center;justify-content:center;
     padding:18px;text-align:center;font-size:11px;color:var(--muted);line-height:1.5;
@@ -647,14 +656,18 @@
               <span class="bell-dot" id="bellCount">4</span>
             </button>
           </div>
-          <div class="screen-scroll">
-            <div class="map-card">
-              <div class="geocoder-slot" id="geocoderContainer"></div>
-              <div class="mapbox-real-map" id="mapContainer"></div>
-            </div>
-            <div class="list-title">Happening now near you</div>
+          <div class="map-card" id="mapStage">
+            <div class="geocoder-slot" id="geocoderContainer"></div>
+            <div class="mapbox-real-map" id="mapContainer"></div>
+          </div>
+          <div class="screen-scroll home-list" id="homeListView" style="display:none;">
+            <div class="list-title">Nearby events, closest first</div>
             <div id="homeList"></div>
           </div>
+          <button class="view-toggle-btn" id="viewToggleBtn">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            <span id="viewToggleLabel">List</span>
+          </button>
         </div>
 
         <!-- CAPTURE -->
@@ -938,7 +951,7 @@
     document.querySelectorAll(".jump-btn").forEach(b=> b.classList.toggle("active", b.dataset.goto === id));
     if(id === "home"){
       initMap(); // safe now — the map container is actually visible
-      if(map) setTimeout(()=> map.resize(), 60); // catches size changes since last shown
+      if(homeView === "map" && map) setTimeout(()=> map.resize(), 60); // catches size changes since last shown
     }
     if(id === "alerts"){ state.unreadAlerts = 0; renderBell(); }
     if(id === "rewards") renderRewards();
@@ -989,6 +1002,22 @@
   /* ---------------- home / map (real Mapbox map + Google Sheet data) ---------------- */
   let map = null, geolocateControl = null, mapMarkers = [];
 
+  /* ---------------- map <-> list view toggle ---------------- */
+  let homeView = "map";
+  const mapStage = document.getElementById("mapStage");
+  const homeListView = document.getElementById("homeListView");
+  const viewToggleBtn = document.getElementById("viewToggleBtn");
+  const viewToggleLabel = document.getElementById("viewToggleLabel");
+
+  function setHomeView(view){
+    homeView = view;
+    mapStage.style.display = view === "map" ? "flex" : "none";
+    homeListView.style.display = view === "list" ? "flex" : "none";
+    viewToggleLabel.textContent = view === "map" ? "List" : "Map";
+    if(view === "map" && map) setTimeout(()=> map.resize(), 60); // container was display:none, size was stale
+  }
+  viewToggleBtn.addEventListener("click", ()=> setHomeView(homeView === "map" ? "list" : "map"));
+
   function haversineMiles(lat1, lon1, lat2, lon2){
     const R = 3958.8;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -1002,8 +1031,10 @@
     events.forEach(ev=>{
       if(typeof ev.lat === "number" && typeof ev.lng === "number"){
         const d = haversineMiles(origin.lat, origin.lng, ev.lat, ev.lng);
+        ev.distanceMiles = d; // numeric, for sorting — "distance" below is display-only ("< 0.1 mi" isn't parseable)
         ev.distance = d < 0.1 ? "< 0.1 mi" : d.toFixed(1) + " mi";
       } else {
+        ev.distanceMiles = Infinity;
         ev.distance = "";
       }
     });
@@ -1182,13 +1213,9 @@
 
     const list = document.getElementById("homeList");
     list.innerHTML = "";
-    const sorted = events.slice().sort((a,b)=>{
-      if(a.live !== b.live) return a.live ? -1 : 1;
-      const da = parseFloat(a.distance) || 999;
-      const db = parseFloat(b.distance) || 999;
-      return da - db;
-    });
-    sorted.slice(0,4).forEach(ev=>{
+    // closest first — this list is the dedicated "List view", not a preview
+    const sorted = events.slice().sort((a,b)=> a.distanceMiles - b.distanceMiles);
+    sorted.forEach(ev=>{
       const row = document.createElement("div");
       row.className = "ev-card";
       row.addEventListener("click", ()=> openSheet(ev.id));
