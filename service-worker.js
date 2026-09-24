@@ -3,7 +3,7 @@
 // offline data strategy, just enough for a demo/beta build to qualify
 // as an installable PWA on iOS and Android.
 
-const CACHE_NAME = "third-space-demo-v7";
+const CACHE_NAME = "third-space-demo-v8";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -16,7 +16,17 @@ const APP_SHELL = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(CACHE_NAME).then((cache) =>
+      // fetch with {cache:"reload"} so a bumped CACHE_NAME always repopulates
+      // from the network — GitHub Pages' CDN caches app-shell files for a
+      // few minutes, and a default fetch() here could silently re-cache the
+      // stale copy right after a deploy.
+      Promise.all(
+        APP_SHELL.map((url) =>
+          fetch(url, { cache: "reload" }).then((res) => cache.put(url, res))
+        )
+      )
+    )
   );
   self.skipWaiting();
 });
