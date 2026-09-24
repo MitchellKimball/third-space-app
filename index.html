@@ -905,10 +905,15 @@
      title, venue, address, lat, lng, day_time, live, going,
      from_group, host, description, status_note, category, parking,
      alcohol
+     Only "title" is required on every row. For location, either fill
+     in lat/lng directly, or just fill in "address" — the app will
+     geocode it against Mapbox on load and cache the result so it
+     isn't re-geocoded every visit. lat/lng win if both are present.
   ========================================================================= */
   const MAPBOX_TOKEN = "pk.eyJ1IjoibWl0Y2hlbGxraW1iYWxsOTQiLCJhIjoiY210dHNsenB6MDZxaDJ6cTNxamUxcTVybCJ9.1-J_H9klBRnP4I14GnPDxQ";
   const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRk_0p6stmfzdl4hpX-Y1WANrcjzZIanA4iCOLVZoPT8Oy_mumavhY8upsadmV5fiU7qTgumjliNBTV/pub?output=csv";
   const DEFAULT_CENTER = { lat: 34.0870, lng: -118.2702 }; // Silver Lake, LA
+  const LA_BBOX = [-118.6682, 33.7037, -118.1553, 34.3373]; // rough LA county bounding box, used to bias search + geocoding
 
   const FALLBACK_EVENTS = [
     {id:1, title:"Rooftop Jazz Session", venue:"The Oviatt Penthouse", lat:34.0478, lng:-118.2563, time:"Tue · 8:00 PM", live:true, startsIn:"starts in 12 min", going:12, fromGroup:3, host:"Maya R.", desc:"Small-group table, live trio, one round included. Cameras welcome — tag the event to share.", category:"Live Music", parking:"Street parking after 8pm", alcohol:true, g:0},
@@ -1094,7 +1099,7 @@
         marker: false,
         placeholder: "Search neighborhoods, addresses…",
         proximity: { longitude: DEFAULT_CENTER.lng, latitude: DEFAULT_CENTER.lat },
-        bbox: [-118.6682, 33.7037, -118.1553, 34.3373] // rough LA county bounding box
+        bbox: LA_BBOX
       });
       document.getElementById("geocoderContainer").appendChild(geocoder.onAdd(map));
     }
@@ -1135,6 +1140,45 @@
       .trim();
   }
 
+  /* ---------------- geocoding (address -> lat/lng, cached) ---------------- */
+  const GEOCODE_CACHE_KEY = "communa_geocode_cache_v1";
+
+  function loadGeocodeCache(){
+    try{ return JSON.parse(localStorage.getItem(GEOCODE_CACHE_KEY)) || {}; }
+    catch(err){ return {}; }
+  }
+  function saveGeocodeCache(cache){
+    try{ localStorage.setItem(GEOCODE_CACHE_KEY, JSON.stringify(cache)); }
+    catch(err){ /* storage full/disabled — cache just won't persist between visits */ }
+  }
+  const geocodeCache = loadGeocodeCache();
+
+  function geocodeAddress(address){
+    if(geocodeCache[address]) return Promise.resolve(geocodeCache[address]);
+    if(!MAPBOX_TOKEN || MAPBOX_TOKEN.indexOf("YOUR_") === 0) return Promise.resolve(null);
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json`
+      + `?access_token=${MAPBOX_TOKEN}&limit=1&bbox=${LA_BBOX.join(",")}`;
+    return fetch(url)
+      .then(res=> res.ok ? res.json() : null)
+      .then(data=>{
+        const center = data && data.features && data.features[0] && data.features[0].center;
+        if(!center) return null;
+        const coords = { lat: center[1], lng: center[0] };
+        geocodeCache[address] = coords;
+        saveGeocodeCache(geocodeCache);
+        return coords;
+      })
+      .catch(()=> null); // network hiccup or bad address — event just won't get a pin this load
+  }
+
+  function resolveEventCoords(row){
+    const lat = parseFloat(row.lat);
+    const lng = parseFloat(row.lng);
+    if(!isNaN(lat) && !isNaN(lng)) return Promise.resolve({ lat, lng });
+    if(!row.address) return Promise.resolve(null);
+    return geocodeAddress(row.address);
+  }
+
   function loadEventsFromSheet(){
     if(!window.Papa || !SHEET_CSV_URL || SHEET_CSV_URL.indexOf("YOUR_") === 0){
       return; // no sheet configured yet — stays on FALLBACK_EVENTS
@@ -1144,37 +1188,40 @@
       header: true,
       skipEmptyLines: true,
       complete: (results)=>{
-        const parsed = (results.data || []).map((row, i)=>{
-          const lat = parseFloat(row.lat);
-          const lng = parseFloat(row.lng);
-          if(isNaN(lat) || isNaN(lng) || !row.title) return null;
-          return {
-            id: i + 1,
-            title: String(row.title).trim(),
-            venue: String(row.venue || "").trim(),
-            address: String(row.address || "").trim(),
-            lat, lng,
-            time: String(row.day_time || "").trim(),
-            live: String(row.live || "").trim().toUpperCase() === "TRUE",
-            going: parseInt(row.going, 10) || 0,
-            fromGroup: parseInt(row.from_group, 10) || 0,
-            host: cleanHostName(row.host),
-            desc: String(row.description || "").trim(),
-            startsIn: String(row.status_note || "").trim(),
-            category: String(row.category || "").trim(),
-            parking: String(row.parking || "").trim(),
-            alcohol: String(row.alcohol || "").trim().toUpperCase() === "TRUE",
-            g: i % gradients.length
-          };
-        }).filter(Boolean);
+        const rows = (results.data || []).filter(row=> row.title);
 
-        if(parsed.length){
-          events = parsed;
-          recomputeDistances();
-          if(map) updateMapMarkers();
-          renderHome();
-          showToast(`Loaded ${parsed.length} events from your sheet`);
-        }
+        Promise.all(rows.map(row=>
+          resolveEventCoords(row).then(coords=> ({ row, coords }))
+        )).then(resolvedRows=>{
+          const parsed = resolvedRows
+            .filter(({coords})=> coords) // drop events we couldn't place on the map
+            .map(({row, coords}, i)=>({
+              id: i + 1,
+              title: String(row.title).trim(),
+              venue: String(row.venue || "").trim(),
+              address: String(row.address || "").trim(),
+              lat: coords.lat, lng: coords.lng,
+              time: String(row.day_time || "").trim(),
+              live: String(row.live || "").trim().toUpperCase() === "TRUE",
+              going: parseInt(row.going, 10) || 0,
+              fromGroup: parseInt(row.from_group, 10) || 0,
+              host: cleanHostName(row.host),
+              desc: String(row.description || "").trim(),
+              startsIn: String(row.status_note || "").trim(),
+              category: String(row.category || "").trim(),
+              parking: String(row.parking || "").trim(),
+              alcohol: String(row.alcohol || "").trim().toUpperCase() === "TRUE",
+              g: i % gradients.length
+            }));
+
+          if(parsed.length){
+            events = parsed;
+            recomputeDistances();
+            if(map) updateMapMarkers();
+            renderHome();
+            showToast(`Loaded ${parsed.length} events from your sheet`);
+          }
+        });
       },
       error: ()=>{ /* stays on FALLBACK_EVENTS, no need to alarm anyone testing */ }
     });
