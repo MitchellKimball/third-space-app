@@ -837,10 +837,19 @@
           </div>
         </div>
 
-        <!-- FEED -->
-        <div class="screen" data-screen="feed">
-          <div class="app-header"><div><h1>Feed</h1><div class="sub">Near you · live</div></div></div>
-          <div class="screen-scroll" id="feedScroll" style="padding-top:12px;"></div>
+        <!-- CALENDAR -->
+        <div class="screen" data-screen="calendar">
+          <div class="app-header"><div><h1>Calendar</h1><div class="sub">Partiful + planning</div></div></div>
+          <div class="screen-scroll" style="padding:18px;">
+            <div class="stat-card">
+              <div class="big">Copy your Partiful link</div>
+              <div class="sub">Use this for community event invites and RSVPs.</div>
+            </div>
+            <div class="list-title">This week</div>
+            <div class="redeem-row"><div><p class="t">Sun · Sunset Volleyball</p><p class="s">https://partiful.com/e/example-1</p></div></div>
+            <div class="redeem-row"><div><p class="t">Tue · Rooftop Jazz Session</p><p class="s">https://partiful.com/e/example-2</p></div></div>
+            <div class="redeem-row"><div><p class="t">Thu · Silver Lake Supper Club</p><p class="s">https://partiful.com/e/example-3</p></div></div>
+          </div>
         </div>
 
         <!-- REWARDS -->
@@ -962,21 +971,17 @@
 
       <!-- bottom nav -->
       <div class="bottomnav" id="bottomnav">
-        <button class="navitem" data-goto="home">
-          <svg viewBox="0 0 24 24"><path d="M12 21s-7-7.5-7-12a7 7 0 0 1 14 0c0 4.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>
-          <span>Map</span>
-        </button>
-        <button class="navitem" data-goto="discover">
-          <svg viewBox="0 0 24 24"><rect x="4" y="7" width="12" height="14" rx="2.5" transform="rotate(-8 10 14)"/><rect x="7" y="4" width="13" height="15" rx="2.5" fill="#fff"/></svg>
-          <span>Discover</span>
-        </button>
         <button class="navitem" data-goto="capture">
           <svg viewBox="0 0 24 24"><path d="M4 8a2 2 0 0 1 2-2h1.2l.8-1.4A1.5 1.5 0 0 1 9.3 4h5.4a1.5 1.5 0 0 1 1.3.75L16.8 6H18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.6"/></svg>
           <span>Capture</span>
         </button>
-        <button class="navitem" data-goto="feed">
-          <svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.5"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.5"/><rect x="13" y="13" width="7.5" height="7.5" rx="1.5"/></svg>
-          <span>Feed</span>
+        <button class="navitem" data-goto="calendar">
+          <svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7.5 3.5v4M16.5 3.5v4M3.5 9.5h17"/></svg>
+          <span>Calendar</span>
+        </button>
+        <button class="navitem" data-goto="home">
+          <svg viewBox="0 0 24 24"><path d="M12 21s-7-7.5-7-12a7 7 0 0 1 14 0c0 4.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>
+          <span>Map</span>
         </button>
         <button class="navitem" data-goto="profile">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1-4 4-6 7.5-6s6.5 2 7.5 6"/></svg>
@@ -1066,9 +1071,8 @@
   const jumpbar = document.getElementById("jumpbar");
 
   const jumpTargets = [
-    ["onb-1","Onboarding"], ["home","Map"], ["discover","Discover"],
-    ["capture","Capture"], ["feed","Feed"], ["rewards","Rewards"],
-    ["leaderboard","Leaderboard"], ["alerts","Alerts"], ["profile","Profile"], ["venue","Venue view"]
+    ["onb-1","Onboarding"], ["home","Map"], ["capture","Capture"], ["calendar","Calendar"],
+    ["rewards","Rewards"], ["leaderboard","Leaderboard"], ["alerts","Alerts"], ["profile","Profile"], ["venue","Venue view"]
   ];
   jumpTargets.forEach(([id,label])=>{
     const b = document.createElement("button");
@@ -1090,8 +1094,6 @@
       if(map) setTimeout(()=> map.resize(), 60); // catches size changes since last shown
     }
     if(id === "alerts"){ state.unreadAlerts = 0; renderBell(); }
-    if(id === "feed") renderFeed();
-    if(id === "discover") renderDeck();
     if(id === "rewards") renderRewards();
     if(id === "leaderboard") renderLeaderboard();
     if(id === "alerts") renderAlerts();
