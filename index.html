@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0" />
-<title>Communa — Local Events &amp; Map</title>
+<title>Comuna — Local Events &amp; Map</title>
 
 <!-- installable app / PWA metadata -->
 <link rel="manifest" href="manifest.json" />
@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Communa" />
+<meta name="apple-mobile-web-app-title" content="Comuna" />
 <meta name="mobile-web-app-capable" content="yes" />
 
 <!-- real map: Mapbox GL JS + Geocoder search plugin -->
@@ -598,7 +598,7 @@
 <div class="harness">
   <div class="harness-top">
     <div>
-      <div class="harness-title">Communa — Interactive Prototype</div>
+      <div class="harness-title">Comuna — Interactive Prototype</div>
       <div class="harness-sub">Click through the phone below. Nothing here is saved once you close the tab.</div>
     </div>
     <div class="harness-actions">
@@ -621,7 +621,7 @@
           <button class="onb-skip" data-goto="home">Skip intro →</button>
           <div class="onb">
             <div class="onb-logo">LOGO MARK</div>
-            <h2>Communa</h2>
+            <h2>Comuna</h2>
             <p class="tagline">Discover Events, Experiences, &amp; Pop-ups in your neighborhood</p>
             <div class="onb-footer">
               <button class="btn" data-goto="onb-2">Get Started</button>
@@ -640,7 +640,7 @@
               <div class="pin" style="left:50%;top:50%;"></div>
             </div>
             <h2 style="font-size:18px;">See what's happening nearby, live</h2>
-            <p class="tagline">Communa uses your location only while the app is open.</p>
+            <p class="tagline">Comuna uses your location only while the app is open.</p>
             <div class="onb-footer">
               <button class="btn" data-goto="home">Allow Location</button>
             </div>
@@ -650,7 +650,7 @@
         <!-- HOME / MAP -->
         <div class="screen" data-screen="home">
           <div class="app-header">
-            <div><h1>Communa · LA</h1></div>
+            <div><h1>Comuna · LA</h1></div>
             <button class="bell-btn" data-goto="alerts">
               <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#111827" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
               <span class="bell-dot" id="bellCount">4</span>
@@ -1323,7 +1323,7 @@
   function currentEventTag(){
     const live = events.find(ev=> ev.live);
     const ev = live || events[0];
-    return ev ? ev.title : "Communa";
+    return ev ? ev.title : "Comuna";
   }
 
   /* ---------------- capture ---------------- */

@@ -1,6 +1,6 @@
 {
-  "name": "Communa",
-  "short_name": "Communa",
+  "name": "Comuna",
+  "short_name": "Comuna",
   "description": "Neighborhood events on a live map — capture the moment, keep your calendar, and earn rewards.",
   "start_url": "./index.html",
   "scope": "./",

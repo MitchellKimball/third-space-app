@@ -1,4 +1,4 @@
-# Communa (installable on iPhone/Android)
+# Comuna (installable on iPhone/Android)
 
 ## 1. Get it on GitHub (using VS Code)
 
