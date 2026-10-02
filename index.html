@@ -63,7 +63,7 @@ img{ max-width:100% }
 .scroll{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 20px 110px }
 .topbar{ display:flex; align-items:center; justify-content:space-between; padding:20px 20px 8px }
 .wm{ font-family:var(--display); font-weight:900; letter-spacing:.04em; line-height:1; display:inline-flex; align-items:center; color:var(--green) }
-.wm svg{ margin:0 .02em }
+.wm svg{ margin-left:.09em; flex:none } /* pin mark trails the name; letter-spacing after the A adds the rest of the gap */
 .h1{ font-family:var(--display); font-weight:800; font-size:34px; line-height:.95; text-transform:uppercase; margin:6px 0 4px; letter-spacing:.2px }
 .h2{ font-family:var(--display); font-weight:800; font-size:22px; text-transform:uppercase; margin:22px 0 10px; color:var(--green); letter-spacing:.3px }
 .sub{ color:var(--muted); font-size:13.5px; margin:0 }
@@ -554,7 +554,7 @@ function cityLabel(title,sub,bg,fg,w=160,h=106,rot=0){
 }
 
 function omark(size,ring,dot){ const r=size/2, sw=Math.max(2,size*.085); return `<svg width="${size}" height="${size}" viewBox="${-r} ${-r} ${size} ${size}" aria-hidden="true"><circle r="${r-sw/2}" fill="none" stroke="${ring||C.sun}" stroke-width="${sw}"/><circle r="${r*.42}" fill="none" stroke="${ring||C.sun}" stroke-width="${sw*.8}"/><circle r="${r*.14}" fill="${dot||C.red}"/></svg>`; }
-function wordmark(el){ const px=parseFloat(getComputedStyle(el).fontSize); el.innerHTML=`C${omark(px*.74)}MUNA`; el.setAttribute('aria-label','Comuna'); }
+function wordmark(el){ const px=parseFloat(getComputedStyle(el).fontSize); el.innerHTML=`COMUNA${omark(px*.6)}`; el.setAttribute('aria-label','Comuna'); }
 function patchSVG(title,sub,scene,w,h){
   const d=`M8 34 Q8 7 ${w/2} 7 Q${w-8} 7 ${w-8} 34 L${w-8} ${h*.62} Q${w-8} ${h*.8} ${w/2} ${h-7} Q8 ${h*.8} 8 ${h*.62} Z`, id='pc'+(++sid);
   const sc={lake:`<rect width="${w}" height="${h}" fill="${C.sun}"/><circle cx="${w*.68}" cy="${h*.38}" r="${w*.13}" fill="#F0D48A"/><path d="M0 ${h*.55} Q${w*.3} ${h*.38} ${w*.55} ${h*.52} T${w} ${h*.48} V${h} H0Z" fill="${C.green}"/><rect y="${h*.66}" width="${w}" height="${h}" fill="${C.blue}"/>`,
