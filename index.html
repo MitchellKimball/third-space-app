@@ -88,6 +88,20 @@ img{ max-width:100% }
 .onb2{ background:var(--paper) }
 .mini-map{ height:300px; border-radius:22px; overflow:hidden; position:relative; margin:18px 0 6px; box-shadow:0 1px 0 var(--line) }
 
+.onbtop{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px }
+.onbtop .back{ font-size:14px; font-weight:700; color:var(--muted) }
+.steps{ display:flex; gap:6px } .steps i{ width:22px; height:5px; border-radius:3px; background:var(--line) } .steps i.on{ background:var(--green) }
+.or{ display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px; margin:16px 0 10px } .or::before,.or::after{ content:''; flex:1; height:1px; background:var(--line) }
+.field{ display:block; width:100%; font:inherit; font-size:15px; color:var(--ink); background:var(--card); border:1.5px solid var(--line); border-radius:14px; padding:14px; margin-top:8px }
+.field:focus{ outline:none; border-color:var(--green) }
+.flabel{ font-size:13px; font-weight:700; color:var(--muted); margin-top:16px; display:block }
+.interests{ display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 20px }
+.interests button{ border:1.5px solid var(--ink); border-radius:30px; padding:9px 14px; font-size:14px; font-weight:500 }
+.interests button[aria-pressed="true"]{ background:var(--green); border-color:var(--green); color:var(--paper) }
+.seg{ display:flex; background:var(--card); border-radius:30px; padding:3px; margin-top:8px } .seg button{ flex:1; padding:9px; border-radius:30px; font-size:14px; font-weight:700; color:var(--muted) } .seg button.on{ background:var(--green); color:var(--paper) }
+.codebox{ letter-spacing:.5em; text-align:center; font-size:22px; font-weight:700 }
+.onbnote{ font-size:12.5px; color:var(--muted); margin-top:8px; line-height:1.45 }
+
 /* ---------- home ---------- */
 .nb-chip{ display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:13px; background:var(--card); padding:8px 12px 8px 10px; border-radius:30px }
 .mapwrap{ position:relative; height:44%; min-height:250px; margin:6px 14px 0; border-radius:22px; overflow:hidden; background:var(--paper-2) }
@@ -279,14 +293,47 @@ img{ max-width:100% }
       </div>
     </section>
 
-    <!-- ONBOARDING 2 -->
+    <!-- ONBOARDING 2: location -->
     <section class="screen onb2" data-s="onb2">
-      <div class="scroll" style="padding-top:44px;padding-bottom:30px;display:flex;flex-direction:column">
+      <div class="scroll" style="padding-top:28px;padding-bottom:30px;display:flex;flex-direction:column">
+        <div class="onbtop"><button class="back" data-back>&larr; Back</button><div class="steps"><i class="on"></i><i></i><i></i></div></div>
         <div class="h1" style="color:var(--green);font-size:44px">Something good is happening nearby.</div>
-        <div class="mini-map" id="miniMap"></div>
+        <div class="mini-map" id="miniMap" style="height:230px"></div>
         <div class="hand" style="font-size:20px;color:var(--red);margin-bottom:10px">we only use your location while the app is open</div>
-        <button class="btn green" id="allowLoc" style="margin-top:auto">Use my location</button>
-        <button class="btn" data-go="home" style="margin-top:6px;color:var(--muted)">Not now, start in Silver Lake</button>
+        <button class="btn green" id="allowLoc">Use my location</button>
+        <div class="or">or pick your neighborhood</div>
+        <select class="field" id="hoodSelect" aria-label="Your neighborhood" style="margin-top:0"><option value="">Choose a neighborhood</option></select>
+        <button class="btn primary" id="locNext" style="margin-top:auto;margin-top:18px" disabled>Continue</button>
+      </div>
+    </section>
+
+    <!-- ONBOARDING 3: interests -->
+    <section class="screen onb2" data-s="onb3">
+      <div class="scroll" style="padding-top:28px;padding-bottom:30px;display:flex;flex-direction:column">
+        <div class="onbtop"><button class="back" data-back>&larr; Back</button><div class="steps"><i class="on"></i><i class="on"></i><i></i></div></div>
+        <div class="h1" style="color:var(--green);font-size:44px">What are you into?</div>
+        <p class="sub" style="font-size:15px">Pick as many as you like.</p>
+        <div class="interests" id="interestList"></div>
+        <button class="btn primary" id="intNext" style="margin-top:auto" disabled>Continue</button>
+      </div>
+    </section>
+
+    <!-- ONBOARDING 4: name + verification -->
+    <section class="screen onb2" data-s="onb4">
+      <div class="scroll" style="padding-top:28px;padding-bottom:30px;display:flex;flex-direction:column">
+        <div class="onbtop"><button class="back" data-back>&larr; Back</button><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i></div></div>
+        <div class="h1" style="color:var(--green);font-size:44px">Put your name on your passport.</div>
+        <label class="flabel" for="suName">Your name</label>
+        <input class="field" id="suName" autocomplete="name" placeholder="First and last name">
+        <span class="flabel">Sign in with</span>
+        <div class="seg" id="suMode"><button class="on" data-mode="email">Email</button><button data-mode="phone">Phone</button></div>
+        <input class="field" id="suContact" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" aria-label="Email">
+        <div id="suCodeWrap" style="display:none">
+          <label class="flabel" for="suCode">Enter the 6-digit code</label>
+          <input class="field codebox" id="suCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="------">
+          <div class="onbnote" id="suSent"></div>
+        </div>
+        <button class="btn primary" id="suNext" style="margin-top:auto;margin-top:22px" disabled>Send code</button>
       </div>
     </section>
 
@@ -328,7 +375,7 @@ img{ max-width:100% }
       <div class="topbar"><div class="h1" style="color:var(--green)">Passport</div><button class="pill" data-go="profile">Profile</button></div>
       <div class="scroll">
         <div class="passcover">
-          <div class="k">Mitchell K. · Los Angeles</div>
+          <div class="k" id="passName">Mitchell K. · Los Angeles</div>
           <div class="big" id="passCount">3 of 8 neighborhoods</div>
           <div class="bar"><i id="passBar" style="width:37%"></i></div>
           <div class="passstats"><div><b id="psStreak">4 wk</b>streak</div><div><b id="psVisits">18</b>check-ins</div><div><b id="psPts">1,240</b>points</div></div>
@@ -349,7 +396,7 @@ img{ max-width:100% }
     <section class="screen" data-s="profile">
       <div class="topbar"><div class="h1" style="color:var(--green)">You</div></div>
       <div class="scroll">
-        <div class="prof"><div class="avatar">M</div><div><div style="font-weight:700;font-size:19px">Mitchell K.</div><div class="sub">Silver Lake · exploring since January</div></div></div>
+        <div class="prof"><div class="avatar" id="pfAvatar">M</div><div><div style="font-weight:700;font-size:19px" id="pfName">Mitchell K.</div><div class="sub" id="pfHood">Silver Lake · exploring since January</div></div></div>
         <div class="stats3"><div><b id="pfStamps">3</b>stamps</div><div><b id="pfVisits">18</b>check-ins</div><div><b id="pfStreak">4</b>week streak</div></div>
         <button class="linkrow" data-go="passport">Your passport <span>Stamps, patches, points</span></button>
         <button class="linkrow" data-go="plans">Your plans <span>This week</span></button>
@@ -491,7 +538,7 @@ const START = { places:{
     'Edendale Library':      {n:1,  cat:'community', lat:34.0860, lng:-118.2640},
     'Echo Park Lake':        {n:2,  cat:'outdoors',  lat:34.0726, lng:-118.2606},
     'Vista Theatre':         {n:1,  cat:'music',     lat:34.0976, lng:-118.2871}
-  }, points:1240, streak:4, visits:18, rsvp:[4], checked:[], redeemed:[], alertsRead:false, nb:'Silver Lake', loc:null };
+  }, points:1240, streak:4, visits:18, rsvp:[4], checked:[], redeemed:[], alertsRead:false, nb:'Silver Lake', loc:null, name:'Mitchell Kimball', interests:[], joined:'2026-01-15' };
 let S;
 function load(){ try{ const r=localStorage.getItem('comuna_v3'); S = r? Object.assign(JSON.parse(JSON.stringify(START)), JSON.parse(r)) : JSON.parse(JSON.stringify(START)); }catch(e){ S=JSON.parse(JSON.stringify(START)); } }
 function save(){ try{ localStorage.setItem('comuna_v3', JSON.stringify(S)); }catch(e){} }
@@ -574,7 +621,7 @@ function go(id, push=true){
   if(push) history.push(current);
   current=id;
   screens.forEach(s=>s.classList.toggle('on', s.dataset.s===id));
-  nav.classList.toggle('hide', ['onb1','onb2','host','alerts'].includes(id));
+  nav.classList.toggle('hide', ['onb1','onb2','onb3','onb4','host','alerts'].includes(id));
   nav.querySelectorAll('button').forEach(b=>{ const on=b.dataset.nav===id; b.classList.toggle('on',on); b.querySelector('svg').setAttribute('stroke', on?C.green:C.muted); });
   if(id==='home'){ renderHome(); setTimeout(()=>{ if(map) map.resize(); else drawPaper(); },30); }
   if(id==='plans') renderPlans();
@@ -582,7 +629,10 @@ function go(id, push=true){
   if(id==='profile') renderProfile();
   if(id==='alerts'){ renderAlerts(); S.alertsRead=true; save(); updateDot(); }
   if(id==='host') renderHost();
-  if(id==='onb2') drawMini();
+  if(id==='onb2'){ drawMini(); hoodSel.value=S.loc?S.nb:''; locNext.disabled=!S.loc; }
+  if(id==='onb3') renderInterests();
+  if(id==='onb4') suUpdate();
+  if(id==='profile'||id==='passport') renderNames();
 }
 document.addEventListener('click',e=>{
   const g=e.target.closest('[data-go]'); if(g){ go(g.dataset.go); return; }
@@ -597,11 +647,43 @@ function buildOnb(){
   <div style="right:4px;top:40px">${stampSVG('ECHO PARK','COMUNA · EST. 2026','lotus','#C9533D',136,9)}</div>
   <div style="left:96px;top:150px">${stampSVG('LOS FELIZ','COMUNA · LOS ANGELES','palm',C.sun,138,4)}</div>`;
 }
+const hoodSel=document.getElementById('hoodSelect'), locNext=document.getElementById('locNext');
+hoodSel.innerHTML+=HOODS.map(h=>`<option>${h.name}</option>`).join('');
+function setHood(name,loc){ const h=hoodByName(name); S.nb=h.name; S.loc=loc||{lat:h.lat,lng:h.lng}; save(); rebuildMap(); hoodSel.value=h.name; locNext.disabled=false; drawMini(); }
+hoodSel.addEventListener('change',()=>{ if(hoodSel.value) setHood(hoodSel.value); else locNext.disabled=true; });
+locNext.onclick=()=>go('onb3');
 document.getElementById('allowLoc').addEventListener('click',()=>{
-  if(!navigator.geolocation){ go('home'); return; }
-  navigator.geolocation.getCurrentPosition(p=>{ S.loc={lat:p.coords.latitude,lng:p.coords.longitude}; S.nb=hoodOf(S.loc).name; save(); rebuildMap(); go('home'); toast('Showing what\'s near you'); },
-    ()=>{ toast('No location. Starting in Silver Lake'); go('home'); }, {timeout:6000});
+  if(!navigator.geolocation){ toast('Location isn\'t available. Pick your neighborhood instead.'); return; }
+  navigator.geolocation.getCurrentPosition(p=>{ const loc={lat:p.coords.latitude,lng:p.coords.longitude}; setHood(hoodOf(loc).name,loc); toast('Got it. You\'re near '+S.nb); go('onb3'); },
+    ()=>toast('No location. Pick your neighborhood instead.'), {timeout:6000});
 });
+
+/* sign-up: interests */
+const INTERESTS=['Music & Arts','Food & Drink','Health & Wellness','Workshops & Learning','Social & Meetups','Outdoors & Nature','Markets & Shopping','Comedy & Performance','Film & Media','Immersive & Experiential','Nightlife','Community & Civic','Sports & Games'];
+const intNext=document.getElementById('intNext');
+function renderInterests(){ const mine=S.interests||[]; document.getElementById('interestList').innerHTML=INTERESTS.map(t=>`<button aria-pressed="${mine.includes(t)}" data-int="${t}">${t}</button>`).join(''); intNext.disabled=!mine.length; intNext.textContent=mine.length?`Continue with ${mine.length}`:'Pick at least one'; }
+document.getElementById('interestList').addEventListener('click',e=>{ const b=e.target.closest('[data-int]'); if(!b) return; const t=b.dataset.int, m=S.interests=S.interests||[]; m.includes(t)? m.splice(m.indexOf(t),1) : m.push(t); save(); renderInterests(); });
+intNext.onclick=()=>go('onb4');
+
+/* sign-up: name + one-time code. Prototype only: no code is really sent, and any 6 digits verify. */
+let suMode='email', suSent=false;
+const suName=document.getElementById('suName'), suContact=document.getElementById('suContact'), suCode=document.getElementById('suCode'), suNext=document.getElementById('suNext');
+const validContact=()=> suMode==='email' ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(suContact.value.trim()) : suContact.value.replace(/\D/g,'').length>=10;
+function suUpdate(){ suNext.textContent= suSent?'Verify and start exploring':'Send code'; suNext.disabled = !suName.value.trim() || !validContact() || (suSent && !/^\d{6}$/.test(suCode.value)); }
+document.getElementById('suMode').addEventListener('click',e=>{ const b=e.target.closest('[data-mode]'); if(!b||b.dataset.mode===suMode) return; suMode=b.dataset.mode; suSent=false;
+  document.querySelectorAll('#suMode button').forEach(x=>x.classList.toggle('on',x===b));
+  Object.assign(suContact, suMode==='email'? {type:'email',autocomplete:'email',inputMode:'email',placeholder:'you@example.com'} : {type:'tel',autocomplete:'tel',inputMode:'tel',placeholder:'(323) 555-0123'}); suContact.setAttribute('aria-label',suMode==='email'?'Email':'Phone number');
+  suContact.value=''; suCode.value=''; document.getElementById('suCodeWrap').style.display='none'; suUpdate(); });
+[suName,suContact,suCode].forEach(el=>el.addEventListener('input',()=>{ if(el===suContact && suSent){ suSent=false; suCode.value=''; document.getElementById('suCodeWrap').style.display='none'; } suUpdate(); }));
+suNext.onclick=()=>{
+  if(!suSent){ suSent=true; document.getElementById('suCodeWrap').style.display='block';
+    document.getElementById('suSent').textContent = suMode==='email' ? `We sent a 6-digit code to ${suContact.value.trim()}. The email also has a magic link: tap it instead and you're in.` : `We texted a 6-digit code to ${suContact.value.trim()}.`;
+    suCode.focus(); suUpdate(); return; }
+  S.name=suName.value.trim().replace(/\s+/g,' '); S.joined=new Date().toISOString().slice(0,10); S[suMode]=suContact.value.trim(); save(); renderNames();
+  history=[]; go('home'); toast(`Welcome, ${S.name.split(' ')[0]}. Your passport is ready.`);
+};
+function shortName(){ const p=(S.name||'').split(' ').filter(Boolean); return p.length? p[0]+(p[1]?` ${p[p.length-1][0].toUpperCase()}.`:'') : 'You'; }
+function renderNames(){ const n=shortName(); document.getElementById('passName').textContent=`${n} · Los Angeles`; document.getElementById('pfName').textContent=n; document.getElementById('pfAvatar').textContent=n[0]; document.getElementById('pfHood').textContent=`${S.nb} · exploring since ${new Date(S.joined||Date.now()).toLocaleString('en-US',{month:'long'})}`; }
 
 /* ---------- home ---------- */
 let filter='All';
@@ -842,8 +924,9 @@ function renderPassport(){
   }
   document.getElementById('passPage').innerHTML=html;
   document.getElementById('patchList').innerHTML=PATCHES.map(p=>{ const ok=p.ok(); return `<div class="patch ${ok?'':'locked'}">${patchSVG(p.t,p.s,p.sc,92,110)}<div>${ok?'Earned':'Locked'}</div></div>`; }).join('');
-  const lb=[['Ana P.',2410],['Jordan M.',1980],['Mitchell K.',S.points],['Sam T.',1105],['Priya K.',960]].sort((a,b)=>b[1]-a[1]);
-  document.getElementById('lbList').innerHTML=lb.map((r,i)=>`<div class="lbrow ${r[0]==='Mitchell K.'?'me':''}"><div class="r">${i+1}</div><div>${r[0]}${r[0]==='Mitchell K.'?' (you)':''}</div><div>${r[1].toLocaleString()} pts</div></div>`).join('');
+  const me=shortName();
+  const lb=[['Ana P.',2410],['Jordan M.',1980],[me,S.points],['Sam T.',1105],['Priya K.',960]].sort((a,b)=>b[1]-a[1]);
+  document.getElementById('lbList').innerHTML=lb.map((r,i)=>`<div class="lbrow ${r[0]===me?'me':''}"><div class="r">${i+1}</div><div>${r[0]}${r[0]===me?' (you)':''}</div><div>${r[1].toLocaleString()} pts</div></div>`).join('');
   const rw=[{id:'tsc',t:'$10 at Ten Speed Coffee',s:'Any drink or pastry',cost:500},{id:'otw',t:'Free ceramics class seat',s:'Otherwild Studio',cost:1500},{id:'patch',t:'Embroidered Silver Lake patch',s:'Pick up at any partner event',cost:800}];
   document.getElementById('rewardList').innerHTML=rw.map(r=>{ const used=S.redeemed.includes(r.id); return `<div class="reward"><div><div class="t">${r.t}</div><div class="s">${r.s} · ${r.cost} pts</div></div><button data-redeem="${r.id}" data-cost="${r.cost}" ${used||S.points<r.cost?'disabled':''}>${used?'Redeemed':'Redeem'}</button></div>`; }).join('');
 }
