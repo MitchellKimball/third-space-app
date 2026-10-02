@@ -629,7 +629,7 @@ function renderHome(){
       <div><div class="when">${ev.live?'\u{1F534} ':''}${ev.startsIn||ev.time}</div><div class="t">${ev.title}</div><div class="m">${ev.venue}${inn&&!done?' · you\'re in':''}</div></div>
       <div class="dist">${mins(ev.mi)}<small>min away</small></div></button>`; }).join('')
     + `<div class="endnote">that's the list. go have fun.</div><div class="demo-tag">${usingDemo?'Demo events · connect the Google Sheet to go live':'Live events from the Comuna sheet'}</div>`;
-  const first=P[0]; document.getElementById('mapNote').textContent = first ? (first.live? `${first.title.split(' ').slice(0,2).join(' ')}: ${first.startsIn}` : 'the good stuff is close') : '';
+  const first=P[0]; document.getElementById('mapNote').textContent = first ? (first.live? `${first.title.split(' ').slice(0,2).join(' ')}: ${first.startsIn}` : '') : '';
   placePins(P);
 }
 document.getElementById('chips').addEventListener('click',e=>{ const c=e.target.closest('[data-cat]'); if(!c) return; filter=c.dataset.cat; renderHome(); });
