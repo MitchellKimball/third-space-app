@@ -26,6 +26,7 @@
   --display:'Big Shoulders Display', 'Arial Narrow', Impact, sans-serif;
   --sans:'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --hand:'Caveat', 'Comic Sans MS', cursive;
+  --navh:calc(66px + env(safe-area-inset-bottom,0px));
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
@@ -133,6 +134,16 @@ img{ max-width:100% }
 .pick .dist small{ display:block; font-family:var(--sans); font-weight:500; font-size:10.5px; color:var(--muted) }
 .endnote{ text-align:center; margin:20px 0 4px; font-family:var(--hand); font-size:21px; color:var(--muted) }
 .demo-tag{ text-align:center; font-size:11px; color:var(--muted); margin-top:4px }
+/* map mode: the map fills the screen; header, chips and a swipeable row of picks float over it */
+#homeScreen:not(.home-list) .homehead{ position:relative; z-index:6; padding-bottom:14px; background:linear-gradient(var(--paper) 72%, rgba(243,231,209,0)); pointer-events:none }
+#homeScreen:not(.home-list) .homehead > *{ pointer-events:auto }
+#homeScreen:not(.home-list) .mapwrap{ position:absolute; inset:0; height:auto; min-height:0; margin:0; border-radius:0 }
+#homeScreen:not(.home-list) .mapwrap .toggle{ top:auto; bottom:calc(var(--navh) + 128px) }
+#homeScreen:not(.home-list) .maplabel{ bottom:calc(var(--navh) + 134px) }
+#homeScreen:not(.home-list) .picks{ position:absolute; left:0; right:0; bottom:calc(var(--navh) + 10px); z-index:6; flex:none; display:flex; gap:10px; overflow-x:auto; overflow-y:hidden; padding:0 14px; scroll-snap-type:x mandatory; scrollbar-width:none; pointer-events:none }
+#homeScreen:not(.home-list) .picks::-webkit-scrollbar{ display:none }
+#homeScreen:not(.home-list) .pick{ flex:0 0 84%; margin:0; scroll-snap-align:center; box-shadow:0 4px 14px rgba(0,0,0,.18); pointer-events:auto }
+#homeScreen:not(.home-list) .endnote, #homeScreen:not(.home-list) .demo-tag{ display:none }
 /* list mode: keep the map/list toggle reachable (it lives inside .mapwrap) instead of hiding the whole wrapper */
 .home-list .mapwrap{ height:auto; min-height:0; margin:6px 14px 0; background:none; overflow:visible; display:flex; justify-content:flex-end }
 .home-list .mapwrap #map, .home-list .mapwrap .maplabel{ display:none }
@@ -358,6 +369,7 @@ img{ max-width:100% }
 
     <!-- HOME -->
     <section class="screen" data-s="home" id="homeScreen">
+      <div class="homehead">
       <div class="topbar">
         <div class="wm" id="homeMark" style="font-size:28px"></div>
         <div style="display:flex;gap:8px;align-items:center">
@@ -368,12 +380,13 @@ img{ max-width:100% }
         <div class="h1" id="homeTitle">Explore your neighborhood</div>
         <p class="sub" id="homeSub">5 picks within 15 minutes</p>
       </div>
+      <div class="chips" id="chips"></div>
+      </div>
       <div class="mapwrap" id="mapwrap">
         <div id="map"></div>
         <div class="toggle"><button class="on" id="tMap">Map</button><button id="tList">List</button></div>
         <div class="maplabel" id="mapNote"></div>
       </div>
-      <div class="chips" id="chips"></div>
       <div class="picks" id="picks"></div>
     </section>
 
