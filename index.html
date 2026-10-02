@@ -1,13 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0" />
-<title>Comuna — Local Events &amp; Map</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#244D3A">
+<title>Comuna — Explore where you live</title>
 
 <!-- installable app / PWA metadata -->
 <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#0F9D8C" />
 <link rel="icon" href="icons/favicon-32.png" />
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -15,1478 +15,903 @@
 <meta name="apple-mobile-web-app-title" content="Comuna" />
 <meta name="mobile-web-app-capable" content="yes" />
 
-<!-- real map: Mapbox GL JS + Geocoder search plugin -->
-<link href="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css" rel="stylesheet" />
-<link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.1/mapbox-gl-geocoder.css" rel="stylesheet" />
-
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=DM+Sans:wght@400;500;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
-  :root{
-    --ink:#0B1220;
-    --ink-2:#111827;
-    --muted:#6B7280;
-    --line:#E5E7EB;
-    --light:#F3F4F6;
-    --white:#FFFFFF;
-    --accent:#0F9D8C;
-    --accent-dk:#0B7F72;
-    --accent-tint:#E6F5F3;
-    --alert:#E11D48;
-    --alert-tint:#FDE7EC;
-    --radius:22px;
-    font-size:16px;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background:#EEF1F4;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    color:var(--ink-2);
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    padding:28px 16px 60px;
-  }
+:root{
+  --paper:#F3E7D1; --paper-2:#EFE2C8; --card:#FBF6EA; --ink:#26251F; --muted:#6B675A; --line:#E2D5BC;
+  --green:#244D3A; --red:#C9533D; --sun:#D6A638; --blue:#4B66A8;
+  --stage:#E9DDC6; --stage-ink:#26251F; --stage-muted:#6B675A;
+  --display:'Big Shoulders Display', 'Arial Narrow', Impact, sans-serif;
+  --sans:'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --hand:'Caveat', 'Comic Sans MS', cursive;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --stage:#1C2A22; --stage-ink:#F3E7D1; --stage-muted:#B9AE97; } }
+:root[data-theme="dark"]{ --stage:#1C2A22; --stage-ink:#F3E7D1; --stage-muted:#B9AE97; }
+html{ height:100%; scroll-padding-top:env(safe-area-inset-top,0px) }
+*,*::before,*::after{ box-sizing:border-box }
+body{ margin:0; height:100%; background:var(--stage); color:var(--stage-ink); font-family:var(--sans); -webkit-font-smoothing:antialiased }
+button{ font:inherit; color:inherit; background:none; border:0; cursor:pointer; padding:0 }
+button:focus-visible, a:focus-visible{ outline:2px solid var(--sun); outline-offset:2px; border-radius:6px }
+img{ max-width:100% }
 
-  /* ---------- harness (outside the "app") ---------- */
-  .harness{
-    width:100%;
-    max-width:1040px;
-    margin-bottom:22px;
-  }
-  .harness-top{
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-end;
-    flex-wrap:wrap;
-    gap:12px;
-    margin-bottom:14px;
-  }
-  .harness-title{font-size:20px;font-weight:700;color:var(--ink-2);}
-  .harness-sub{font-size:13px;color:var(--muted);margin-top:2px;}
-  .harness-actions{display:flex;gap:8px;}
-  .harness-btn{
-    border:1px solid var(--line);
-    background:var(--white);
-    color:var(--ink-2);
-    font-size:12.5px;
-    font-weight:600;
-    padding:8px 12px;
-    border-radius:999px;
-    cursor:pointer;
-  }
-  .harness-btn:hover{border-color:var(--accent);color:var(--accent-dk);}
-  .jumpbar{
-    display:flex;
-    flex-wrap:wrap;
-    gap:6px;
-    padding:10px;
-    background:var(--white);
-    border:1px solid var(--line);
-    border-radius:14px;
-  }
-  .jump-btn{
-    border:1px solid transparent;
-    background:var(--light);
-    color:var(--ink-2);
-    font-size:12px;
-    font-weight:600;
-    padding:7px 11px;
-    border-radius:999px;
-    cursor:pointer;
-    white-space:nowrap;
-  }
-  .jump-btn.active{background:var(--accent);color:var(--white);}
-  .jump-btn:hover:not(.active){background:#E4E7EB;}
+/* ---------- stage (desktop) ---------- */
+.stage{ min-height:100%; display:flex; align-items:center; justify-content:center; gap:56px; padding:28px }
+.aside{ max-width:330px }
+.aside h1{ font-family:var(--display); font-weight:900; font-size:54px; line-height:.92; margin:10px 0 14px; text-transform:uppercase; color:var(--stage-ink) }
+.aside p{ color:var(--stage-muted); line-height:1.55; font-size:14.5px; margin:0 0 12px }
+.aside .note{ font-family:var(--hand); font-size:21px; color:var(--red); line-height:1.15 }
+.aside .jump{ display:flex; flex-wrap:wrap; gap:6px; margin-top:16px }
+.aside .jump button{ border:1.5px solid currentColor; border-radius:30px; padding:6px 12px; font-size:12.5px; font-weight:500; color:var(--stage-ink) }
+.aside .restart{ margin-top:14px; font-size:13px; text-decoration:underline; color:var(--stage-muted) }
 
-  /* ---------- phone ---------- */
-  .stage{
-    display:flex;
-    justify-content:center;
-    width:100%;
-  }
-  .phone{
-    position:relative;
-    width:390px;
-    height:812px;
-    max-height:82vh;
-    background:var(--white);
-    border-radius:46px;
-    border:10px solid var(--ink);
-    box-shadow:0 24px 60px rgba(15,23,42,.28);
-    overflow:hidden;
-    flex-shrink:0;
-  }
-  .notch{
-    position:absolute;
-    top:0; left:50%;
-    transform:translateX(-50%);
-    width:150px; height:26px;
-    background:var(--ink);
-    border-bottom-left-radius:16px;
-    border-bottom-right-radius:16px;
-    z-index:50;
-  }
-  .statusbar{
-    height:44px;
-    display:flex;
-    align-items:flex-end;
-    justify-content:space-between;
-    padding:0 22px 6px;
-    font-size:13px;
-    font-weight:700;
-    color:var(--ink-2);
-    flex-shrink:0;
-  }
-  .app-body{
-    position:relative;
-    height:calc(100% - 44px);
-    display:flex;
-    flex-direction:column;
-  }
+.phone{ width:390px; height:820px; max-height:calc(100vh - 56px); background:#1d1c18; border-radius:52px; padding:12px; box-shadow:0 30px 60px rgba(0,0,0,.28); flex:none }
+.app{ position:relative; width:100%; height:100%; background:var(--paper); color:var(--ink); border-radius:41px; overflow:hidden; display:flex; flex-direction:column }
+@media (max-width:820px){
+  .stage{ padding:0; display:block; height:100% }
+  .aside{ display:none }
+  .phone{ width:100%; height:100%; max-height:none; border-radius:0; padding:0; box-shadow:none; background:var(--paper) }
+  .app{ border-radius:0 }
+}
 
-  .screens{
-    position:relative;
-    flex:1;
-    min-height:0;
-  }
-  .screen{
-    position:absolute;
-    inset:0;
-    display:none;
-    flex-direction:column;
-    background:var(--white);
-  }
-  .screen.active{display:flex;}
-  .screen-scroll{
-    flex:1;
-    overflow-y:auto;
-    -webkit-overflow-scrolling:touch;
-  }
-  .screen-scroll::-webkit-scrollbar{width:0;}
+/* ---------- shared ---------- */
+.screen{ position:absolute; inset:0; display:none; flex-direction:column; background:var(--paper) }
+.screen.on{ display:flex }
+.scroll{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 20px 110px }
+.topbar{ display:flex; align-items:center; justify-content:space-between; padding:20px 20px 8px }
+.wm{ font-family:var(--display); font-weight:900; letter-spacing:.04em; line-height:1; display:inline-flex; align-items:center; color:var(--green) }
+.wm svg{ margin:0 .02em }
+.h1{ font-family:var(--display); font-weight:800; font-size:34px; line-height:.95; text-transform:uppercase; margin:6px 0 4px; letter-spacing:.2px }
+.h2{ font-family:var(--display); font-weight:800; font-size:22px; text-transform:uppercase; margin:22px 0 10px; color:var(--green); letter-spacing:.3px }
+.sub{ color:var(--muted); font-size:13.5px; margin:0 }
+.hand{ font-family:var(--hand); font-weight:700 }
+.iconbtn{ width:40px; height:40px; border-radius:50%; display:grid; place-items:center; position:relative; background:var(--card) }
+.dot{ position:absolute; top:4px; right:3px; min-width:17px; height:17px; border-radius:9px; background:var(--red); color:#fff; font-size:10px; font-weight:700; display:grid; place-items:center; padding:0 4px; border:2px solid var(--paper) }
+.btn{ display:block; width:100%; text-align:center; border-radius:14px; padding:15px; font-weight:700; font-size:15px }
+.btn.primary{ background:var(--red); color:#fff }
+.btn.green{ background:var(--green); color:var(--paper) }
+.btn.ghost{ border:1.5px solid var(--ink) }
+.btn:disabled{ opacity:.45; cursor:default }
+.pill{ display:inline-flex; align-items:center; gap:6px; background:var(--card); border-radius:30px; padding:7px 12px; font-size:13px; font-weight:500 }
 
-  /* header used on main tab screens */
-  .app-header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:14px 18px 12px;
-    border-bottom:1px solid var(--line);
-    flex-shrink:0;
-  }
-  .app-header h1{font-size:17px;margin:0;font-weight:700;}
-  .app-header .sub{font-size:11.5px;color:var(--accent-dk);font-weight:700;margin-top:1px;}
-  .bell-btn{
-    position:relative;
-    width:34px;height:34px;
-    border-radius:50%;
-    background:var(--light);
-    border:none;
-    display:flex;align-items:center;justify-content:center;
-    cursor:pointer;
-  }
-  .bell-dot{
-    position:absolute;top:4px;right:5px;
-    width:16px;height:16px;border-radius:50%;
-    background:var(--alert);color:#fff;
-    font-size:9px;font-weight:800;
-    display:flex;align-items:center;justify-content:center;
-  }
+/* ---------- onboarding ---------- */
+.onb{ background:var(--green); color:var(--paper) }
+.onb .inner{ flex:1; display:flex; flex-direction:column; padding:44px 26px 34px; position:relative }
+.onb .skip{ position:absolute; right:22px; top:26px; font-size:13px; color:#CFC3AB }
+.onb .big{ font-family:var(--display); font-weight:900; font-size:60px; line-height:.9; text-transform:uppercase; margin:0 }
+.onb .lede{ color:#DDD1B8; font-size:15px; line-height:1.5; margin:14px 0 22px }
+.stampfield{ position:relative; height:300px; margin:24px -6px 10px }
+.stampfield > *{ position:absolute }
+.onb2{ background:var(--paper) }
+.mini-map{ height:300px; border-radius:22px; overflow:hidden; position:relative; margin:18px 0 6px; box-shadow:0 1px 0 var(--line) }
 
-  /* ---------- bottom nav ---------- */
-  .bottomnav{
-    display:flex;
-    border-top:1px solid var(--line);
-    background:var(--white);
-    flex-shrink:0;
-    padding-bottom:6px;
-  }
-  .navitem{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:3px;
-    padding:8px 2px 2px;
-    background:none;
-    border:none;
-    cursor:pointer;
-    color:var(--muted);
-  }
-  .navitem svg{width:21px;height:21px;stroke:var(--muted);fill:none;stroke-width:1.8;}
-  .navitem span{font-size:10px;font-weight:600;}
-  .navitem.active{color:var(--accent);}
-  .navitem.active svg{stroke:var(--accent);}
+/* ---------- home ---------- */
+.nb-chip{ display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:13px; background:var(--card); padding:8px 12px 8px 10px; border-radius:30px }
+.mapwrap{ position:relative; height:44%; min-height:250px; margin:6px 14px 0; border-radius:22px; overflow:hidden; background:var(--paper-2) }
+#map, .paper-map{ position:absolute; inset:0 }
+.mapwrap .toggle{ position:absolute; right:10px; top:10px; z-index:5; background:var(--card); border-radius:30px; display:flex; padding:3px; box-shadow:0 2px 8px rgba(0,0,0,.12) }
+.mapwrap .toggle button{ padding:6px 12px; border-radius:30px; font-size:12.5px; font-weight:700 }
+.mapwrap .toggle button.on{ background:var(--green); color:var(--paper) }
+.maplabel{ position:absolute; left:14px; bottom:10px; z-index:4; font-family:var(--hand); font-size:18px; color:var(--red); pointer-events:none }
+.pin{ width:42px; height:42px; border-radius:50%; border:2.5px solid var(--paper); box-shadow:0 3px 8px rgba(0,0,0,.28); display:grid; place-items:center; position:relative; cursor:pointer; transform:translate(-50%,-50%); overflow:visible }
+.pin svg{ display:block }
+.pin .chk{ position:absolute; right:-5px; top:-5px; width:18px; height:18px; border-radius:50%; background:var(--green); color:var(--paper); font-size:11px; font-weight:700; display:grid; place-items:center; border:2px solid var(--paper) }
+.mapboxgl-marker .pin{ transform:none }
 
-  /* ---------- onboarding ---------- */
-  .onb{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    padding:34px 26px 26px;
-  }
-  .onb-logo{
-    width:100%;
-    height:210px;
-    border:1.5px dashed var(--line);
-    border-radius:16px;
-    background:var(--light);
-    display:flex;align-items:center;justify-content:center;
-    color:var(--muted);
-    font-size:12px;font-weight:700;letter-spacing:.5px;
-    margin-bottom:26px;
-  }
-  .onb h2{font-size:24px;text-align:center;margin:0 0 8px;}
-  .onb p.tagline{text-align:center;color:var(--muted);font-size:14px;margin:0 0 auto;line-height:1.5;}
-  .onb-skip{
-    position:absolute;top:16px;right:18px;z-index:5;
-    font-size:11px;color:var(--muted);
-    background:none;border:none;cursor:pointer;
-    text-decoration:underline;
-  }
-  .loc-preview{
-    width:100%;height:190px;border-radius:16px;background:var(--light);
-    border:1px solid var(--line);
-    display:flex;align-items:center;justify-content:center;
-    color:var(--muted);font-size:12px;font-weight:600;margin:6px 0 24px;
-    position:relative;overflow:hidden;
-  }
-  .loc-preview .pin{position:absolute;width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 6px rgba(15,157,138,.18);}
-  .btn{
-    border:none;
-    border-radius:999px;
-    background:var(--accent);
-    color:#fff;
-    font-size:15px;
-    font-weight:700;
-    padding:15px;
-    cursor:pointer;
-    width:100%;
-  }
-  .btn:hover{background:var(--accent-dk);}
-  .btn.ghost{background:var(--white);color:var(--accent-dk);border:1.5px solid var(--accent);}
-  .btn.small{padding:10px;font-size:13px;}
-  .onb-footer{margin-top:auto;}
+.pin.live{ animation:pulse 1.8s ease-out infinite }
+@keyframes pulse{ 0%{ box-shadow:0 0 0 0 rgba(201,83,61,.55) } 100%{ box-shadow:0 0 0 14px rgba(201,83,61,0) } }
+@media (prefers-reduced-motion:reduce){ .pin.live{ animation:none } }
+.youare{ position:absolute; transform:translate(-50%,-50%); pointer-events:none }
+.chips{ display:flex; gap:8px; overflow-x:auto; padding:14px 20px 4px; scrollbar-width:none }
+.chips::-webkit-scrollbar{ display:none }
+.chip{ flex:none; border:1.5px solid var(--ink); border-radius:30px; padding:6px 13px; font-size:13px; font-weight:500 }
+.chip.on{ background:var(--ink); color:var(--paper) }
+.picks{ padding:6px 20px 110px; overflow-y:auto; flex:1 }
+.pick{ display:grid; grid-template-columns:44px 1fr auto; gap:12px; align-items:center; background:var(--card); border-radius:16px; padding:12px 14px; margin-top:10px; width:100%; text-align:left }
+.pick .n{ width:44px; height:44px; position:relative }
+.pick .n .chk{ position:absolute; right:-4px; top:-4px; width:18px; height:18px; border-radius:50%; background:var(--green); color:var(--paper); font-size:11px; font-weight:700; display:grid; place-items:center; border:2px solid var(--card) }
+.pick .when{ font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--red); text-transform:uppercase }
+.pick .t{ font-weight:700; font-size:15px; margin:2px 0 1px; line-height:1.2 }
+.pick .m{ font-size:12.5px; color:var(--muted) }
+.pick .dist{ font-family:var(--display); font-weight:800; font-size:20px; color:var(--green); text-align:right; line-height:1 }
+.pick .dist small{ display:block; font-family:var(--sans); font-weight:500; font-size:10.5px; color:var(--muted) }
+.endnote{ text-align:center; margin:20px 0 4px; font-family:var(--hand); font-size:21px; color:var(--muted) }
+.demo-tag{ text-align:center; font-size:11px; color:var(--muted); margin-top:4px }
+/* list mode: keep the map/list toggle reachable (it lives inside .mapwrap) instead of hiding the whole wrapper */
+.home-list .mapwrap{ height:auto; min-height:0; margin:6px 14px 0; background:none; overflow:visible; display:flex; justify-content:flex-end }
+.home-list .mapwrap #map, .home-list .mapwrap .maplabel{ display:none }
+.home-list .mapwrap .toggle{ position:static }
 
-  /* ---------- map / home (real Mapbox map, full-bleed) ---------- */
-  .map-card{
-    flex:1;
-    min-height:0;
-    display:flex;
-    flex-direction:column;
-    background:var(--light);
-  }
-  .geocoder-slot{flex-shrink:0;padding:8px;background:var(--white);border-bottom:1px solid var(--line);}
-  .geocoder-slot .mapboxgl-ctrl-geocoder{
-    width:100%;max-width:none;box-shadow:none;border:1px solid var(--line);border-radius:999px;
-    font-family:inherit;
-  }
-  .geocoder-slot .mapboxgl-ctrl-geocoder input{font-size:12.5px;height:34px;}
-  .geocoder-slot .mapboxgl-ctrl-geocoder--icon-search{top:8px;left:10px;fill:var(--muted);}
-  .geocoder-slot .mapboxgl-ctrl-geocoder--button{top:5px;}
-  .mapbox-real-map{flex:1;min-height:0;position:relative;background:var(--light);}
-  .mapbox-real-map .mapboxgl-ctrl-top-right{top:6px;right:6px;}
-  .mapbox-real-map .mapboxgl-ctrl-group{border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.15);}
-  .home-list{flex:1;min-height:0;}
-  .view-toggle-btn{
-    position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
-    display:flex;align-items:center;gap:7px;
-    background:var(--ink);color:#fff;border:none;border-radius:999px;
-    padding:11px 18px;font-size:12.5px;font-weight:700;
-    box-shadow:0 8px 20px rgba(11,18,32,.3);
-    cursor:pointer;z-index:20;
-  }
-  .map-config-note{
-    height:100%;display:flex;align-items:center;justify-content:center;
-    padding:18px;text-align:center;font-size:11px;color:var(--muted);line-height:1.5;
-  }
-  .mb-pin{
-    width:16px;height:16px;border-radius:50%;
-    border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);
-    cursor:pointer;position:relative;
-  }
-  .mb-pin.live{background:var(--alert);}
-  .mb-pin.event{background:var(--accent);}
-  .mb-pin-label{
-    position:absolute;top:100%;left:50%;transform:translateX(-50%);
-    font-size:7px;font-weight:800;color:var(--alert);
-    margin-top:1px;white-space:nowrap;
-  }
-  .list-title{font-size:13px;font-weight:700;margin:16px 18px 8px;}
-  .ev-card{
-    display:flex;
-    gap:10px;
-    margin:0 18px 10px;
-    padding:9px;
-    border:1px solid var(--line);
-    border-radius:14px;
-    align-items:center;
-    cursor:pointer;
-    background:var(--white);
-  }
-  .ev-card:hover{border-color:var(--accent);}
-  .ev-thumb{
-    width:52px;height:52px;border-radius:10px;flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;
-    color:#fff;font-weight:800;font-size:15px;
-  }
-  .ev-info{flex:1;min-width:0;}
-  .ev-info .t{font-size:13px;font-weight:700;margin:0 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .ev-info .s{font-size:11.5px;color:var(--muted);margin:0;}
-  .pill{
-    font-size:9px;font-weight:800;letter-spacing:.3px;
-    padding:4px 8px;border-radius:999px;
-    flex-shrink:0;
-  }
-  .pill.live{background:var(--alert);color:#fff;}
-  .pill.soft{background:var(--accent-tint);color:var(--accent-dk);}
+/* ---------- sheet ---------- */
+.overlay{ position:absolute; inset:0; background:rgba(38,37,31,.45); z-index:40; display:none; align-items:flex-end }
+.overlay.on{ display:flex }
+.sheet{ width:100%; background:var(--paper); border-radius:26px 26px 0 0; padding:10px 22px 26px; max-height:88%; overflow-y:auto; animation:up .25s ease-out }
+@keyframes up{ from{ transform:translateY(40px); opacity:.6 } to{ transform:none; opacity:1 } }
+@media (prefers-reduced-motion:reduce){ .sheet{ animation:none } }
+.grab{ width:42px; height:5px; border-radius:3px; background:var(--line); margin:0 auto 12px }
+.sheet .cat{ color:var(--red); font-weight:700; font-size:12px; letter-spacing:.06em; text-transform:uppercase }
+.sheet h2{ font-family:var(--display); font-weight:900; font-size:36px; line-height:.95; text-transform:uppercase; margin:6px 0 6px; color:var(--green) }
+.facts{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0 }
+.fact{ background:var(--card); border-radius:12px; padding:10px 12px }
+.fact .k{ font-size:11px; color:var(--muted) }
+.fact .v{ font-weight:700; font-size:14px; margin-top:2px }
+.desc{ font-size:14.5px; line-height:1.5; margin:4px 0 12px }
+.host{ display:flex; align-items:center; gap:10px; margin:6px 0 14px; font-size:13.5px }
+.avatar{ width:36px; height:36px; border-radius:50%; background:var(--sun); color:var(--ink); display:grid; place-items:center; font-family:var(--display); font-weight:900; font-size:16px }
+.goingrow{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); margin-bottom:12px }
+.faces{ display:flex } .faces span{ width:24px; height:24px; border-radius:50%; border:2px solid var(--paper); margin-left:-6px; display:grid; place-items:center; font-size:10px; font-weight:700; color:var(--paper) }
+.faces span:first-child{ margin-left:0 }
+.practical{ font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:16px }
+.row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px }
 
-  /* ---------- capture ---------- */
-  .capture-screen{flex:1;background:var(--ink);display:flex;flex-direction:column;position:relative;}
-  .viewfinder{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-  .viewfinder::before{
-    content:"";position:absolute;inset:0;
-    background:
-      radial-gradient(circle at 30% 20%, rgba(15,157,138,.14), transparent 55%),
-      radial-gradient(circle at 75% 70%, rgba(225,29,72,.10), transparent 50%);
-  }
-  .vf-label{color:#334155;font-size:11px;font-weight:800;letter-spacing:2px;position:relative;}
-  .cap-tag{
-    position:absolute;top:16px;left:16px;
-    background:rgba(255,255,255,.12);
-    color:#fff;font-size:11px;font-weight:700;
-    padding:6px 12px;border-radius:999px;
-    display:flex;align-items:center;gap:6px;
-  }
-  .cap-tag svg{width:12px;height:12px;stroke:#fff;}
-  .rec-badge{
-    position:absolute;top:16px;right:16px;
-    background:var(--alert);color:#fff;font-size:10px;font-weight:800;
-    padding:6px 11px;border-radius:999px;
-    display:none;align-items:center;gap:5px;
-  }
-  .rec-badge.show{display:flex;}
-  .rec-dot{width:6px;height:6px;border-radius:50%;background:#fff;}
-  .autotag{
-    position:relative;text-align:center;color:#64748B;font-size:10.5px;
-    margin-top:8px;
-  }
-  .toggle-row{display:flex;justify-content:center;padding:14px 0 6px;position:relative;}
-  .toggle{
-    display:flex;background:rgba(255,255,255,.1);
-    border-radius:999px;padding:3px;
-  }
-  .toggle button{
-    border:none;background:none;color:#94A3B8;
-    font-size:10.5px;font-weight:800;letter-spacing:.5px;
-    padding:6px 16px;border-radius:999px;cursor:pointer;
-  }
-  .toggle button.active{background:#fff;color:var(--ink-2);}
-  .shutter-row{display:flex;justify-content:center;padding:10px 0 30px;position:relative;}
-  .shutter{
-    width:70px;height:70px;border-radius:50%;
-    border:4px solid #fff;background:transparent;
-    display:flex;align-items:center;justify-content:center;
-    cursor:pointer;
-  }
-  .shutter .inner{width:56px;height:56px;border-radius:50%;background:#fff;transition:.12s;}
-  .shutter:active .inner{transform:scale(.85);}
-  .flash{
-    position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;
-    transition:opacity .08s;
-  }
-  .flash.show{opacity:.85;}
+/* ---------- stamp modal ---------- */
+.stampmodal{ position:absolute; inset:0; z-index:60; display:none; align-items:center; justify-content:center; background:rgba(36,77,58,.94); color:var(--paper); flex-direction:column; text-align:center; padding:30px }
+.stampmodal.on{ display:flex }
+.stampmodal .stampbox{ animation:thunk .45s cubic-bezier(.2,1.6,.4,1) both }
+@keyframes thunk{ 0%{ transform:scale(2.2) rotate(-18deg); opacity:0 } 60%{ opacity:1 } 100%{ transform:scale(1) rotate(-8deg) } }
+@media (prefers-reduced-motion:reduce){ .stampmodal .stampbox{ animation:none; transform:rotate(-8deg) } }
+.stampmodal h3{ font-family:var(--display); font-weight:900; font-size:40px; text-transform:uppercase; margin:18px 0 4px; line-height:.95 }
+.stampmodal p{ color:#DDD1B8; margin:0 0 22px; font-size:14.5px }
+.stampmodal .hand{ color:var(--sun); font-size:22px; margin-bottom:18px }
 
-  /* ---------- rewards / leaderboard / alerts / profile shared bits ---------- */
-  .stat-card{
-    margin:14px 18px 4px;
-    padding:14px 16px;
-    background:var(--accent-tint);
-    border:1px solid var(--accent);
-    border-radius:14px;
-  }
-  .stat-card .big{font-size:20px;font-weight:800;color:var(--accent-dk);}
-  .stat-card .sub{font-size:11.5px;color:var(--accent-dk);margin-top:2px;}
-  .badge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 18px;}
-  .badge-item{text-align:center;}
-  .badge-circle{
-    width:52px;height:52px;border-radius:50%;margin:0 auto 6px;
-    display:flex;align-items:center;justify-content:center;
-    color:#fff;font-size:19px;
-  }
-  .badge-circle.locked{background:var(--light);border:1px solid var(--line);color:var(--muted);}
-  .badge-circle.earned{background:var(--accent);}
-  .badge-item span{font-size:9.5px;color:var(--muted);font-weight:700;}
-  .badge-item.earned span{color:var(--ink-2);}
-  .redeem-row{
-    display:flex;align-items:center;justify-content:space-between;
-    margin:0 18px 10px;padding:12px 14px;
-    border:1px solid var(--line);border-radius:12px;
-  }
-  .redeem-row .t{font-size:12.5px;font-weight:700;margin:0;}
-  .redeem-row .s{font-size:11px;color:var(--muted);margin:2px 0 0;}
-  .redeem-btn{
-    border:1.5px solid var(--accent);background:#fff;color:var(--accent-dk);
-    font-size:11px;font-weight:800;padding:7px 12px;border-radius:999px;cursor:pointer;flex-shrink:0;
-  }
-  .redeem-btn:hover{background:var(--accent);color:#fff;}
-  .redeem-btn:disabled{opacity:.4;cursor:not-allowed;}
+/* ---------- plans ---------- */
+.planrow{ background:var(--card); border-radius:16px; padding:14px; margin-top:10px }
+.planrow .d{ font-family:var(--display); font-weight:800; font-size:14px; color:var(--red); letter-spacing:.06em; text-transform:uppercase }
+.planrow .t{ font-weight:700; font-size:15.5px; margin:2px 0 }
+.planrow .u{ font-size:12px; color:var(--muted); word-break:break-all }
+.planrow .acts{ display:flex; gap:8px; margin-top:10px }
+.planrow .acts button{ border:1.5px solid var(--ink); border-radius:30px; padding:6px 12px; font-size:12.5px; font-weight:700 }
+.empty{ text-align:center; padding:26px 10px; color:var(--muted); font-size:14px }
+.empty .hand{ font-size:24px; color:var(--red); display:block; margin-bottom:6px }
 
-  .lb-row{display:flex;align-items:center;gap:10px;margin:0 18px 8px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;}
-  .lb-row.me{border-color:var(--accent);background:var(--accent-tint);}
-  .lb-rank{font-size:13px;font-weight:800;width:16px;color:var(--muted);}
-  .lb-row.me .lb-rank{color:var(--accent-dk);}
-  .lb-avatar{width:30px;height:30px;border-radius:50%;background:var(--light);border:1px solid var(--line);flex-shrink:0;}
-  .lb-name{flex:1;font-size:12.5px;font-weight:700;}
-  .lb-pts{font-size:11.5px;color:var(--muted);font-weight:700;}
+/* ---------- passport ---------- */
+.passcover{ background:var(--green); color:var(--paper); border-radius:22px; padding:18px 18px 16px; margin-top:6px; position:relative; overflow:hidden }
+.passcover .k{ font-size:12px; color:var(--sun); font-weight:700; letter-spacing:.08em; text-transform:uppercase }
+.passcover .big{ font-family:var(--display); font-weight:900; font-size:40px; line-height:.95; text-transform:uppercase; margin:4px 0 10px }
+.bar{ height:8px; border-radius:4px; background:rgba(243,231,209,.2) }
+.bar i{ display:block; height:100%; border-radius:4px; background:var(--sun) }
+.passstats{ display:flex; gap:18px; margin-top:12px; font-size:12.5px; color:#DDD1B8 }
+.passstats b{ font-family:var(--display); font-size:22px; color:var(--paper); display:block; font-weight:800 }
+.stampgrid{ display:grid; grid-template-columns:repeat(2,1fr); gap:6px 4px; background:var(--card); border-radius:22px; padding:14px 6px; margin-top:12px; justify-items:center }
+.stampgrid .slot{ text-align:center; font-size:11.5px; color:var(--muted) }
+.tabs{ display:flex; gap:6px; margin-top:14px; overflow-x:auto; scrollbar-width:none }
+.tabs::-webkit-scrollbar{ display:none }
+.tabs button{ flex:none; padding:8px 13px; border-radius:10px 10px 0 0; background:var(--paper-2); font-weight:700; font-size:13px; color:var(--muted) }
+.tabs button.on{ background:var(--card); color:var(--green) }
+.page{ background:var(--card); border-radius:0 18px 18px 18px; padding:14px 12px 16px; position:relative; min-height:300px;
+  background-image:repeating-linear-gradient(0deg, transparent 0 27px, rgba(107,103,90,.07) 27px 28px) }
+.page .ph{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:0 4px 8px; border-bottom:1.5px dashed var(--line); margin-bottom:10px }
+.page .ph b{ font-family:var(--display); font-weight:800; font-size:18px; color:var(--green); text-transform:uppercase; letter-spacing:.5px }
+.page .ph span{ font-size:11.5px; color:var(--muted); text-align:right }
+.pagegrid{ display:grid; grid-template-columns:1fr 1fr; gap:4px 2px; justify-items:center; align-items:center }
+.pagegrid .slot{ text-align:center; padding:4px 0 }
+.ghost-rect{ width:140px; height:92px; border-radius:10px; border:2px dashed #CDBF9F; display:grid; place-items:center; font-family:var(--hand); font-size:18px; color:#A89C82; margin:4px 0; padding:8px; line-height:1 }
+.pagenote{ font-family:var(--hand); font-size:18px; color:var(--red); text-align:center; margin-top:10px }
+.unlocks{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:-8px 0 18px }
+.unlocks span{ background:rgba(243,231,209,.14); border:1px solid rgba(243,231,209,.35); border-radius:30px; padding:6px 12px; font-size:13px; font-weight:700 }
+.ghost-stamp{ width:122px; height:122px; border-radius:50%; border:2px dashed #CDBF9F; display:grid; place-items:center; font-family:var(--hand); font-size:19px; color:#A89C82; line-height:1; padding:12px }
+.patches{ display:flex; gap:10px; overflow-x:auto; padding:4px 0 2px; scrollbar-width:none }
+.patches::-webkit-scrollbar{ display:none }
+.patch{ flex:none; text-align:center; width:96px; font-size:11px; color:var(--muted) }
+.patch.locked svg{ filter:grayscale(1); opacity:.35 }
+.lb{ background:var(--card); border-radius:18px; padding:4px 14px }
+.lbrow{ display:grid; grid-template-columns:28px 1fr auto; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px }
+.lbrow:last-child{ border-bottom:0 }
+.lbrow .r{ font-family:var(--display); font-weight:900; font-size:20px; color:var(--muted) }
+.lbrow.me{ font-weight:700 } .lbrow.me .r{ color:var(--red) }
+.reward{ display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--card); border-radius:16px; padding:14px; margin-top:10px }
+.reward .t{ font-weight:700; font-size:14.5px } .reward .s{ font-size:12px; color:var(--muted) }
+.reward button{ background:var(--red); color:#fff; border-radius:30px; padding:8px 14px; font-weight:700; font-size:13px; flex:none }
+.reward button:disabled{ background:#CDBF9F }
 
-  .alert-row{display:flex;gap:10px;margin:0 18px 10px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;}
-  .alert-row .stripe{width:4px;border-radius:3px;flex-shrink:0;}
-  .alert-row .t{font-size:12.5px;font-weight:700;margin:0 0 2px;}
-  .alert-row .s{font-size:11px;color:var(--muted);margin:0;}
+/* ---------- profile / alerts ---------- */
+.prof{ display:flex; gap:14px; align-items:center; margin:8px 0 6px }
+.prof .avatar{ width:64px; height:64px; font-size:28px; background:var(--green); color:var(--paper) }
+.stats3{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:14px 0 }
+.stats3 div{ background:var(--card); border-radius:14px; padding:12px; text-align:center; font-size:11.5px; color:var(--muted) }
+.stats3 b{ display:block; font-family:var(--display); font-weight:900; font-size:28px; color:var(--green) }
+.linkrow{ display:flex; justify-content:space-between; align-items:center; width:100%; background:var(--card); border-radius:14px; padding:15px 16px; margin-top:8px; font-weight:700; font-size:14.5px; text-align:left }
+.linkrow span{ color:var(--muted); font-weight:500 }
+.alert{ display:grid; grid-template-columns:40px 1fr; gap:12px; background:var(--card); border-radius:16px; padding:13px 14px; margin-top:10px; text-align:left; width:100% }
+.alert.unread{ box-shadow:inset 3px 0 0 var(--red) }
+.alert .ic{ width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background:var(--paper-2) }
+.alert .t{ font-weight:700; font-size:14px } .alert .s{ font-size:12.5px; color:var(--muted); margin-top:2px } .alert .w{ font-size:11px; color:var(--muted); margin-top:4px }
+.back{ display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:14px; padding:6px 0 }
 
-  .profile-head{display:flex;gap:12px;align-items:center;padding:16px 18px 6px;}
-  .avatar-lg{width:56px;height:56px;border-radius:50%;background:var(--light);border:1px solid var(--line);flex-shrink:0;}
-  .profile-name{font-size:16px;font-weight:800;margin:0;}
-  .profile-sub{font-size:11.5px;color:var(--muted);margin:2px 0 6px;}
-  .tier-pill{font-size:10px;font-weight:800;color:var(--accent-dk);background:var(--accent-tint);border:1px solid var(--accent);padding:3px 9px;border-radius:999px;}
-  .stat-row{display:flex;padding:14px 18px 6px;text-align:center;}
-  .stat-row .cell{flex:1;}
-  .stat-row .num{font-size:17px;font-weight:800;}
-  .stat-row .lbl{font-size:10px;color:var(--muted);font-weight:700;margin-top:2px;}
-  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 18px 8px;}
-  .grid3 .cell{aspect-ratio:1;border-radius:10px;background:var(--light);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:11px;}
-  .link-row{
-    display:block;margin:16px 18px 6px;
-    font-size:12px;color:var(--accent-dk);font-weight:700;
-    background:none;border:none;cursor:pointer;padding:0;
-    text-decoration:underline;
-  }
+/* ---------- host ---------- */
+.hostscr{ background:var(--ink); color:var(--paper) }
+.hostscr .scroll{ padding-bottom:40px }
+.hostscr .back{ color:#CFC3AB }
+.hostscr .h1{ color:var(--paper) }
+.hostscr .sub{ color:#B9AE97 }
+.hostbig{ background:var(--green); border-radius:20px; padding:18px; margin-top:14px }
+.hostbig .k{ font-size:12px; color:var(--sun); font-weight:700; letter-spacing:.06em; text-transform:uppercase }
+.hostbig .v{ font-family:var(--display); font-weight:900; font-size:52px; line-height:1; margin:4px 0 2px }
+.hostbig .s{ font-size:13px; color:#DDD1B8 }
+.hostgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px }
+.hostgrid div{ background:#34322A; border-radius:14px; padding:12px; font-size:11.5px; color:#B9AE97 }
+.hostgrid b{ display:block; font-family:var(--display); font-weight:900; font-size:26px; color:var(--paper) }
+.bill{ background:var(--paper); color:var(--ink); border-radius:18px; padding:16px; margin-top:12px }
+.bill .line{ display:flex; justify-content:space-between; font-size:14px; padding:6px 0; border-bottom:1px dashed var(--line) }
+.bill .line:last-child{ border:0; font-weight:700; font-size:15.5px }
+.hostrow{ display:flex; justify-content:space-between; align-items:center; background:#34322A; border-radius:14px; padding:13px 14px; margin-top:8px; font-size:14px }
+.hostrow small{ color:#B9AE97; display:block; font-size:12px; margin-top:2px }
+.hostrow button{ background:var(--sun); color:var(--ink); border-radius:30px; padding:7px 12px; font-weight:700; font-size:12.5px }
+.hostscr .h2{ color:var(--sun) }
 
-  /* ---------- venue view ---------- */
-  .venue-hdr{background:var(--ink);color:#fff;padding:16px 18px;}
-  .venue-hdr h1{font-size:17px;margin:0;}
-  .venue-back{font-size:11.5px;color:var(--accent-tint);background:none;border:none;cursor:pointer;padding:0;margin-top:6px;text-decoration:underline;}
-  .venue-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 18px;}
-  .venue-stats .cell{background:var(--light);border:1px solid var(--line);border-radius:12px;padding:10px 4px;text-align:center;}
-  .venue-stats .num{font-size:15px;font-weight:800;}
-  .venue-stats .lbl{font-size:9px;color:var(--muted);font-weight:700;margin-top:2px;}
-  .venue-money{padding:0 18px;margin-bottom:6px;}
-  .venue-money .lbl{font-size:11px;color:var(--muted);font-weight:700;}
-  .venue-money .num{font-size:24px;font-weight:800;}
-
-  /* ---------- event detail sheet ---------- */
-  .sheet-overlay{
-    position:absolute;inset:0;background:rgba(11,18,32,.45);
-    display:none;align-items:flex-end;z-index:80;
-  }
-  .sheet-overlay.show{display:flex;}
-  .sheet{
-    width:100%;max-height:88%;
-    background:#fff;border-radius:24px 24px 0 0;
-    display:flex;flex-direction:column;
-    overflow:hidden;
-    animation:sheetup .18s ease-out;
-  }
-  @keyframes sheetup{from{transform:translateY(24px);opacity:.5;}to{transform:translateY(0);opacity:1;}}
-  .sheet-grab{width:38px;height:4px;border-radius:3px;background:var(--line);margin:10px auto;}
-  .sheet-photo{height:150px;margin:0 16px;border-radius:14px;position:relative;display:flex;align-items:flex-end;padding:10px;color:#fff;overflow:hidden;}
-  .sheet-badges{position:absolute;left:16px;top:12px;display:flex;gap:6px;flex-wrap:wrap;z-index:2;}
-  .sheet-badge{font-size:9px;font-weight:800;letter-spacing:.2px;padding:5px 8px;border-radius:999px;color:#fff;background:rgba(0,0,0,.36);}
-  .sheet-badge.live{background:var(--alert);}
-  .sheet-badge.category{background:rgba(15,157,140,.88);}
-  .sheet-photo .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(0,0,0,.5) 100%);}
-  .sheet-body{padding:14px 18px 20px;overflow-y:auto;}
-  .sheet-body h2{font-size:17px;margin:0 0 3px;}
-  .sheet-body .meta{font-size:12px;color:var(--muted);margin:0 0 10px;}
-  .avatars{display:flex;margin-bottom:4px;}
-  .avatars .a{width:26px;height:26px;border-radius:50%;background:var(--light);border:2px solid #fff;margin-right:-8px;}
-  .going-line{font-size:11.5px;color:var(--muted);margin:6px 0 12px 34px;}
-  .host-box{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12px;margin-bottom:12px;}
-  .sheet-extras{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px;}
-  .sheet-note{font-size:11px;color:var(--muted);background:var(--light);border:1px solid var(--line);border-radius:999px;padding:6px 10px;}
-  .sheet-21{font-size:10px;font-weight:800;letter-spacing:.2px;color:#fff;background:var(--alert);border-radius:999px;padding:6px 9px;}
-  .whattoexpect{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:0 0 4px;}
-  .desc-text{font-size:12.5px;line-height:1.5;color:var(--ink-2);margin:0 0 16px;}
-  .close-sheet{position:absolute;top:12px;right:14px;background:rgba(0,0,0,.35);color:#fff;width:26px;height:26px;border-radius:50%;border:none;font-size:14px;cursor:pointer;z-index:3;}
-
-  /* ---------- check-in overlay ---------- */
-  .checkin-overlay{
-    position:absolute;inset:0;background:var(--ink);
-    display:none;flex-direction:column;align-items:center;justify-content:center;
-    color:#fff;text-align:center;padding:30px;z-index:90;
-  }
-  .checkin-overlay.show{display:flex;}
-  .check-circle{
-    width:96px;height:96px;border-radius:50%;
-    border:3px solid var(--accent);
-    display:flex;align-items:center;justify-content:center;
-    margin-bottom:16px;
-    animation:pop .3s ease-out;
-  }
-  @keyframes pop{from{transform:scale(.6);opacity:0;}to{transform:scale(1);opacity:1;}}
-  .check-circle svg{width:42px;height:42px;stroke:var(--accent);}
-  .checkin-overlay h2{font-size:16px;margin:0 0 4px;}
-  .checkin-overlay .pts{color:var(--accent);font-size:12.5px;font-weight:700;margin-bottom:18px;}
-  .flames{display:flex;gap:8px;margin-bottom:14px;}
-  .flame{width:30px;height:30px;border-radius:8px;background:#1A2436;display:flex;align-items:center;justify-content:center;font-size:14px;opacity:.35;}
-  .flame.on{background:var(--accent);opacity:1;}
-  .checkin-overlay .unlock{font-size:11px;color:#94A3B8;margin-bottom:22px;}
-
-  /* ---------- toast ---------- */
-  .toast{
-    position:absolute;left:50%;bottom:82px;transform:translateX(-50%) translateY(10px);
-    background:var(--ink);color:#fff;font-size:12.5px;font-weight:600;
-    padding:11px 18px;border-radius:999px;
-    opacity:0;pointer-events:none;transition:.18s;
-    z-index:95;white-space:nowrap;
-    box-shadow:0 8px 20px rgba(0,0,0,.25);
-  }
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-
-  @media (max-width:460px){
-    .phone{width:100%;max-width:390px;height:78vh;border-radius:32px;border-width:8px;}
-    .deck{width:260px;height:380px;}
-  }
-
-  /* ---------- real phone / installed app mode ---------- */
-  .devtools-toggle{
-    position:fixed;top:10px;right:10px;z-index:200;
-    width:34px;height:34px;border-radius:50%;
-    background:var(--ink);color:#fff;border:none;
-    font-size:15px;cursor:pointer;
-    display:none;
-    align-items:center;justify-content:center;
-    box-shadow:0 4px 12px rgba(0,0,0,.25);
-  }
-  @media (max-width:700px){
-    body{padding:0;min-height:100dvh;}
-    .harness{max-width:100%;padding:14px 14px 0;}
-    .jumpbar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-    .jump-btn{flex-shrink:0;}
-    .stage{padding:0 0 14px;}
-    .phone{
-      width:100%;max-width:480px;
-      height:calc(100dvh - 150px);
-      max-height:none;
-      border-radius:0;border:none;box-shadow:none;
-    }
-    .notch{display:none;}
-  }
-  /* launched from home screen: hide dev harness by default, edge-to-edge */
-  body.standalone-app{padding:0;}
-  body.standalone-app .harness{display:none;}
-  body.standalone-app .stage{padding:0;}
-  body.standalone-app .phone{
-    width:100vw;max-width:none;height:100dvh;
-    border-radius:0;border:none;box-shadow:none;
-  }
-  body.standalone-app .notch{display:none;}
-  body.standalone-app .devtools-toggle{display:flex;}
-  body.standalone-app.devtools-open .harness{
-    display:block;position:fixed;inset:0;z-index:150;
-    background:#EEF1F4;overflow-y:auto;padding:54px 16px 24px;
-    max-width:100%;
-  }
-  body.standalone-app.devtools-open .stage{display:none;}
+/* ---------- nav ---------- */
+.nav{ position:absolute; left:0; right:0; bottom:0; z-index:30; display:grid; grid-template-columns:repeat(4,1fr); background:var(--card); border-top:1px solid var(--line); padding:8px 6px calc(10px + env(safe-area-inset-bottom,0px)) }
+.nav.hide{ display:none }
+.nav button{ display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; font-weight:700; color:var(--muted); padding:4px 0 }
+.nav button.on{ color:var(--green) }
+.nav button.on svg{ stroke:var(--green) }
+.toast{ position:absolute; left:50%; bottom:96px; transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:30px; font-size:13.5px; font-weight:500; z-index:80; opacity:0; transition:opacity .2s; pointer-events:none; white-space:nowrap }
+.toast.on{ opacity:1 }
+.mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib{ opacity:.6 }
 </style>
 </head>
 <body>
-
-<button class="devtools-toggle" id="devtoolsToggle" title="Dev tools">🛠</button>
-
-<div class="harness">
-  <div class="harness-top">
-    <div>
-      <div class="harness-title">Comuna — Interactive Prototype</div>
-      <div class="harness-sub">Click through the phone below. Nothing here is saved once you close the tab.</div>
-    </div>
-    <div class="harness-actions">
-      <button class="harness-btn" id="restartBtn">↺ Restart demo</button>
-    </div>
-  </div>
-  <div class="jumpbar" id="jumpbar"></div>
-</div>
-
 <div class="stage">
-  <div class="phone">
-    <div class="notch"></div>
-    <div class="statusbar"><span>9:41</span><span>•••</span></div>
-    <div class="app-body">
-
-      <div class="screens">
-
-        <!-- ONBOARDING 1 -->
-        <div class="screen active" data-screen="onb-1">
-          <button class="onb-skip" data-goto="home">Skip intro →</button>
-          <div class="onb">
-            <div class="onb-logo">LOGO MARK</div>
-            <h2>Comuna</h2>
-            <p class="tagline">Discover Events, Experiences, &amp; Pop-ups in your neighborhood</p>
-            <div class="onb-footer">
-              <button class="btn" data-goto="onb-2">Get Started</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- ONBOARDING 2 -->
-        <div class="screen" data-screen="onb-2">
-          <button class="onb-skip" data-goto="home">Skip intro →</button>
-          <div class="onb" style="padding-top:56px;">
-            <div class="loc-preview">
-              <span>MAP PREVIEW (pins near you)</span>
-              <div class="pin" style="left:34%;top:38%;"></div>
-              <div class="pin" style="left:62%;top:58%;"></div>
-              <div class="pin" style="left:50%;top:50%;"></div>
-            </div>
-            <h2 style="font-size:18px;">See what's happening nearby, live</h2>
-            <p class="tagline">Comuna uses your location only while the app is open.</p>
-            <div class="onb-footer">
-              <button class="btn" data-goto="home">Allow Location</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- HOME / MAP -->
-        <div class="screen" data-screen="home">
-          <div class="app-header">
-            <div><h1>Comuna · LA</h1></div>
-            <button class="bell-btn" data-goto="alerts">
-              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#111827" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-              <span class="bell-dot" id="bellCount">4</span>
-            </button>
-          </div>
-          <div class="map-card" id="mapStage">
-            <div class="geocoder-slot" id="geocoderContainer"></div>
-            <div class="mapbox-real-map" id="mapContainer"></div>
-          </div>
-          <div class="screen-scroll home-list" id="homeListView" style="display:none;">
-            <div class="list-title">Nearby events, closest first</div>
-            <div id="homeList"></div>
-          </div>
-          <button class="view-toggle-btn" id="viewToggleBtn">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-            <span id="viewToggleLabel">List</span>
-          </button>
-        </div>
-
-        <!-- CAPTURE -->
-        <div class="screen" data-screen="capture">
-          <div class="capture-screen">
-            <div class="flash" id="flash"></div>
-            <div class="viewfinder">
-              <div class="cap-tag">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke-width="2"><path d="M12 21s-7-7.5-7-12a7 7 0 0 1 14 0c0 4.5-7 12-7 12z"/></svg>
-                <span id="capTagText">Rooftop Jazz Session</span>
-              </div>
-              <div class="rec-badge" id="recBadge"><span class="rec-dot"></span>REC</div>
-              <div class="vf-label">VIEWFINDER</div>
-            </div>
-            <div class="autotag">Auto-tags: venue · group · time</div>
-            <div class="toggle-row">
-              <div class="toggle">
-                <button class="active" id="modePhoto">PHOTO</button>
-                <button id="modeVideo">VIDEO</button>
-              </div>
-            </div>
-            <div class="shutter-row">
-              <button class="shutter" id="shutterBtn"><div class="inner"></div></button>
-            </div>
-          </div>
-        </div>
-
-        <!-- CALENDAR -->
-        <div class="screen" data-screen="calendar">
-          <div class="app-header"><div><h1>Calendar</h1><div class="sub">Partiful + planning</div></div></div>
-          <div class="screen-scroll" style="padding:18px;">
-            <div class="stat-card">
-              <div class="big">Copy your Partiful link</div>
-              <div class="sub">Use this for community event invites and RSVPs.</div>
-            </div>
-            <div class="list-title">This week</div>
-            <div class="redeem-row"><div><p class="t">Sun · Sunset Volleyball</p><p class="s">https://partiful.com/e/example-1</p></div></div>
-            <div class="redeem-row"><div><p class="t">Tue · Rooftop Jazz Session</p><p class="s">https://partiful.com/e/example-2</p></div></div>
-            <div class="redeem-row"><div><p class="t">Thu · Silver Lake Supper Club</p><p class="s">https://partiful.com/e/example-3</p></div></div>
-          </div>
-        </div>
-
-        <!-- REWARDS -->
-        <div class="screen" data-screen="rewards">
-          <div class="app-header"><div><h1>Rewards</h1></div></div>
-          <div class="screen-scroll">
-            <div class="stat-card">
-              <div class="big" id="pointsBig">1,240 pts</div>
-              <div class="sub">Silver Tier · 260 to Gold</div>
-            </div>
-            <div class="list-title">Badges</div>
-            <div class="badge-grid" id="badgeGrid"></div>
-            <div class="list-title">Redeem now</div>
-            <div id="redeemList"></div>
-          </div>
-        </div>
-
-        <!-- LEADERBOARD -->
-        <div class="screen" data-screen="leaderboard">
-          <div class="app-header"><div><h1>Leaderboard</h1><div class="sub">Silver Lake · this month</div></div></div>
-          <div class="screen-scroll" id="lbScroll" style="padding-top:12px;"></div>
-        </div>
-
-        <!-- ALERTS -->
-        <div class="screen" data-screen="alerts">
-          <div class="app-header"><div><h1>Alerts</h1></div></div>
-          <div class="screen-scroll" id="alertsScroll" style="padding-top:12px;"></div>
-        </div>
-
-        <!-- PROFILE -->
-        <div class="screen" data-screen="profile">
-          <div class="app-header"><div><h1>Profile</h1></div></div>
-          <div class="screen-scroll">
-            <div class="profile-head">
-              <div class="avatar-lg"></div>
-              <div>
-                <p class="profile-name">Mitchell K.</p>
-                <p class="profile-sub">Silver Lake · Member since Jan</p>
-                <span class="tier-pill" id="tierPill">Silver Tier</span>
-              </div>
-            </div>
-            <div class="stat-row">
-              <div class="cell"><div class="num" id="profStreak">4wk</div><div class="lbl">Streak</div></div>
-              <div class="cell"><div class="num" id="profPoints">1,240</div><div class="lbl">Points</div></div>
-              <div class="cell"><div class="num" id="profEvents">18</div><div class="lbl">Events</div></div>
-            </div>
-            <div class="list-title">My captures</div>
-            <div class="grid3" id="captureGrid"></div>
-            <button class="link-row" data-goto="rewards">View rewards & badges →</button>
-            <button class="link-row" data-goto="leaderboard">Neighborhood leaderboard →</button>
-            <button class="link-row" data-goto="venue">View as venue partner →</button>
-          </div>
-        </div>
-
-        <!-- VENUE DASHBOARD -->
-        <div class="screen" data-screen="venue">
-          <div class="venue-hdr">
-            <h1>Ten Speed Coffee</h1>
-            <button class="venue-back" data-goto="profile">← Back to member app</button>
-          </div>
-          <div class="screen-scroll">
-            <div class="venue-money">
-              <div class="lbl">Revenue this month</div>
-              <div class="num">$8,940</div>
-            </div>
-            <div class="venue-stats">
-              <div class="cell"><div class="num">87</div><div class="lbl">Attendees</div></div>
-              <div class="cell"><div class="num">4.9</div><div class="lbl">Avg rating</div></div>
-              <div class="cell"><div class="num">312</div><div class="lbl">Reached</div></div>
-            </div>
-            <div class="list-title">Upcoming groups</div>
-            <div class="redeem-row"><div><p class="t">Tue 7:00p</p><p class="s">7 guests</p></div></div>
-            <div class="redeem-row"><div><p class="t">Thu 6:30p</p><p class="s">6 guests</p></div></div>
-            <div class="list-title">Pending redemptions</div>
-            <div class="redeem-row" style="border-color:var(--accent);background:var(--accent-tint);">
-              <div><p class="t">3 members</p><p class="s">$10 credit each</p></div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- event detail sheet -->
-      <div class="sheet-overlay" id="sheetOverlay">
-        <div class="sheet">
-          <button class="close-sheet" id="closeSheet">✕</button>
-          <div class="sheet-grab"></div>
-          <div class="sheet-photo" id="sheetPhoto">
-            <div class="sheet-badges" id="sheetBadges"></div>
-            <div class="veil"></div>
-          </div>
-          <div class="sheet-body">
-            <h2 id="sheetTitle"></h2>
-            <p class="meta" id="sheetMeta"></p>
-            <div class="avatars"><div class="a"></div><div class="a"></div><div class="a"></div><div class="a"></div></div>
-            <p class="going-line" id="sheetGoing"></p>
-            <div class="host-box" id="sheetHost"></div>
-            <div class="sheet-extras" id="sheetExtras"></div>
-            <p class="whattoexpect">What to expect</p>
-            <p class="desc-text" id="sheetDesc"></p>
-            <button class="btn" id="sheetRsvp">RSVP — Free with Membership</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- check-in overlay -->
-      <div class="checkin-overlay" id="checkinOverlay">
-        <div class="check-circle">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-        </div>
-        <h2 id="checkinEventName">You're checked in</h2>
-        <div class="pts" id="checkinPts">+50 points earned</div>
-        <div class="flames" id="checkinFlames"></div>
-        <div class="unlock" id="checkinUnlock"></div>
-        <button class="btn" style="width:200px;" id="checkinDone">Nice</button>
-      </div>
-
-      <div class="toast" id="toast"></div>
-
-      <!-- bottom nav -->
-      <div class="bottomnav" id="bottomnav">
-        <button class="navitem" data-goto="capture">
-          <svg viewBox="0 0 24 24"><path d="M4 8a2 2 0 0 1 2-2h1.2l.8-1.4A1.5 1.5 0 0 1 9.3 4h5.4a1.5 1.5 0 0 1 1.3.75L16.8 6H18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.6"/></svg>
-          <span>Capture</span>
-        </button>
-        <button class="navitem" data-goto="calendar">
-          <svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7.5 3.5v4M16.5 3.5v4M3.5 9.5h17"/></svg>
-          <span>Calendar</span>
-        </button>
-        <button class="navitem" data-goto="home">
-          <svg viewBox="0 0 24 24"><path d="M12 21s-7-7.5-7-12a7 7 0 0 1 14 0c0 4.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>
-          <span>Map</span>
-        </button>
-        <button class="navitem" data-goto="profile">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1-4 4-6 7.5-6s6.5 2 7.5 6"/></svg>
-          <span>Profile</span>
-        </button>
-      </div>
-
-    </div>
+  <div class="aside">
+    <div class="wm" id="asideMark" style="font-size:34px"></div>
+    <h1>Explore where you live.</h1>
+    <p>An interactive prototype of the Comuna app, rebuilt on Brand Guide v2. Tap through the phone: find tonight's picks, say you're in, check in, and collect the neighborhood stamp.</p>
+    <p class="note">nothing is saved to a server. it all lives in your browser.</p>
+    <p id="mapStatus" style="font-size:12.5px">Map: loading…</p>
+    <div class="jump" id="jump"></div>
+    <button class="restart" id="restart">Restart the demo</button>
   </div>
+
+  <div class="phone"><div class="app" id="app">
+
+    <!-- ONBOARDING 1 -->
+    <section class="screen onb" data-s="onb1">
+      <div class="inner">
+        <button class="skip" data-go="home">Skip</button>
+        <div class="wm" id="onbMark" style="font-size:40px;color:var(--paper)"></div>
+        <div class="stampfield" id="stampfield"></div>
+        <h1 class="big">Your neighborhood has plans.</h1>
+        <p class="lede">Five or so good things happening near you right now. Say you're in, show up, collect the stamp.</p>
+        <button class="btn primary" data-go="onb2" style="margin-top:auto">Get started</button>
+      </div>
+    </section>
+
+    <!-- ONBOARDING 2 -->
+    <section class="screen onb2" data-s="onb2">
+      <div class="scroll" style="padding-top:44px;padding-bottom:30px;display:flex;flex-direction:column">
+        <div class="h1" style="color:var(--green);font-size:44px">Something good is happening nearby.</div>
+        <div class="mini-map" id="miniMap"></div>
+        <div class="hand" style="font-size:20px;color:var(--red);margin-bottom:10px">we only use your location while the app is open</div>
+        <button class="btn green" id="allowLoc" style="margin-top:auto">Use my location</button>
+        <button class="btn" data-go="home" style="margin-top:6px;color:var(--muted)">Not now, start in Silver Lake</button>
+      </div>
+    </section>
+
+    <!-- HOME -->
+    <section class="screen" data-s="home" id="homeScreen">
+      <div class="topbar">
+        <div class="wm" id="homeMark" style="font-size:28px"></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="nb-chip" id="nbChip" aria-label="Current neighborhood"><span id="nbGlyph"></span><span id="nbName">Silver Lake</span></button>
+          <button class="iconbtn" data-go="alerts" aria-label="Alerts"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#26251F" stroke-width="2" stroke-linecap="round"><path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4z"/><path d="M10 21h4"/></svg><span class="dot" id="alertDot">3</span></button>
+        </div>
+      </div>
+      <div style="padding:2px 20px 0">
+        <div class="h1" id="homeTitle">Tonight in Silver Lake</div>
+        <p class="sub" id="homeSub">5 picks within 15 minutes</p>
+      </div>
+      <div class="mapwrap" id="mapwrap">
+        <div id="map"></div>
+        <div class="toggle"><button class="on" id="tMap">Map</button><button id="tList">List</button></div>
+        <div class="maplabel" id="mapNote"></div>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="picks" id="picks"></div>
+    </section>
+
+    <!-- PLANS -->
+    <section class="screen" data-s="plans">
+      <div class="topbar"><div class="h1" style="color:var(--green)">Your plans</div></div>
+      <div class="scroll">
+        <p class="sub">Everything you're in on this week. Share the invite so friends can come too.</p>
+        <div id="planList"></div>
+        <div class="h2">Invites from friends</div>
+        <div id="inviteList"></div>
+      </div>
+    </section>
+
+    <!-- PASSPORT -->
+    <section class="screen" data-s="passport">
+      <div class="topbar"><div class="h1" style="color:var(--green)">Passport</div><button class="pill" data-go="profile">Profile</button></div>
+      <div class="scroll">
+        <div class="passcover">
+          <div class="k">Mitchell K. · Los Angeles</div>
+          <div class="big" id="passCount">3 of 8 neighborhoods</div>
+          <div class="bar"><i id="passBar" style="width:37%"></i></div>
+          <div class="passstats"><div><b id="psStreak">4 wk</b>streak</div><div><b id="psVisits">18</b>check-ins</div><div><b id="psPts">1,240</b>points</div></div>
+          <div id="passSeal" style="position:absolute;right:-18px;top:-18px;opacity:.25"></div>
+        </div>
+        <div class="tabs" id="passTabs" role="tablist"></div>
+        <div class="page" id="passPage"></div>
+        <div class="h2">Patches</div>
+        <div class="patches" id="patchList"></div>
+        <div class="h2">Silver Lake explorers this month</div>
+        <div class="lb" id="lbList"></div>
+        <div class="h2">Spend your points</div>
+        <div id="rewardList"></div>
+      </div>
+    </section>
+
+    <!-- PROFILE -->
+    <section class="screen" data-s="profile">
+      <div class="topbar"><div class="h1" style="color:var(--green)">You</div></div>
+      <div class="scroll">
+        <div class="prof"><div class="avatar">M</div><div><div style="font-weight:700;font-size:19px">Mitchell K.</div><div class="sub">Silver Lake · exploring since January</div></div></div>
+        <div class="stats3"><div><b id="pfStamps">3</b>stamps</div><div><b id="pfVisits">18</b>check-ins</div><div><b id="pfStreak">4</b>week streak</div></div>
+        <button class="linkrow" data-go="passport">Your passport <span>Stamps, patches, points</span></button>
+        <button class="linkrow" data-go="plans">Your plans <span>This week</span></button>
+        <button class="linkrow" data-go="alerts">Alerts <span id="pfAlerts">3 new</span></button>
+        <button class="linkrow" data-go="host" style="background:var(--green);color:var(--paper)">See it as a host <span style="color:#CFC3AB">Ten Speed Coffee</span></button>
+      </div>
+    </section>
+
+    <!-- ALERTS -->
+    <section class="screen" data-s="alerts">
+      <div class="topbar"><button class="back" data-back><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button></div>
+      <div class="scroll">
+        <div class="h1" style="color:var(--green)">Alerts</div>
+        <div id="alertList"></div>
+      </div>
+    </section>
+
+    <!-- HOST -->
+    <section class="screen hostscr" data-s="host">
+      <div class="topbar"><button class="back" data-go="profile"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>Back to the app</button></div>
+      <div class="scroll">
+        <p class="sub" style="color:var(--sun);font-weight:700">Host portal</p>
+        <div class="h1" style="font-size:40px">Ten Speed Coffee</div>
+        <p class="sub">Be discovered by your neighborhood.</p>
+        <div class="hostbig">
+          <div class="k">Verified check-ins this month</div>
+          <div class="v" id="hostCheckins">87</div>
+          <div class="s">Neighbors who found you on Comuna and scanned in at the door.</div>
+        </div>
+        <div class="hostgrid"><div><b>$8,940</b>spend by Comuna guests</div><div><b>312</b>neighbors reached</div><div><b>23</b>regulars with 5+ stamps</div></div>
+        <div class="bill">
+          <div class="line"><span>Listing fee</span><span>$40</span></div>
+          <div class="line"><span id="billVisits">87 verified visits × $5</span><span id="billVisitAmt">$435</span></div>
+          <div class="line"><span>You pay this month</span><span id="billTotal">$475</span></div>
+        </div>
+        <p class="sub" style="margin-top:8px;font-size:12px">You only pay for people who actually walk in. No check-in, no charge.</p>
+        <div class="h2">Coming up</div>
+        <div class="hostrow"><div>Silver Lake Supper Club<small>Thu 7:00 PM · 7 guests</small></div><span class="hand" style="color:var(--sun);font-size:19px">nearly full</span></div>
+        <div class="hostrow"><div>Latte art hour<small>Tue 7:00 PM · 6 guests</small></div></div>
+        <div class="h2">Point redemptions to approve</div>
+        <div id="redemptionList"></div>
+        <button class="btn primary" id="postEvent" style="margin-top:16px">Post something for this week</button>
+      </div>
+    </section>
+
+    <nav class="nav" id="nav">
+      <button data-go="home" data-nav="home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="#6B675A"/></svg>Tonight</button>
+      <button data-go="plans" data-nav="plans"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Plans</button>
+      <button data-go="passport" data-nav="passport"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="11" r="3.5"/><path d="M9 17h6"/></svg>Passport</button>
+      <button data-go="profile" data-nav="profile"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>You</button>
+    </nav>
+
+    <div class="overlay" id="overlay"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+    <div class="stampmodal" id="stampModal" role="dialog" aria-modal="true"></div>
+    <div class="toast" id="toast"></div>
+  </div></div>
 </div>
 
-<script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
-<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.1/mapbox-gl-geocoder.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
 (function(){
-  "use strict";
+/* ================= CONFIG =================
+   Same data hookups as the original MVP. When this file is hosted on GitHub Pages,
+   the Mapbox map and the Google Sheet events load live. Anywhere they can't load
+   (offline, or a sandboxed preview), the app falls back to a hand-drawn "Paper" map
+   and the demo events below, so nothing breaks.
+============================================ */
+const MAPBOX_TOKEN = "pk.eyJ1IjoibWl0Y2hlbGxraW1iYWxsOTQiLCJhIjoiY210dHNsenB6MDZxaDJ6cTNxamUxcTVybCJ9.1-J_H9klBRnP4I14GnPDxQ";
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRk_0p6stmfzdl4hpX-Y1WANrcjzZIanA4iCOLVZoPT8Oy_mumavhY8upsadmV5fiU7qTgumjliNBTV/pub?output=csv";
+const DEFAULT_CENTER = { lat: 34.0869, lng: -118.2702 }; // Silver Lake
+const NEARBY_MILES = 3.5;   // roughly a 15-minute weeknight drive in these neighborhoods
+const MAX_PICKS = 6;        // short list, not infinite scroll
 
-  /* ---------------- data ---------------- */
-  const gradients = [
-    "linear-gradient(135deg,#0F9D8C,#0B7F72)",
-    "linear-gradient(135deg,#E11D48,#9F1239)",
-    "linear-gradient(135deg,#334155,#0B1220)",
-    "linear-gradient(135deg,#0EA5B7,#0B7F72)",
-    "linear-gradient(135deg,#F59E0B,#B45309)",
-    "linear-gradient(135deg,#6366F1,#312E81)"
-  ];
+const C = { paper:'#F3E7D1', card:'#FBF6EA', ink:'#26251F', green:'#244D3A', red:'#C9533D', sun:'#D6A638', blue:'#4B66A8', muted:'#6B675A' };
 
-  /* ================= CONFIG — fill these in to go live =================
-     1. MAPBOX_TOKEN — sign up free at mapbox.com, then Account >
-        "Access tokens" and copy your default public token (starts pk.).
-     2. SHEET_CSV_URL — in your Google Sheet: File > Share > Publish to
-        web > choose the events sheet/tab > format "Comma-separated
-        values (.csv)" > Publish. Copy the URL it gives you.
-     Until both are filled in, the app runs on the 6 demo LA events
-     below so nothing breaks while this is being set up.
-     Sheet columns expected (header row, any order):
-     title, venue, address, lat, lng, day_time, live, going,
-     from_group, host, description, status_note, category, parking,
-     alcohol
-     Only "title" is required on every row. For location, either fill
-     in lat/lng directly, or just fill in "address" — the app will
-     geocode it against Mapbox on load and cache the result so it
-     isn't re-geocoded every visit. lat/lng win if both are present.
-  ========================================================================= */
-  const MAPBOX_TOKEN = "pk.eyJ1IjoibWl0Y2hlbGxraW1iYWxsOTQiLCJhIjoiY210dHNsenB6MDZxaDJ6cTNxamUxcTVybCJ9.1-J_H9klBRnP4I14GnPDxQ";
-  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRk_0p6stmfzdl4hpX-Y1WANrcjzZIanA4iCOLVZoPT8Oy_mumavhY8upsadmV5fiU7qTgumjliNBTV/pub?output=csv";
-  const DEFAULT_CENTER = { lat: 34.0870, lng: -118.2702 }; // Silver Lake, LA
-  const LA_BBOX = [-118.6682, 33.7037, -118.1553, 34.3373]; // rough LA county bounding box, used to bias search + geocoding
+/* ---------- neighborhoods (each gets a passport stamp) ---------- */
+const HOODS = [
+  { name:'Silver Lake',  lat:34.0869, lng:-118.2702, glyph:'ripple', color:C.blue },
+  { name:'Echo Park',    lat:34.0782, lng:-118.2606, glyph:'lotus',  color:C.red },
+  { name:'Los Feliz',    lat:34.1063, lng:-118.2848, glyph:'palm',   color:C.green },
+  { name:'Frogtown',     lat:34.0985, lng:-118.2440, glyph:'river',  color:C.blue },
+  { name:'Griffith Park',lat:34.1184, lng:-118.3004, glyph:'peak',   color:C.green },
+  { name:'Downtown',     lat:34.0478, lng:-118.2563, glyph:'tower',  color:C.ink },
+  { name:'Highland Park',lat:34.1115, lng:-118.1920, glyph:'sun',    color:C.sun },
+  { name:'Santa Monica', lat:34.0195, lng:-118.4912, glyph:'wave',   color:C.blue, city:'Santa Monica' }
+];
 
-  const FALLBACK_EVENTS = [
-    {id:1, title:"Rooftop Jazz Session", venue:"The Oviatt Penthouse", lat:34.0478, lng:-118.2563, time:"Tue · 8:00 PM", live:true, startsIn:"starts in 12 min", going:12, fromGroup:3, host:"Maya R.", desc:"Small-group table, live trio, one round included. Cameras welcome — tag the event to share.", category:"Live Music", parking:"Street parking after 8pm", alcohol:true, g:0},
-    {id:2, title:"Sunday Ceramics Pop-up", venue:"Otherwild Studio", lat:34.0928, lng:-118.2515, time:"Sun · 2:00 PM", live:false, startsIn:"6 spots left", going:6, fromGroup:2, host:"Devon L.", desc:"Hand-build a small bowl, glaze included. No experience needed, all materials provided.", category:"Art & Making", parking:"Free garage behind the studio", alcohol:false, g:1},
-    {id:3, title:"Griffith Park Sunrise Hike", venue:"Griffith Observatory Trailhead", lat:34.1184, lng:-118.3004, time:"Sat · 6:30 AM", live:false, startsIn:"9 going", going:9, fromGroup:1, host:"Priya K.", desc:"Easy 3-mile loop, coffee after at the trailhead. Bring layers, it's cold before sunrise.", category:"Outdoors", parking:"Lot parking at sunrise", alcohol:false, g:2},
-    {id:4, title:"Silver Lake Supper Club", venue:"Ten Speed Coffee", lat:34.0869, lng:-118.2702, time:"Thu · 7:00 PM", live:false, startsIn:"7 going", going:7, fromGroup:4, host:"Jordan M.", desc:"A rotating dinner series in a different member's neighborhood spot each week.", category:"Food & Drink", parking:"Metered street parking nearby", alcohol:true, g:3},
-    {id:5, title:"Vinyl & Wine Night", venue:"Bar Chelou", lat:34.1046, lng:-118.2727, time:"Fri · 8:30 PM", live:false, startsIn:"5 going", going:5, fromGroup:0, host:"Marcus T.", desc:"Bring a record or just come listen. Small pours, small group, big speakers.", category:"Music & Nightlife", parking:"Validated parking at the lot behind the bar", alcohol:true, g:4},
-    {id:6, title:"Sunset Volleyball", venue:"Will Rogers State Beach", lat:34.0367, lng:-118.5309, time:"Wed · 6:00 PM", live:false, startsIn:"8 going", going:8, fromGroup:2, host:"Ghazi A.", desc:"Casual co-ed games, all levels. We wrap before it gets dark and grab tacos after.", category:"Wellness & Fitness", parking:"Free lot near the beach entrance", alcohol:false, g:5}
-  ];
+/* ---------- categories: each gets a pin icon ---------- */
+const CATS = {
+  // Brand Guide v2 core palette only: Signal Red, Ink, Comuna Green, Map Blue, Sun. The icon tells categories apart.
+  food:     { label:'Food & Drink',        short:'Food',      bg:'#C9533D' },
+  music:    { label:'Music & Nightlife',   short:'Nightlife', bg:'#26251F' },
+  wellness: { label:'Wellness & Fitness',  short:'Wellness',  bg:'#244D3A' },
+  outdoors: { label:'Outdoors',            short:'Outdoors',  bg:'#4B66A8' },
+  art:      { label:'Art & Making',        short:'Art',       bg:'#D6A638' },
+  games:    { label:'Games & Social',      short:'Games',     bg:'#4B66A8' },
+  markets:  { label:'Markets & Shopping',  short:'Markets',   bg:'#244D3A' },
+  community:{ label:'Community & Causes',  short:'Community', bg:'#C9533D' }
+};
+function catArt(k){
+  const P='#F3E7D1', I='#26251F';
+  switch(k){
+    case 'food': return `<path d="M-19 -17 H-1 Q-1 1 -10 4 Q-19 1 -19 -17Z" fill="none" stroke="${P}" stroke-width="3"/><path d="M-16.5 -9 H-3.5 Q-4 0 -10 1.5 Q-16 0 -16.5 -9Z" fill="#D6A638"/><path d="M-10 4 V16 M-16 17 H-4" stroke="${P}" stroke-width="3" stroke-linecap="round"/><path d="M8 -19 V-8 M13 -19 V-8 M18 -19 V-8 M8 -8 Q13 -3 18 -8 M13 -5 L9 19" fill="none" stroke="${P}" stroke-width="2.8" stroke-linecap="round"/>`;
+    case 'music': return `<circle cx="-3" cy="3" r="16" fill="${I}" stroke="${P}" stroke-width="2"/><circle cx="-3" cy="3" r="11" fill="none" stroke="${P}" stroke-opacity=".35" stroke-width="1.2"/><circle cx="-3" cy="3" r="5" fill="${P}"/><circle cx="-3" cy="3" r="1.6" fill="${I}"/><path d="M17 -19 V0 L8 9" fill="none" stroke="${P}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M-19 -21 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z" fill="#D6A638"/>`;
+    case 'wellness': return `<path d="M0 -1 C-13 -9 -11 -22 0 -15 C11 -22 13 -9 0 -1Z" fill="#C9533D"/><rect x="-20" y="5" width="7" height="15" rx="2" fill="${P}"/><rect x="13" y="5" width="7" height="15" rx="2" fill="${P}"/><rect x="-13" y="10.5" width="26" height="4.5" fill="${P}"/><path d="M-17 -18 l-4 -3 M17 -18 l4 -3 M0 -22 v-4" stroke="${P}" stroke-width="2.5" stroke-linecap="round"/>`;
+    case 'outdoors': return `<circle cx="11" cy="-12" r="6.5" fill="#D6A638"/><path d="M-24 14 L-8 -10 L-1 0 L7 -7 L24 14Z" fill="${P}"/><path d="M14 20 L9 9 H12 L8 1 H11 L14 -5 L17 1 H20 L16 9 H19Z" fill="#244D3A"/><path d="M-14 22 Q-4 14 -8 8" fill="none" stroke="#F3E7D1" stroke-width="2.6" stroke-linecap="round"/>`;
+    case 'art': return `<path d="M-19 1 C-19 -14 -3 -20 9 -15 C20 -10 20 3 10 3 C3 3 6 12 -1 15 C-11 19 -19 11 -19 1Z" fill="${P}"/><circle cx="-11" cy="-4" r="3" fill="#C9533D"/><circle cx="-4" cy="-11" r="3" fill="#D6A638"/><circle cx="6" cy="-10" r="3" fill="#4B66A8"/><circle cx="-10" cy="7" r="3" fill="#244D3A"/><path d="M3 12 L21 -12" stroke="${I}" stroke-width="3.5" stroke-linecap="round"/>`;
+    case 'games': return `<rect x="-3" y="-17" width="18" height="26" rx="3" fill="#C9533D" stroke="${P}" stroke-width="2" transform="rotate(14)"/><rect x="-17" y="-13" width="18" height="26" rx="3" fill="${P}" transform="rotate(-10)"/><path d="M-8 -6 C-13 0 -14 4 -10 5 C-9 5 -8.4 4.4 -8 4 L-9.5 8 H-6.5 L-8 4 C-7.6 4.4 -7 5 -6 5 C-2 4 -3 0 -8 -6Z" fill="${I}" transform="rotate(-10)"/>`;
+    case 'markets': return `<path d="M-20 -16 H20 V-8 Q15 -3 10 -8 Q5 -3 0 -8 Q-5 -3 -10 -8 Q-15 -3 -20 -8Z" fill="${P}"/><path d="M-10 -16 H-5 V-7 Q-7.5 -4.5 -10 -7Z M5 -16 H10 V-7 Q7.5 -4.5 5 -7Z" fill="#D6A638"/><path d="M-18 -6 V18 M18 -6 V18" stroke="${P}" stroke-width="2.8"/><rect x="-18" y="8" width="36" height="4" fill="${P}"/><circle cx="-9" cy="3" r="4" fill="#C9533D"/><circle cx="-1" cy="3" r="4" fill="#C9533D"/><path d="M8 7 q-2 -8 3 -9 q4 1 1 9" fill="#D6A638"/>`;
+    case 'community': return `<circle cx="-12" cy="-6" r="5" fill="${P}"/><circle cx="12" cy="-6" r="5" fill="${P}"/><circle cx="0" cy="-11" r="5.5" fill="${I}"/><path d="M-21 13 Q-19 1 -12 1 Q-5 1 -4 8Z M21 13 Q19 1 12 1 Q5 1 4 8Z" fill="${P}"/><path d="M-9 16 Q-8 -3 0 -3 Q8 -3 9 16Z" fill="${I}"/><path d="M0 -21 v-4 M-8 -19 l-2 -3 M8 -19 l2 -3" stroke="${P}" stroke-width="2.2" stroke-linecap="round"/>`;
+  }
+  return `<circle r="6" fill="${P}"/>`;
+}
+function catIcon(k,size){ const c=CATS[k]||CATS.community; return `<svg width="${size}" height="${size}" viewBox="-28 -28 56 56" aria-hidden="true" style="display:block"><circle r="27" fill="${c.bg}"/>${catArt(k)}</svg>`; }
 
-  let events = FALLBACK_EVENTS.slice();
+/* ---------- demo events (used when the Sheet can't be reached) ---------- */
+const DEMO_EVENTS = [
+  {id:1, title:"Rooftop Jazz Session", venue:"The Oviatt Penthouse", lat:34.0478, lng:-118.2563, time:"Tue · 8:00 PM", live:true, startsIn:"starts in 12 min", going:12, fromGroup:3, host:"Maya R.", desc:"Small-group table, live trio, one round included.", category:"music", parking:"Street parking after 8pm", alcohol:true},
+  {id:2, title:"Sunday Ceramics Pop-up", venue:"Otherwild Studio", lat:34.0928, lng:-118.2515, time:"Sun · 2:00 PM", startsIn:"6 spots left", going:6, fromGroup:2, host:"Devon L.", desc:"Hand-build a small bowl, glaze included. No experience needed.", category:"art", parking:"Free garage behind the studio", alcohol:false},
+  {id:3, title:"Griffith Park Sunrise Hike", venue:"Observatory Trailhead", lat:34.1184, lng:-118.3004, time:"Sat · 6:30 AM", startsIn:"9 going", going:9, fromGroup:1, host:"Priya K.", desc:"Easy 3-mile loop, coffee after at the trailhead. Bring layers.", category:"outdoors", parking:"Lot parking at sunrise", alcohol:false},
+  {id:4, title:"Silver Lake Supper Club", venue:"Ten Speed Coffee", lat:34.0869, lng:-118.2702, time:"Thu · 7:00 PM", startsIn:"7 going", going:7, fromGroup:4, host:"Jordan M.", desc:"A rotating dinner series at a different neighborhood spot each week.", category:"food", parking:"Metered street parking nearby", alcohol:true},
+  {id:5, title:"Tuesday Farmers Market", venue:"Sunset Triangle Plaza", lat:34.0834, lng:-118.2742, time:"Tue · 2:00 PM", startsIn:"on now", going:23, fromGroup:1, host:"Silver Lake Farmers Market", desc:"Stone fruit, tamales and neighbors. Grab dinner fixings on the way home.", category:"markets", parking:"Street parking on Griffith Park Blvd", alcohol:false},
+  {id:6, title:"Wednesday Comedy", venue:"Bar Bandini", lat:34.0779, lng:-118.2626, time:"Wed · 8:00 PM", startsIn:"14 going", going:14, fromGroup:2, host:"Bar Bandini", desc:"A weekly stand-up show. Cheap drinks, small room, good laughs.", category:"music", parking:"Street parking on Sunset", alcohol:true},
+  {id:7, title:"Friday Night Market", venue:"Logan St.", lat:34.0768, lng:-118.2598, time:"Fri · 3:00 PM", startsIn:"live DJ at 6", going:31, fromGroup:3, host:"Echo Park Farmers Market", desc:"Produce, food trucks and a DJ as the sun goes down.", category:"markets", parking:"Walk if you can, it gets busy", alcohol:false},
+  {id:8, title:"Sunset Volleyball", venue:"Will Rogers State Beach", lat:34.0367, lng:-118.5309, time:"Wed · 6:00 PM", startsIn:"8 going", going:8, fromGroup:2, host:"Ghazi A.", desc:"Casual co-ed games, all levels. Tacos after.", category:"wellness", parking:"Free lot near the beach entrance", alcohol:false},
+  {id:9, title:"Lake Cleanup & Coffee", venue:"Echo Park Lake", lat:34.0726, lng:-118.2606, time:"Sat · 9:00 AM", startsIn:"11 going", going:11, fromGroup:1, host:"Neighbors of Echo Park", desc:"An hour of picking up around the lake, then coffee on the lawn. Gloves provided.", category:"community", parking:"Street parking on Park Ave", alcohol:false},
+  {id:10, title:"Board Game Night", venue:"Stories Books & Cafe", lat:34.0777, lng:-118.2605, time:"Thu · 7:30 PM", startsIn:"4 spots left", going:8, fromGroup:0, host:"Stories", desc:"Bring a game or borrow one. Tables of four, strangers welcome.", category:"games", parking:"Street parking on Sunset", alcohol:false}
+];
 
-  const captureSeed = [
-    {title:"Sunday Ceramics Pop-up", user:"Priya K.", time:"4 min ago", g:1},
-    {title:"Griffith Park Sunrise Hike", user:"Marcus T.", time:"22 min ago", g:2}
-  ];
+let events = DEMO_EVENTS.slice();
+let usingDemo = true;
 
-  const state = {
-    userLocation: null,
-    points: 1240,
-    streak: 4,
-    tier: "Silver",
-    eventsAttended: 18,
-    rsvped: new Set(),
-    captures: captureSeed.slice(),
-    badges: {Regular:true, Explorer:true, "Host's Pick":false, "Early Riser":false},
-    unreadAlerts: 4,
-    captureMode: "PHOTO"
-  };
+const PARTIFUL = { 4:"https://partiful.com/e/example-3", 1:"https://partiful.com/e/example-2", 8:"https://partiful.com/e/example-1" };
 
-  const initialState = JSON.parse(JSON.stringify({
-    points: state.points, streak: state.streak, eventsAttended: state.eventsAttended,
-    badges: state.badges, unreadAlerts: state.unreadAlerts
-  }));
+/* ---------- state ---------- */
+// Every check-in stamps a PLACE. Neighborhood, city and state stamps are earned from the places you've been.
+const START = { places:{
+    'Ten Speed Coffee':      {n:12, cat:'food',      lat:34.0869, lng:-118.2702},
+    'Sunset Triangle Plaza': {n:4,  cat:'markets',   lat:34.0834, lng:-118.2742},
+    'Edendale Library':      {n:1,  cat:'community', lat:34.0860, lng:-118.2640},
+    'Echo Park Lake':        {n:2,  cat:'outdoors',  lat:34.0726, lng:-118.2606},
+    'Vista Theatre':         {n:1,  cat:'music',     lat:34.0976, lng:-118.2871}
+  }, points:1240, streak:4, visits:18, rsvp:[4], checked:[], redeemed:[], alertsRead:false, nb:'Silver Lake', loc:null };
+let S;
+function load(){ try{ const r=localStorage.getItem('comuna_v3'); S = r? Object.assign(JSON.parse(JSON.stringify(START)), JSON.parse(r)) : JSON.parse(JSON.stringify(START)); }catch(e){ S=JSON.parse(JSON.stringify(START)); } }
+function save(){ try{ localStorage.setItem('comuna_v3', JSON.stringify(S)); }catch(e){} }
+load();
 
-  /* ---------------- nav / screen routing ---------------- */
-  const screens = document.querySelectorAll(".screen");
-  const navItems = document.querySelectorAll(".navitem");
-  const bottomnav = document.getElementById("bottomnav");
-  const jumpbar = document.getElementById("jumpbar");
+/* ---------- geometry ---------- */
+function miles(a,b){ const R=3958.8, dLa=(b.lat-a.lat)*Math.PI/180, dLo=(b.lng-a.lng)*Math.PI/180; const x=Math.sin(dLa/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(x)); }
+function origin(){ return S.loc || DEFAULT_CENTER; }
+function hoodOf(p){ let best=HOODS[0], d=1e9; HOODS.forEach(h=>{ const m=miles(p,h); if(m<d){d=m;best=h;} }); return best; }
+function cityOf(h){ return h.city || 'Los Angeles'; }
+function visitedHoods(){ const o={}; Object.values(S.places).forEach(p=>{ const h=hoodOf(p).name; o[h]=(o[h]||0)+p.n; }); return o; }
+function visitedCities(){ const o={}; Object.values(S.places).forEach(p=>{ const c=cityOf(hoodOf(p)); o[c]=(o[c]||0)+p.n; }); return o; }
+function hoodByName(n){ return HOODS.find(h=>h.name===n) || HOODS[0]; }
 
-  const jumpTargets = [
-    ["onb-1","Onboarding"], ["home","Map"], ["capture","Capture"], ["calendar","Calendar"],
-    ["rewards","Rewards"], ["leaderboard","Leaderboard"], ["alerts","Alerts"], ["profile","Profile"], ["venue","Venue view"]
-  ];
-  jumpTargets.forEach(([id,label])=>{
-    const b = document.createElement("button");
-    b.className = "jump-btn";
-    b.textContent = label;
-    b.dataset.goto = id;
-    b.addEventListener("click", ()=>showScreen(id));
-    jumpbar.appendChild(b);
-  });
+/* ---------- brand SVG ---------- */
+function glyph(kind,c){
+  let g='';
+  if(kind==='wave'){ g=`<path d="M-26 -6 q6.5 -9 13 0 t13 0 t13 0 t13 0 M-26 6 q6.5 -9 13 0 t13 0 t13 0 t13 0" fill="none" stroke="${c}" stroke-width="3.2" stroke-linecap="round"/><circle cy="-21" r="6" fill="${c}"/>`; }
+  else if(kind==='ripple'){ g=[6,14,22].map(r=>`<ellipse cy="5" rx="${r*1.3}" ry="${r*.55}" fill="none" stroke="${c}" stroke-width="2.6"/>`).join('')+`<path d="M-6 -5 L0 -26 L6 -5Z" fill="${c}"/>`; }
+  else if(kind==='lotus'){ g=[-50,-25,0,25,50].map(a=>`<ellipse cy="-12" rx="6" ry="15" fill="${c}" transform="rotate(${a} 0 2)"/>`).join('')+`<path d="M-24 10 q24 10 48 0" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round"/>`; }
+  else if(kind==='palm'){ g=`<path d="M0 26 Q3 4 0 -12" fill="none" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>`+[-150,-110,-70,-30,10].map(a=>`<path d="M0 -12 q10 -8 22 -2" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round" transform="rotate(${a+90} 0 -12)"/>`).join(''); }
+  else if(kind==='peak'){ g=`<path d="M-26 18 L-8 -14 L2 2 L10 -8 L26 18Z" fill="${c}"/><circle cx="14" cy="-20" r="5" fill="${c}"/>`; }
+  else if(kind==='tower'){ g=`<rect x="-20" y="-6" width="10" height="26" fill="${c}"/><rect x="-6" y="-24" width="12" height="44" fill="${c}"/><rect x="10" y="-12" width="10" height="32" fill="${c}"/>`; }
+  else if(kind==='sun'){ g=`<circle r="10" fill="${c}"/>`+[0,45,90,135,180,225,270,315].map(a=>`<path d="M0 -15 V-24" stroke="${c}" stroke-width="3.2" stroke-linecap="round" transform="rotate(${a})"/>`).join(''); }
+  else if(kind==='river'){ g=`<path d="M-24 -14 C-8 -14 -8 0 6 0 S18 14 26 14" fill="none" stroke="${c}" stroke-width="5" stroke-linecap="round"/><circle cx="-12" cy="10" r="4" fill="${c}"/><circle cx="12" cy="-12" r="4" fill="${c}"/>`; }
+  else if(kind==='star'){ const p=[]; for(let i=0;i<10;i++){ const r=i%2?8:20, a=Math.PI/2+i*Math.PI/5; p.push(`${(r*Math.cos(a)).toFixed(1)},${(-r*Math.sin(a)).toFixed(1)}`);} g=`<polygon points="${p.join(' ')}" fill="${c}"/>`; }
+  return g;
+}
+let sid=0;
+function stampSVG(top,bottom,kind,c,size,rot,fill){
+  const r=size/2, a='sa'+(++sid), b='sb'+sid, Rt=r-27*size/170, Rb=r-15*size/170, s=size/170;
+  return `<svg width="${size}" height="${size}" viewBox="${-r} ${-r} ${size} ${size}" style="transform:rotate(${rot||0}deg);overflow:visible;display:block" aria-hidden="true">
+  <circle r="${r-3}" fill="${fill||'none'}" stroke="${c}" stroke-width="${3.2*Math.max(s,.7)}"/>
+  <circle r="${r-31*s}" fill="none" stroke="${c}" stroke-width="${1.6*Math.max(s,.7)}"/>
+  <path id="${a}" d="M${-Rt} 0 A${Rt} ${Rt} 0 0 1 ${Rt} 0" fill="none"/><path id="${b}" d="M${-Rb} 0 A${Rb} ${Rb} 0 0 0 ${Rb} 0" fill="none"/>
+  <text font-family="Big Shoulders Display" font-weight="800" font-size="${(size*.11).toFixed(1)}" letter-spacing="1.2" fill="${c}"><textPath href="#${a}" startOffset="50%" text-anchor="middle">${top}</textPath></text>
+  <text font-family="Big Shoulders Display" font-weight="700" font-size="${(size*.08).toFixed(1)}" letter-spacing="1.5" fill="${c}"><textPath href="#${b}" startOffset="50%" text-anchor="middle">${bottom}</textPath></text>
+  <circle cx="${-(r-21*s)}" r="${2.4*s}" fill="${c}"/><circle cx="${r-21*s}" r="${2.4*s}" fill="${c}"/>
+  <g transform="scale(${s})">${glyph(kind,c)}</g></svg>`;
+}
+function placeStamp(name,hood,cat,n,rot,w=150,h=100,ink){
+  const bg=(CATS[cat]||CATS.community).bg, c=ink||bg, reg=n>=5, k=w/150;
+  const nm=name.toUpperCase(), fit=nm.length*9.2*k>w-26*k;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 150 100" style="transform:rotate(${rot}deg);overflow:visible;display:block" aria-label="${name} stamp">
+  <rect x="3" y="3" width="144" height="94" rx="9" fill="none" stroke="${c}" stroke-width="2.8"/>
+  <rect x="9" y="9" width="132" height="82" rx="5" fill="none" stroke="${c}" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <g transform="translate(75 30) scale(.5)"><circle r="27" fill="${bg}" stroke="${ink?c:'none'}" stroke-width="3"/>${catArt(cat)}</g>
+  <text x="75" y="64" text-anchor="middle" font-family="Big Shoulders Display" font-weight="900" font-size="17" letter-spacing="1" fill="${c}" ${nm.length*9.2>124?'textLength="124" lengthAdjust="spacingAndGlyphs"':''}>${nm}</text>
+  <text x="75" y="79" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="8" letter-spacing="1.4" fill="${c}">${hood.toUpperCase()} · ${n} VISIT${n>1?'S':''}</text>
+  ${reg?`<g transform="translate(112 4) rotate(12)"><rect x="0" y="0" width="44" height="15" fill="${C.sun}"/><text x="22" y="11" text-anchor="middle" font-family="Big Shoulders Display" font-weight="900" font-size="10" letter-spacing="1" fill="${C.ink}">REGULAR</text></g>`:''}
+  </svg>`;
+}
+function cityLabel(title,sub,bg,fg,w=160,h=106,rot=0){
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="transform:rotate(${rot}deg);overflow:visible;display:block" aria-label="${title} stamp">
+  <ellipse cx="${w/2}" cy="${h/2}" rx="${w/2-3}" ry="${h/2-3}" fill="${bg}"/><ellipse cx="${w/2}" cy="${h/2}" rx="${w/2-10}" ry="${h/2-10}" fill="none" stroke="${fg}" stroke-width="1.6"/>
+  <rect x="14" y="${h/2-15}" width="${w-28}" height="30" fill="${fg}"/>
+  <text x="${w/2}" y="${h/2+8.5}" text-anchor="middle" font-family="Big Shoulders Display" font-weight="900" font-size="23" letter-spacing="1.5" fill="${bg}" ${title.length*12.5>w-36?`textLength="${w-36}" lengthAdjust="spacingAndGlyphs"`:''}>${title.toUpperCase()}</text>
+  <text x="${w/2}" y="${h/2-22}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="8" letter-spacing="2.5" fill="${fg}">COMUNA</text>
+  <text x="${w/2}" y="${h/2+29}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="8" letter-spacing="2" fill="${fg}">${sub}</text></svg>`;
+}
 
-  function showScreen(id){
-    screens.forEach(s=> s.classList.toggle("active", s.dataset.screen === id));
-    const onboarding = id.startsWith("onb-");
-    bottomnav.style.display = (onboarding || id === "venue") ? "none" : "flex";
-    navItems.forEach(n=> n.classList.toggle("active", n.dataset.goto === id));
-    document.querySelectorAll(".jump-btn").forEach(b=> b.classList.toggle("active", b.dataset.goto === id));
-    if(id === "home"){
-      initMap(); // safe now — the map container is actually visible
-      if(homeView === "map" && map) setTimeout(()=> map.resize(), 60); // catches size changes since last shown
+function omark(size,ring,dot){ const r=size/2, sw=Math.max(2,size*.085); return `<svg width="${size}" height="${size}" viewBox="${-r} ${-r} ${size} ${size}" aria-hidden="true"><circle r="${r-sw/2}" fill="none" stroke="${ring||C.sun}" stroke-width="${sw}"/><circle r="${r*.42}" fill="none" stroke="${ring||C.sun}" stroke-width="${sw*.8}"/><circle r="${r*.14}" fill="${dot||C.red}"/></svg>`; }
+function wordmark(el){ const px=parseFloat(getComputedStyle(el).fontSize); el.innerHTML=`C${omark(px*.74)}MUNA`; el.setAttribute('aria-label','Comuna'); }
+function patchSVG(title,sub,scene,w,h){
+  const d=`M8 34 Q8 7 ${w/2} 7 Q${w-8} 7 ${w-8} 34 L${w-8} ${h*.62} Q${w-8} ${h*.8} ${w/2} ${h-7} Q8 ${h*.8} 8 ${h*.62} Z`, id='pc'+(++sid);
+  const sc={lake:`<rect width="${w}" height="${h}" fill="${C.sun}"/><circle cx="${w*.68}" cy="${h*.38}" r="${w*.13}" fill="#F0D48A"/><path d="M0 ${h*.55} Q${w*.3} ${h*.38} ${w*.55} ${h*.52} T${w} ${h*.48} V${h} H0Z" fill="${C.green}"/><rect y="${h*.66}" width="${w}" height="${h}" fill="${C.blue}"/>`,
+    beach:`<rect width="${w}" height="${h}" fill="#E9B98E"/><circle cx="${w/2}" cy="${h*.56}" r="${w*.2}" fill="${C.sun}"/><rect y="${h*.56}" width="${w}" height="${h}" fill="${C.blue}"/><rect y="${h*.76}" width="${w}" height="${h}" fill="#E7D3A8"/>`,
+    hills:`<rect width="${w}" height="${h}" fill="#BFD0C2"/><path d="M0 ${h*.6} L${w*.3} ${h*.32} L${w*.55} ${h*.55} L${w*.75} ${h*.4} L${w} ${h*.6} V${h} H0Z" fill="${C.green}"/><circle cx="${w*.22}" cy="${h*.25}" r="${w*.07}" fill="${C.sun}"/>`,
+    night:`<rect width="${w}" height="${h}" fill="${C.blue}"/><circle cx="${w*.7}" cy="${h*.3}" r="${w*.1}" fill="${C.paper}"/><path d="M0 ${h*.62} h${w*.2} v-${h*.18} h${w*.14} v${h*.1} h${w*.18} v-${h*.24} h${w*.16} v${h*.16} h${w*.32} V${h} H0Z" fill="${C.ink}"/>`}[scene];
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs><g clip-path="url(#${id})">${sc}</g><path d="${d}" fill="none" stroke="${C.ink}" stroke-width="6"/>
+  <rect x="14" y="${h*.12}" width="${w-28}" height="22" rx="3" fill="${C.ink}"/><text x="${w/2}" y="${h*.12+16.5}" text-anchor="middle" font-family="Big Shoulders Display" font-weight="900" font-size="15" fill="${C.paper}" ${title.length*8>w-34?`textLength="${w-34}" lengthAdjust="spacingAndGlyphs"`:''}>${title}</text>
+  <rect x="18" y="${h*.7}" width="${w-36}" height="17" fill="${C.red}"/><text x="${w/2}" y="${h*.7+12.5}" text-anchor="middle" font-family="Big Shoulders Display" font-weight="800" font-size="10.5" letter-spacing="1" fill="${C.paper}" ${sub.length*6.2>w-44?`textLength="${w-44}" lengthAdjust="spacingAndGlyphs"`:''}>${sub}</text></svg>`;
+}
+
+/* ---------- navigation ---------- */
+const screens=[...document.querySelectorAll('.screen')], nav=document.getElementById('nav');
+let current='onb1', history=[];
+function go(id, push=true){
+  if(id===current) return;
+  if(push) history.push(current);
+  current=id;
+  screens.forEach(s=>s.classList.toggle('on', s.dataset.s===id));
+  nav.classList.toggle('hide', ['onb1','onb2','host','alerts'].includes(id));
+  nav.querySelectorAll('button').forEach(b=>{ const on=b.dataset.nav===id; b.classList.toggle('on',on); b.querySelector('svg').setAttribute('stroke', on?C.green:C.muted); });
+  if(id==='home'){ renderHome(); setTimeout(()=>{ if(map) map.resize(); else drawPaper(); },30); }
+  if(id==='plans') renderPlans();
+  if(id==='passport') renderPassport();
+  if(id==='profile') renderProfile();
+  if(id==='alerts'){ renderAlerts(); S.alertsRead=true; save(); updateDot(); }
+  if(id==='host') renderHost();
+  if(id==='onb2') drawMini();
+}
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-go]'); if(g){ go(g.dataset.go); return; }
+  if(e.target.closest('[data-back]')){ go(history.pop()||'home', false); }
+});
+let tt; function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('on'),2200); }
+
+/* ---------- onboarding ---------- */
+function buildOnb(){
+  const f=document.getElementById('stampfield');
+  f.innerHTML=`<div style="left:6px;top:10px">${stampSVG('SILVER LAKE','EXPLORE WHERE YOU LIVE','ripple','#F3E7D1',150,-10)}</div>
+  <div style="right:4px;top:40px">${stampSVG('ECHO PARK','COMUNA · EST. 2026','lotus','#C9533D',136,9)}</div>
+  <div style="left:96px;top:150px">${stampSVG('LOS FELIZ','COMUNA · LOS ANGELES','palm',C.sun,138,4)}</div>`;
+}
+document.getElementById('allowLoc').addEventListener('click',()=>{
+  if(!navigator.geolocation){ go('home'); return; }
+  navigator.geolocation.getCurrentPosition(p=>{ S.loc={lat:p.coords.latitude,lng:p.coords.longitude}; S.nb=hoodOf(S.loc).name; save(); rebuildMap(); go('home'); toast('Showing what\'s near you'); },
+    ()=>{ toast('No location. Starting in Silver Lake'); go('home'); }, {timeout:6000});
+});
+
+/* ---------- home ---------- */
+let filter='All';
+function enrich(){ const o=origin(); events.forEach(ev=>{ ev.mi=miles(o,ev); ev.hood=hoodOf(ev).name; }); }
+function picks(){
+  enrich();
+  let list=events.filter(ev=> filter==='All' || ev.category===filter).sort((a,b)=>a.mi-b.mi);
+  const near=list.filter(ev=>ev.mi<=NEARBY_MILES);
+  return (near.length>=3? near : list).slice(0,MAX_PICKS);
+}
+function mins(mi){ return Math.max(2, Math.round(mi*3.2+2)); }
+function renderHome(){
+  const h=hoodByName(S.nb);
+  document.getElementById('nbName').textContent=h.name;
+  document.getElementById('nbGlyph').innerHTML=`<svg width="18" height="18" viewBox="-28 -28 56 56">${glyph(h.glyph,h.color)}</svg>`;
+  document.getElementById('homeTitle').textContent=`Tonight in ${h.name}`;
+  const cats=['All',...Object.keys(CATS).filter(k=>events.some(e=>e.category===k))];
+  document.getElementById('chips').innerHTML=cats.map(c=>`<button class="chip ${c===filter?'on':''}" data-cat="${c}">${c==='All'?'Everything':CATS[c].short}</button>`).join('');
+  const P=picks();
+  const inRange=P.filter(e=>e.mi<=NEARBY_MILES).length;
+  document.getElementById('homeSub').textContent = inRange ? `${inRange} pick${inRange>1?'s':''} within 15 minutes` : 'A little farther tonight, but worth it';
+  document.getElementById('picks').innerHTML = P.map((ev,i)=>{
+    const done=S.checked.includes(ev.id), inn=S.rsvp.includes(ev.id);
+    return `<button class="pick" data-ev="${ev.id}"><div class="n">${catIcon(ev.category,44)}${done?'<span class="chk">&check;</span>':''}</div>
+      <div><div class="when">${ev.live?'\u{1F534} ':''}${ev.startsIn||ev.time}</div><div class="t">${ev.title}</div><div class="m">${ev.venue}${inn&&!done?' · you\'re in':''}</div></div>
+      <div class="dist">${mins(ev.mi)}<small>min away</small></div></button>`; }).join('')
+    + `<div class="endnote">that's the list. go have fun.</div><div class="demo-tag">${usingDemo?'Demo events · connect the Google Sheet to go live':'Live events from the Comuna sheet'}</div>`;
+  const first=P[0]; document.getElementById('mapNote').textContent = first ? (first.live? `${first.title.split(' ').slice(0,2).join(' ')}: ${first.startsIn}` : 'the good stuff is close') : '';
+  placePins(P);
+}
+document.getElementById('chips').addEventListener('click',e=>{ const c=e.target.closest('[data-cat]'); if(!c) return; filter=c.dataset.cat; renderHome(); });
+document.getElementById('picks').addEventListener('click',e=>{ const p=e.target.closest('[data-ev]'); if(p) openSheet(+p.dataset.ev); });
+document.getElementById('tMap').onclick=()=>{ document.getElementById('homeScreen').classList.remove('home-list'); tMap.classList.add('on'); tList.classList.remove('on'); setTimeout(()=>{ map?map.resize():drawPaper(); },20); };
+document.getElementById('tList').onclick=()=>{ document.getElementById('homeScreen').classList.add('home-list'); tList.classList.add('on'); tMap.classList.remove('on'); };
+document.getElementById('nbChip').onclick=()=>{ const i=HOODS.findIndex(h=>h.name===S.nb); const n=HOODS[(i+1)%HOODS.length]; S.nb=n.name; S.loc={lat:n.lat,lng:n.lng}; save(); rebuildMap(); renderHome(); toast(`Exploring ${n.name}`); };
+const tMap=document.getElementById('tMap'), tList=document.getElementById('tList');
+
+/* ---------- map: Mapbox if reachable, Paper map otherwise ---------- */
+let map=null, markers=[], paperDrawn=false;
+function pinEl(ev,i){ const el=document.createElement('div'); const done=S.checked.includes(ev.id); el.className='pin'+(ev.live&&!done?' live':''); el.style.background=(CATS[ev.category]||CATS.community).bg; el.innerHTML=catIcon(ev.category,37)+(done?'<span class="chk">&check;</span>':''); el.setAttribute('role','button'); el.setAttribute('aria-label',ev.title); el.tabIndex=0; el.onclick=e=>{ e.stopPropagation(); openSheet(ev.id); }; el.onkeydown=e=>{ if(e.key==='Enter') openSheet(ev.id); }; return el; }
+function placePins(P){
+  if(map){ const you=markers.you; markers.forEach(m=>m.remove()); markers=P.map((ev,i)=> new mapboxgl.Marker({element:pinEl(ev,i)}).setLngLat([ev.lng,ev.lat]).addTo(map)); markers.you=you;
+    if(!markers.you){ const y=document.createElement('div'); y.innerHTML=omark(30); markers.you=new mapboxgl.Marker({element:y}).setLngLat([origin().lng,origin().lat]).addTo(map); }
+    const b=new mapboxgl.LngLatBounds(); P.filter(e=>e.mi<=NEARBY_MILES*1.6).forEach(e=>b.extend([e.lng,e.lat])); b.extend([origin().lng,origin().lat]); map.fitBounds(b,{padding:48,maxZoom:15,duration:600});
+  } else drawPaper();
+}
+/* Brand Guide v2 "Paper" map style, applied on top of Mapbox Light.
+   Paper land, Map Blue water, soft green parks, white streets, Ink labels. POIs hidden so Comuna pins lead. */
+const MAPCOL={ land:'#EFE2C8', water:'#AFC0D8', park:'#C9D4B5', building:'#E6D6B8', road:'#FBF6EA', major:'#FFFFFF', label:'#26251F', halo:'#F3E7D1', minorLabel:'#6B675A' };
+function styleMapbox(){
+  const L=map.getStyle().layers||[];
+  L.forEach(l=>{ const id=l.id; try{
+    if(l.type==='background') map.setPaintProperty(id,'background-color',MAPCOL.land);
+    else if(l.type==='fill'){
+      if(/water/.test(id)) map.setPaintProperty(id,'fill-color',MAPCOL.water);
+      else if(/landcover|hillshade/.test(id)) { map.setPaintProperty(id,'fill-color',MAPCOL.land); map.setPaintProperty(id,'fill-opacity',0); }
+      else if(id==='landuse') { map.setPaintProperty(id,'fill-color',['match',['get','class'],['park','pitch','grass','cemetery','wood','scrub','golf_course','agriculture'],MAPCOL.park,'rgba(239,226,200,0)']); map.setPaintProperty(id,'fill-opacity',.85); }
+      else if(/park|pitch|grass|wood|national|golf|cemetery/.test(id)) { map.setPaintProperty(id,'fill-color',MAPCOL.park); map.setPaintProperty(id,'fill-opacity',.8); }
+      else if(/building/.test(id)) map.setPaintProperty(id,'fill-color',MAPCOL.building);
+      else map.setPaintProperty(id,'fill-color',MAPCOL.land);
     }
-    if(id === "alerts"){ state.unreadAlerts = 0; renderBell(); }
-    if(id === "rewards") renderRewards();
-    if(id === "leaderboard") renderLeaderboard();
-    if(id === "alerts") renderAlerts();
-    if(id === "profile") renderProfile();
-    if(id === "capture") document.getElementById("capTagText").textContent = currentEventTag();
-  }
-
-  document.body.addEventListener("click", (e)=>{
-    const t = e.target.closest("[data-goto]");
-    if(t){ showScreen(t.dataset.goto); }
-  });
-
-  document.getElementById("restartBtn").addEventListener("click", restartDemo);
-
-  function restartDemo(){
-    state.userLocation = null;
-    // only revert to demo data if no real Google Sheet is connected —
-    // a connected sheet's events aren't part of the "demo" being reset
-    if(!SHEET_CSV_URL || SHEET_CSV_URL.indexOf("YOUR_") === 0){
-      events = FALLBACK_EVENTS.slice();
+    else if(l.type==='line'){
+      if(/water/.test(id)) map.setPaintProperty(id,'line-color',MAPCOL.water);
+      else if(/motorway|trunk|primary/.test(id)) map.setPaintProperty(id,'line-color',MAPCOL.major);
+      else if(/road|street|bridge|tunnel|path|secondary|tertiary/.test(id)) map.setPaintProperty(id,'line-color',MAPCOL.road);
+      else if(/admin|boundary/.test(id)) map.setLayoutProperty(id,'visibility','none');
     }
-    recomputeDistances();
-    if(map) updateMapMarkers();
-    state.points = initialState.points;
-    state.streak = initialState.streak;
-    state.eventsAttended = initialState.eventsAttended;
-    state.rsvped.clear();
-    state.captures = captureSeed.slice();
-    state.badges = JSON.parse(JSON.stringify(initialState.badges));
-    state.unreadAlerts = initialState.unreadAlerts;
-    renderBell();
-    showScreen("onb-1");
-    showToast("Demo reset");
-  }
-
-  /* ---------------- toast ---------------- */
-  let toastTimer;
-  function showToast(msg){
-    const el = document.getElementById("toast");
-    el.textContent = msg;
-    el.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(()=> el.classList.remove("show"), 1800);
-  }
-
-  /* ---------------- home / map (real Mapbox map + Google Sheet data) ---------------- */
-  let map = null, geolocateControl = null, mapMarkers = [];
-
-  /* ---------------- map <-> list view toggle ---------------- */
-  let homeView = "map";
-  const mapStage = document.getElementById("mapStage");
-  const homeListView = document.getElementById("homeListView");
-  const viewToggleBtn = document.getElementById("viewToggleBtn");
-  const viewToggleLabel = document.getElementById("viewToggleLabel");
-
-  function setHomeView(view){
-    homeView = view;
-    mapStage.style.display = view === "map" ? "flex" : "none";
-    homeListView.style.display = view === "list" ? "flex" : "none";
-    viewToggleLabel.textContent = view === "map" ? "List" : "Map";
-    if(view === "map" && map) setTimeout(()=> map.resize(), 60); // container was display:none, size was stale
-  }
-  viewToggleBtn.addEventListener("click", ()=> setHomeView(homeView === "map" ? "list" : "map"));
-
-  function haversineMiles(lat1, lon1, lat2, lon2){
-    const R = 3958.8;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  }
-
-  function recomputeDistances(){
-    const origin = state.userLocation || DEFAULT_CENTER;
-    events.forEach(ev=>{
-      if(typeof ev.lat === "number" && typeof ev.lng === "number"){
-        const d = haversineMiles(origin.lat, origin.lng, ev.lat, ev.lng);
-        ev.distanceMiles = d; // numeric, for sorting — "distance" below is display-only ("< 0.1 mi" isn't parseable)
-        ev.distance = d < 0.1 ? "< 0.1 mi" : d.toFixed(1) + " mi";
-      } else {
-        ev.distanceMiles = Infinity;
-        ev.distance = "";
-      }
-    });
-  }
-  recomputeDistances(); // initial pass using DEFAULT_CENTER, before geolocation resolves
-
-  function initMap(){
-    if(map) return;
-    const container = document.getElementById("mapContainer");
-    if(!window.mapboxgl){
-      container.innerHTML = '<div class="map-config-note">The map library didn\'t load (offline, blocked script, or a network issue). Reconnect and reopen the app to try again.</div>';
-      return;
+    else if(l.type==='symbol'){
+      if(/poi|transit|airport|natural-point|water-point/.test(id)) map.setLayoutProperty(id,'visibility','none');
+      else { map.setPaintProperty(id,'text-color', /road/.test(id)?MAPCOL.minorLabel:MAPCOL.label); map.setPaintProperty(id,'text-halo-color',MAPCOL.halo); map.setPaintProperty(id,'text-halo-width',1.4); }
+      if(/settlement-subdivision|place-neighbo/.test(id)) map.setLayoutProperty(id,'visibility','none'); // replaced by Comuna neighborhood labels
     }
-    if(!MAPBOX_TOKEN || MAPBOX_TOKEN.indexOf("YOUR_") === 0){
-      container.innerHTML = '<div class="map-config-note">Add your free Mapbox token in the CONFIG block at the top of the script to load the real map here.</div>';
-      return;
-    }
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-    map = new mapboxgl.Map({
-      container: "mapContainer",
-      style: "mapbox://styles/mapbox/outdoors-v12",
-      center: [DEFAULT_CENTER.lng, DEFAULT_CENTER.lat],
-      zoom: 12.3
-    });
-    map.addControl(new mapboxgl.NavigationControl({ showCompass:false }), "top-right");
+  }catch(e){} });
+  // Comuna's own neighborhood labels, in the uppercase, tracked style of the guide
+  try{
+    map.addSource('comuna-hoods',{type:'geojson',data:{type:'FeatureCollection',features:HOODS.map(h=>({type:'Feature',properties:{name:h.name.toUpperCase()},geometry:{type:'Point',coordinates:[h.lng,h.lat]}}))}});
+    map.addLayer({id:'comuna-hood-labels',type:'symbol',source:'comuna-hoods',minzoom:11,layout:{'text-field':['get','name'],'text-font':['DIN Pro Bold','Arial Unicode MS Bold'],'text-size':['interpolate',['linear'],['zoom'],11,11,15,15],'text-letter-spacing':.25,'text-offset':[0,-2.2]},paint:{'text-color':MAPCOL.label,'text-opacity':.55,'text-halo-color':MAPCOL.halo,'text-halo-width':1.5}});
+  }catch(e){}
+}
+function setMapStatus(live){ const el=document.getElementById('mapStatus'); if(el) el.textContent = live ? 'Map: live Mapbox, styled to Brand Guide v2.' : 'Map: Paper preview. The live Mapbox map loads when this file runs on the team\'s own site (Mapbox tokens are locked to approved domains).'; }
+function tryMapbox(){
+  if(!MAPBOX_TOKEN){ drawPaper(); setMapStatus(false); return; }
+  const css=document.createElement('link'); css.rel='stylesheet'; css.href='https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css'; document.head.appendChild(css);
+  const s=document.createElement('script'); s.src='https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js';
+  let settled=false; const fail=()=>{ if(settled) return; settled=true; map=null; drawPaper(); setMapStatus(false); };
+  const timer=setTimeout(fail,6000);
+  s.onerror=()=>{ clearTimeout(timer); fail(); };
+  s.onload=()=>{ try{
+      if(!mapboxgl.supported || !mapboxgl.supported()){ clearTimeout(timer); fail(); return; }
+      mapboxgl.accessToken=MAPBOX_TOKEN;
+      const m=new mapboxgl.Map({container:'map',style:'mapbox://styles/mapbox/light-v11',center:[origin().lng,origin().lat],zoom:13.3,attributionControl:false,pitchWithRotate:false,dragRotate:false});
+      m.addControl(new mapboxgl.AttributionControl({compact:true}),'bottom-right');
+      // A token locked to another domain answers 401/403: fall back to the Paper map instead of showing a blank one.
+      m.on('error',ev=>{ const er=ev&&ev.error; if(!er) return; const bad=[401,403].includes(er.status) || /401|403|Forbidden|Unauthorized/i.test(String(er.message)); if(!bad) return;
+        clearTimeout(timer); markers.forEach(x=>x.remove()); markers=[]; markers.you=null; try{ m.remove(); }catch(e){} map=null; settled=true; drawPaper(); setMapStatus(false); });
+      m.on('style.load',()=>{ if(settled) return; map=m; styleMapbox(); });
+      m.once('idle',()=>{ clearTimeout(timer); if(settled) return; settled=true; map=m; document.querySelector('#map .paper-map')?.remove(); setMapStatus(true); renderHome(); });
+    }catch(e){ clearTimeout(timer); fail(); } };
+  document.head.appendChild(s);
+}
+function rebuildMap(){ if(map){ if(markers.you){ markers.you.remove(); markers.you=null; } map.flyTo({center:[origin().lng,origin().lat],zoom:13.3,duration:800}); } }
 
-    geolocateControl = new mapboxgl.GeolocateControl({
-      positionOptions: { enableHighAccuracy: true },
-      trackUserLocation: true,
-      showUserHeading: true
-    });
-    map.addControl(geolocateControl, "top-right");
-    geolocateControl.on("geolocate", (e)=>{
-      state.userLocation = { lat: e.coords.latitude, lng: e.coords.longitude };
-      recomputeDistances();
-      renderHome();
-    });
+function rng(seed){ return ()=>{ seed=(seed*16807)%2147483647; return (seed-1)/2147483646; }; }
+function projector(w,h,P){
+  const o=origin(); const pts=[o,...P.filter(e=>e.mi<=NEARBY_MILES*1.6)];
+  let la0=Math.min(...pts.map(p=>p.lat)), la1=Math.max(...pts.map(p=>p.lat)), lo0=Math.min(...pts.map(p=>p.lng)), lo1=Math.max(...pts.map(p=>p.lng));
+  const k=Math.cos(o.lat*Math.PI/180); let dLa=Math.max(la1-la0,.012), dLo=Math.max((lo1-lo0)*k,.012);
+  const pad=.22, aspect=w/h; if(dLo/dLa<aspect) dLo=dLa*aspect; else dLa=dLo/aspect;
+  const cLa=(la0+la1)/2, cLo=(lo0+lo1)/2; dLa*=1+pad*2; dLo*=1+pad*2;
+  return p=>({ x:((p.lng-cLo)*k/dLo+.5)*w, y:(.5-(p.lat-cLa)/dLa)*h });
+}
+const LANDMARKS=[ {n:'Silver Lake Reservoir',lat:34.0925,lng:-118.2616,t:'water',rx:.9,ry:.5}, {n:'Echo Park Lake',lat:34.0726,lng:-118.2606,t:'water',rx:.45,ry:.3}, {n:'Elysian Park',lat:34.0806,lng:-118.2436,t:'park',rx:1.2,ry:1.0}, {n:'Griffith Park',lat:34.1300,lng:-118.2950,t:'park',rx:2.2,ry:1.4} ];
+function paintPaper(host,w,h,P,opts={}){
+  const R=rng(7), proj=projector(w,h,P);
+  const pxPerMi = Math.abs(proj({lat:origin().lat,lng:origin().lng+0.0185}).x - proj(origin()).x) || 60;
+  let s=`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block"><rect width="${w}" height="${h}" fill="#EFE2C8"/>`;
+  LANDMARKS.forEach(L=>{ const p=proj(L); if(p.x<-200||p.x>w+200||p.y<-200||p.y>h+200) return; s+=`<ellipse cx="${p.x}" cy="${p.y}" rx="${L.rx*pxPerMi*.5}" ry="${L.ry*pxPerMi*.5}" fill="${L.t==='water'?'#AFC0D8':'#C9D4B5'}"/>`; });
+  const sp=Math.max(18,pxPerMi*.18);
+  s+=`<g stroke="#FBF6EA" stroke-width="2.2" transform="rotate(-12 ${w/2} ${h/2})">`;
+  for(let x=-w; x<w*2; x+=sp*(0.8+R()*0.5)) s+=`<line x1="${x}" y1="${-h}" x2="${x}" y2="${h*2}"/>`;
+  for(let y=-h; y<h*2; y+=sp*(0.8+R()*0.5)) s+=`<line x1="${-w}" y1="${y}" x2="${w*2}" y2="${y}"/>`;
+  s+=`</g><path d="M${-10} ${h*.62} C${w*.3} ${h*.5} ${w*.55} ${h*.72} ${w+10} ${h*.4}" fill="none" stroke="#FFFFFF" stroke-width="7"/><path d="M${w*.22} ${-10} C${w*.3} ${h*.4} ${w*.18} ${h*.7} ${w*.3} ${h+10}" fill="none" stroke="#FFFFFF" stroke-width="5"/>`;
+  HOODS.forEach(H=>{ const p=proj(H); if(p.x<30||p.x>w-30||p.y<20||p.y>h-20) return; s+=`<text x="${p.x}" y="${p.y-22}" text-anchor="middle" font-family="Big Shoulders Display" font-weight="800" font-size="15" letter-spacing="2" fill="#26251F" opacity=".55">${H.name.toUpperCase()}</text>`; });
+  s+='</svg>';
+  host.innerHTML=s;
+  const o=proj(origin()); const you=document.createElement('div'); you.className='youare'; you.style.left=o.x+'px'; you.style.top=o.y+'px'; you.innerHTML=omark(30); host.appendChild(you);
+  if(!opts.noPins) P.forEach((ev,i)=>{ if(ev.mi>NEARBY_MILES*1.6) return; const p=proj(ev); const el=pinEl(ev,i); el.style.position='absolute'; el.style.left=p.x+'px'; el.style.top=p.y+'px'; host.appendChild(el); });
+}
+function drawPaper(){
+  if(map) return;
+  const wrap=document.getElementById('map'); const w=wrap.clientWidth, h=wrap.clientHeight; if(!w||!h) return;
+  let host=wrap.querySelector('.paper-map'); if(!host){ host=document.createElement('div'); host.className='paper-map'; wrap.appendChild(host); }
+  enrich(); paintPaper(host,w,h,picks());
+}
+function drawMini(){ const el=document.getElementById('miniMap'); setTimeout(()=>{ enrich(); paintPaper(el,el.clientWidth,el.clientHeight,picks()); },20); }
+window.addEventListener('resize',()=>{ if(current==='home') drawPaper(); });
 
-    if(window.MapboxGeocoder){
-      const geocoder = new MapboxGeocoder({
-        accessToken: MAPBOX_TOKEN,
-        mapboxgl: mapboxgl,
-        marker: false,
-        placeholder: "Search neighborhoods, addresses…",
-        proximity: { longitude: DEFAULT_CENTER.lng, latitude: DEFAULT_CENTER.lat },
-        bbox: LA_BBOX
-      });
-      document.getElementById("geocoderContainer").appendChild(geocoder.onAdd(map));
-    }
+/* ---------- event sheet ---------- */
+const overlay=document.getElementById('overlay'), sheet=document.getElementById('sheet');
+const faceCols=[C.green,C.red,C.blue,C.sun,C.ink];
+function openSheet(id){
+  const ev=events.find(e=>e.id===id); if(!ev) return; enrich();
+  const inn=S.rsvp.includes(id), done=S.checked.includes(id);
+  const initials=(ev.host||'?').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();
+  const faces=Array.from({length:Math.min(ev.fromGroup||0,4)},(_,i)=>`<span style="background:${faceCols[i]}">${'AJKLR'[i]}</span>`).join('');
+  sheet.innerHTML=`<div class="grab"></div>
+    <div class="cat" style="display:flex;align-items:center;gap:8px">${catIcon(ev.category,26)}${(CATS[ev.category]||{label:'Nearby'}).label} · ${ev.hood}</div>
+    <h2>${ev.title}</h2>
+    <div class="sub">${ev.venue}</div>
+    <div class="facts"><div class="fact"><div class="k">When</div><div class="v">${ev.time||'Soon'}</div></div><div class="fact"><div class="k">How far</div><div class="v">${mins(ev.mi)} min · ${ev.mi.toFixed(1)} mi</div></div></div>
+    ${ev.going?`<div class="goingrow">${faces?`<div class="faces">${faces}</div>`:''}${ev.going} going${ev.fromGroup?`, ${ev.fromGroup} you know`:''}</div>`:''}
+    ${ev.desc?`<p class="desc">${ev.desc}</p>`:''}
+    <div class="host"><div class="avatar">${initials}</div><div><b>${ev.host||'Local host'}</b><div class="sub" style="font-size:12px">Hosting on Comuna</div></div></div>
+    ${(ev.parking||ev.alcohol!==undefined)?`<div class="practical">${ev.parking?`Parking: ${ev.parking}<br>`:''}${ev.alcohol===true?'Drinks available, 21+ to drink':ev.alcohol===false?'Alcohol-free':''}</div>`:''}
+    ${done? `<button class="btn green" disabled>Stamped. See you next time.</button>`
+      : inn? `<div class="row2"><button class="btn ghost" id="shareBtn">Invite friends</button><button class="btn primary" id="checkBtn">I'm here: check in</button></div>`
+      : `<div class="row2"><button class="btn ghost" id="shareBtn">Invite friends</button><button class="btn primary" id="rsvpBtn">I'm in</button></div>`}`;
+  overlay.classList.add('on');
+  const r=document.getElementById('rsvpBtn'); if(r) r.onclick=()=>{ S.rsvp.push(id); save(); toast('You\'re in. It\'s in your plans.'); openSheet(id); renderHome(); };
+  const c=document.getElementById('checkBtn'); if(c) c.onclick=()=>checkIn(ev);
+  const sh=document.getElementById('shareBtn'); if(sh) sh.onclick=()=>shareEv(ev);
+}
+overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.classList.remove('on'); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ overlay.classList.remove('on'); document.getElementById('stampModal').classList.remove('on'); } });
+function shareEv(ev){
+  const url=PARTIFUL[ev.id]||'https://partiful.com/e/example';
+  const text=`${ev.title} at ${ev.venue}, ${ev.time}. Come with? ${url}`;
+  if(navigator.clipboard) navigator.clipboard.writeText(text).then(()=>toast('Invite copied'),()=>toast('Invite ready to share'));
+  else toast('Invite ready to share');
+}
+function checkIn(ev){
+  const hood=hoodByName(ev.hood), city=cityOf(hood);
+  const hadHood=!!visitedHoods()[hood.name], hadCity=!!visitedCities()[city], hadCat=Object.values(S.places).some(p=>p.cat===ev.category);
+  const pl=S.places[ev.venue] || (S.places[ev.venue]={n:0,cat:ev.category,lat:ev.lat,lng:ev.lng});
+  const firstPlace=pl.n===0; pl.n++;
+  S.checked.push(ev.id); S.visits++; S.points+=50; save();
+  overlay.classList.remove('on');
+  const un=[]; if(!hadHood) un.push(`New neighborhood: ${hood.name}`); if(!hadCity) un.push(`New city: ${city}`); if(!hadCat) un.push(`First ${(CATS[ev.category]||{short:''}).short.toLowerCase()} stamp`); if(pl.n===5) un.push(`You're a regular here`);
+  const m=document.getElementById('stampModal');
+  m.innerHTML=`<div class="stampbox">${placeStamp(ev.venue,hood.name,ev.category,pl.n,0,240,160,'#F3E7D1')}</div>
+    <h3>${firstPlace?`Stamped: ${ev.venue}`:`Back at ${ev.venue}`}</h3>
+    <p>${ev.title}. +50 points, and ${ev.venue} knows you came.</p>
+    ${un.length?`<div class="unlocks">${un.map(u=>`<span>${u}</span>`).join('')}</div>`:''}
+    <button class="btn primary" id="closeStamp" style="max-width:260px">Nice</button>`;
+  m.classList.add('on');
+  document.getElementById('closeStamp').onclick=()=>{ m.classList.remove('on'); renderHome(); };
+}
 
-    map.on("load", ()=>{
-      updateMapMarkers();
-      // best-effort: prompt for real location once, matches the onboarding promise
-      setTimeout(()=>{ try{ geolocateControl.trigger(); }catch(err){} }, 500);
-    });
+/* ---------- plans ---------- */
+function renderPlans(){
+  enrich();
+  const mine=events.filter(e=>S.rsvp.includes(e.id));
+  document.getElementById('planList').innerHTML = mine.length? mine.map(ev=>{ const done=S.checked.includes(ev.id); return `<div class="planrow"><div class="d">${ev.time}</div><div class="t">${ev.title}</div><div class="u">${ev.venue} · ${mins(ev.mi)} min away${done?' · stamped':''}</div>
+    <div class="acts"><button data-open="${ev.id}">${done?'Details':'Check in'}</button><button data-share="${ev.id}">Copy Partiful invite</button></div></div>`; }).join('')
+    : `<div class="empty"><span class="hand">free tonight?</span>Nothing planned yet. Tap "I'm in" on a pick and it lands here.</div>`;
+  const inv=[{id:8,from:'Ghazi',t:'Sun · Sunset Volleyball'},{id:1,from:'Maya',t:'Tue · Rooftop Jazz Session'}];
+  document.getElementById('inviteList').innerHTML=inv.map(i=>`<div class="planrow"><div class="d">${i.from} invited you</div><div class="t">${i.t}</div><div class="u">${PARTIFUL[i.id]}</div><div class="acts"><button data-open="${i.id}">See it</button></div></div>`).join('');
+}
+document.querySelector('[data-s="plans"]').addEventListener('click',e=>{ const o=e.target.closest('[data-open]'); if(o) openSheet(+o.dataset.open); const s=e.target.closest('[data-share]'); if(s) shareEv(events.find(x=>x.id===+s.dataset.share)); });
+
+/* ---------- passport: pages for places, neighborhoods, cities and states ---------- */
+let passTab='places';
+const PATCHES=[ {t:'FIRST STAMP',s:'WELCOME',sc:'hills',ok:()=>Object.keys(S.places).length>=1},
+  {t:'THREE HOODS',s:'EXPLORER',sc:'lake',ok:()=>Object.keys(visitedHoods()).length>=3},
+  {t:'REGULAR',s:'5 VISITS, 1 PLACE',sc:'hills',ok:()=>Object.values(S.places).some(p=>p.n>=5)},
+  {t:'ALL 8 KINDS',s:'TRIED EVERYTHING',sc:'night',ok:()=>new Set(Object.values(S.places).map(p=>p.cat)).size>=8},
+  {t:'COAST TO LAKE',s:'SANTA MONICA',sc:'beach',ok:()=>!!visitedCities()['Santa Monica']} ];
+function renderPassport(){
+  const places=S.places, H=visitedHoods(), Ci=visitedCities();
+  const nP=Object.keys(places).length, nH=Object.keys(H).length, nC=Object.keys(Ci).length;
+  document.getElementById('passCount').textContent=`${nP} places, ${nH} neighborhoods`;
+  document.getElementById('passBar').style.width=Math.min(100,nH/HOODS.length*100)+'%';
+  document.getElementById('psStreak').textContent=S.streak+' wk'; document.getElementById('psVisits').textContent=S.visits; document.getElementById('psPts').textContent=S.points.toLocaleString();
+  document.getElementById('passSeal').innerHTML=omark(130,'#F3E7D1','#F3E7D1');
+  const tabs=[['places','Places',nP],['hoods','Neighborhoods',nH],['cities','Cities',nC],['states','States',1]];
+  document.getElementById('passTabs').innerHTML=tabs.map(t=>`<button role="tab" aria-selected="${t[0]===passTab}" class="${t[0]===passTab?'on':''}" data-tab="${t[0]}">${t[1]} ${t[2]}</button>`).join('');
+  const rots=[-7,5,-3,8,-5,4,-9,6,-4,7];
+  let html='';
+  if(passTab==='places'){
+    const list=Object.entries(places).sort((a,b)=>b[1].n-a[1].n);
+    const tried=new Set(list.map(([,p])=>p.cat));
+    html=`<div class="ph"><b>Places</b><span>a stamp for every spot you check in</span></div><div class="pagegrid">`+
+      list.map(([name,p],i)=>`<div class="slot">${placeStamp(name,hoodOf(p).name,p.cat,p.n,rots[i%rots.length])}</div>`).join('')+
+      Object.keys(CATS).filter(k=>!tried.has(k)).slice(0,list.length%2?1:2).map(k=>`<div class="slot"><div class="ghost-rect">your first ${CATS[k].short.toLowerCase()} spot?</div></div>`).join('')+
+      `</div><div class="pagenote">${tried.size} of 8 kinds of places so far</div>`;
+  } else if(passTab==='hoods'){
+    html=`<div class="ph"><b>Neighborhoods</b><span>earned with your first place in each</span></div><div class="pagegrid">`+
+      HOODS.map((h,i)=> H[h.name]? `<div class="slot">${stampSVG(h.name.toUpperCase(),`${H[h.name]} VISIT${H[h.name]>1?'S':''} · COMUNA`,h.glyph,h.color,132,rots[i])}</div>` : `<div class="slot"><div class="ghost-stamp">${h.name}?</div></div>`).join('')+`</div>`;
+  } else if(passTab==='cities'){
+    const cities=['Los Angeles','Santa Monica','Pasadena','Long Beach'];
+    const col={ 'Los Angeles':[C.green,C.paper], 'Santa Monica':[C.blue,C.paper], 'Pasadena':[C.red,C.paper], 'Long Beach':[C.sun,C.ink] };
+    html=`<div class="ph"><b>Cities</b><span>every city you've explored</span></div><div class="pagegrid">`+
+      cities.map((c,i)=> Ci[c]? `<div class="slot">${cityLabel(c,`${Ci[c]} CHECK-INS`,col[c][0],col[c][1],150,100,rots[i])}</div>` : `<div class="slot"><div class="ghost-rect" style="border-radius:50%;width:140px">${c}?</div></div>`).join('')+`</div>`;
+  } else {
+    html=`<div class="ph"><b>States</b><span>for when Comuna goes on the road</span></div><div class="pagegrid">`+
+      `<div class="slot">${stampSVG('CALIFORNIA','EST. 2026 · COMUNA','star',C.red,136,-6)}</div><div class="slot"><div class="ghost-stamp" style="width:128px;height:128px">next state?</div></div></div>`+
+      `<div class="pagenote">LA only for now. New cities unlock as Comuna launches them.</div>`;
   }
+  document.getElementById('passPage').innerHTML=html;
+  document.getElementById('patchList').innerHTML=PATCHES.map(p=>{ const ok=p.ok(); return `<div class="patch ${ok?'':'locked'}">${patchSVG(p.t,p.s,p.sc,92,110)}<div>${ok?'Earned':'Locked'}</div></div>`; }).join('');
+  const lb=[['Ana P.',2410],['Jordan M.',1980],['Mitchell K.',S.points],['Sam T.',1105],['Priya K.',960]].sort((a,b)=>b[1]-a[1]);
+  document.getElementById('lbList').innerHTML=lb.map((r,i)=>`<div class="lbrow ${r[0]==='Mitchell K.'?'me':''}"><div class="r">${i+1}</div><div>${r[0]}${r[0]==='Mitchell K.'?' (you)':''}</div><div>${r[1].toLocaleString()} pts</div></div>`).join('');
+  const rw=[{id:'tsc',t:'$10 at Ten Speed Coffee',s:'Any drink or pastry',cost:500},{id:'otw',t:'Free ceramics class seat',s:'Otherwild Studio',cost:1500},{id:'patch',t:'Embroidered Silver Lake patch',s:'Pick up at any partner event',cost:800}];
+  document.getElementById('rewardList').innerHTML=rw.map(r=>{ const used=S.redeemed.includes(r.id); return `<div class="reward"><div><div class="t">${r.t}</div><div class="s">${r.s} · ${r.cost} pts</div></div><button data-redeem="${r.id}" data-cost="${r.cost}" ${used||S.points<r.cost?'disabled':''}>${used?'Redeemed':'Redeem'}</button></div>`; }).join('');
+}
+document.getElementById('passTabs').addEventListener('click',e=>{ const b=e.target.closest('[data-tab]'); if(!b) return; passTab=b.dataset.tab; renderPassport(); });
 
-  function updateMapMarkers(){
-    if(!map) return;
-    mapMarkers.forEach(m=> m.remove());
-    mapMarkers = [];
-    events.forEach(ev=>{
-      if(typeof ev.lat !== "number" || typeof ev.lng !== "number") return;
-      const el = document.createElement("div");
-      el.className = "mb-pin " + (ev.live ? "live" : "event");
-      el.title = ev.title;
-      if(ev.live){
-        const lbl = document.createElement("span");
-        lbl.className = "mb-pin-label";
-        lbl.textContent = "LIVE";
-        el.appendChild(lbl);
-      }
-      el.addEventListener("click", ()=> openSheet(ev.id));
-      const marker = new mapboxgl.Marker({ element: el }).setLngLat([ev.lng, ev.lat]).addTo(map);
-      mapMarkers.push(marker);
-    });
-  }
+document.getElementById('rewardList').addEventListener('click',e=>{ const b=e.target.closest('[data-redeem]'); if(!b||b.disabled) return; S.points-=+b.dataset.cost; S.redeemed.push(b.dataset.redeem); save(); renderPassport(); toast('Redeemed. Show this at the counter.'); });
 
-  function cleanHostName(value){
-    return String(value || "")
-      .trim()
-      .replace(/^Hosted by\s+/i, "")
-      .replace(/\s*—\s*Culture Keeper\s*$/i, "")
-      .trim();
-  }
+/* ---------- profile / alerts ---------- */
+function renderProfile(){ document.getElementById('pfStamps').textContent=Object.keys(S.places).length+Object.keys(visitedHoods()).length+Object.keys(visitedCities()).length+1; document.getElementById('pfVisits').textContent=S.visits; document.getElementById('pfStreak').textContent=S.streak; document.getElementById('pfAlerts').textContent=S.alertsRead?'All caught up':'3 new'; }
+const ALERTS=[ {t:'Rooftop Jazz starts in 12 minutes',s:'3 friends are already there.',w:'Just now',ic:'music',ev:1}, {t:'Maya invited you',s:'Tue · Rooftop Jazz Session',w:'1 hr ago',ic:'invite',ev:1}, {t:'One more stop for the Explorer patch',s:'Try somewhere in Frogtown this week.',w:'Yesterday',ic:'stamp'}, {t:'Ten Speed Coffee approved your $10 credit',s:'It\'s in your passport.',w:'2 days ago',ic:'coffee'} ];
+function renderAlerts(){
+  const icon=k=>({music:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${C.red}" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,invite:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${C.blue}" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>`,stamp:`<svg width="22" height="22" viewBox="-28 -28 56 56">${glyph('star',C.sun)}</svg>`,coffee:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${C.green}" stroke-width="2"><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 10h2a2 2 0 0 1 0 4h-2"/></svg>`}[k]);
+  document.getElementById('alertList').innerHTML=ALERTS.map((a,i)=>`<button class="alert ${!S.alertsRead&&i<3?'unread':''}" ${a.ev?`data-alert-ev="${a.ev}"`:''}><div class="ic">${icon(a.ic)}</div><div><div class="t">${a.t}</div><div class="s">${a.s}</div><div class="w">${a.w}</div></div></button>`).join('');
+}
+document.getElementById('alertList').addEventListener('click',e=>{ const a=e.target.closest('[data-alert-ev]'); if(a) openSheet(+a.dataset.alertEv); });
+function updateDot(){ const d=document.getElementById('alertDot'); d.style.display=S.alertsRead?'none':'grid'; }
 
-  /* ---------------- geocoding (address -> lat/lng, cached) ---------------- */
-  const GEOCODE_CACHE_KEY = "communa_geocode_cache_v1";
+/* ---------- host ---------- */
+let hostExtra=0;
+function renderHost(){
+  const n=87+S.checked.filter(id=>{ const e=events.find(x=>x.id===id); return e&&e.venue==='Ten Speed Coffee'; }).length+hostExtra;
+  document.getElementById('hostCheckins').textContent=n;
+  document.getElementById('billVisits').textContent=`${n} verified visits × $5`;
+  document.getElementById('billVisitAmt').textContent='$'+(n*5);
+  document.getElementById('billTotal').textContent='$'+(n*5+40);
+  const pend=[['Ana P.','$10 credit'],['Sam T.','$10 credit'],['Jordan M.','$10 credit']].filter((_,i)=>!(S.approved||[]).includes(i));
+  document.getElementById('redemptionList').innerHTML=pend.length? pend.map((p)=>`<div class="hostrow"><div>${p[0]}<small>${p[1]} · 500 pts</small></div><button data-approve="${p[0]}">Approve</button></div>`).join('') : `<p class="sub" style="margin-top:6px">All caught up.</p>`;
+}
+document.getElementById('redemptionList').addEventListener('click',e=>{ const b=e.target.closest('[data-approve]'); if(!b) return; const names=['Ana P.','Sam T.','Jordan M.']; S.approved=S.approved||[]; S.approved.push(names.indexOf(b.dataset.approve)); save(); renderHost(); toast('Approved'); });
+document.getElementById('postEvent').onclick=()=>toast('Posting opens in the next build');
 
-  function loadGeocodeCache(){
-    try{ return JSON.parse(localStorage.getItem(GEOCODE_CACHE_KEY)) || {}; }
-    catch(err){ return {}; }
-  }
-  function saveGeocodeCache(cache){
-    try{ localStorage.setItem(GEOCODE_CACHE_KEY, JSON.stringify(cache)); }
-    catch(err){ /* storage full/disabled — cache just won't persist between visits */ }
-  }
-  const geocodeCache = loadGeocodeCache();
+/* ---------- live data (Google Sheet) ---------- */
+function loadSheet(){
+  if(!SHEET_CSV_URL || !window.Papa) return;
+  fetch(SHEET_CSV_URL).then(r=>{ if(!r.ok) throw 0; return r.text(); }).then(txt=>{
+    const rows=Papa.parse(txt,{header:true,skipEmptyLines:true}).data.filter(r=>r.title && r.lat && r.lng);
+    if(!rows.length) return;
+    const catMap=c=>/music|comedy|night|film|movie/i.test(c)?'music':/dinner|food|drink|supper|coffee/i.test(c)?'food':/fitness|wellness|yoga|run/i.test(c)?'wellness':/hike|outdoor|beach|park/i.test(c)?'outdoors':/art|pop|craft|making/i.test(c)?'art':/game|trivia|social/i.test(c)?'games':/market|shop/i.test(c)?'markets':'community';
+    events=rows.map((r,i)=>({ id:100+i, title:r.title, venue:r.venue||'', lat:parseFloat(r.lat), lng:parseFloat(r.lng), time:r.day_time||'', live:/true/i.test(r.live), startsIn:r.status_note||'', going:parseInt(r.going)||0, fromGroup:parseInt(r.from_group)||0, host:(r.host||'').split(' — ')[0], desc:r.description||'', category:catMap(r.category), parking:r.parking||'', alcohol: r.alcohol? /true|yes/i.test(r.alcohol) : undefined }));
+    usingDemo=false; if(current==='home') renderHome();
+  }).catch(()=>{});
+}
 
-  function geocodeAddress(address){
-    if(geocodeCache[address]) return Promise.resolve(geocodeCache[address]);
-    if(!MAPBOX_TOKEN || MAPBOX_TOKEN.indexOf("YOUR_") === 0) return Promise.resolve(null);
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json`
-      + `?access_token=${MAPBOX_TOKEN}&limit=1&bbox=${LA_BBOX.join(",")}`;
-    return fetch(url)
-      .then(res=> res.ok ? res.json() : null)
-      .then(data=>{
-        const center = data && data.features && data.features[0] && data.features[0].center;
-        if(!center) return null;
-        const coords = { lat: center[1], lng: center[0] };
-        geocodeCache[address] = coords;
-        saveGeocodeCache(geocodeCache);
-        return coords;
-      })
-      .catch(()=> null); // network hiccup or bad address — event just won't get a pin this load
-  }
+/* ---------- demo chrome ---------- */
+const jumps=[['onb1','Intro'],['home','Tonight'],['plans','Plans'],['passport','Passport'],['alerts','Alerts'],['host','Host view']];
+document.getElementById('jump').innerHTML=jumps.map(j=>`<button data-go="${j[0]}">${j[1]}</button>`).join('');
+document.getElementById('restart').onclick=()=>{ try{ localStorage.removeItem('comuna_v3'); }catch(e){} load(); filter='All'; history=[]; current=''; go('onb1',false); renderHome(); updateDot(); toast('Demo reset'); };
 
-  function resolveEventCoords(row){
-    const lat = parseFloat(row.lat);
-    const lng = parseFloat(row.lng);
-    if(!isNaN(lat) && !isNaN(lng)) return Promise.resolve({ lat, lng });
-    if(!row.address) return Promise.resolve(null);
-    return geocodeAddress(row.address);
-  }
-
-  function loadEventsFromSheet(){
-    if(!window.Papa || !SHEET_CSV_URL || SHEET_CSV_URL.indexOf("YOUR_") === 0){
-      return; // no sheet configured yet — stays on FALLBACK_EVENTS
-    }
-    Papa.parse(SHEET_CSV_URL, {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      complete: (results)=>{
-        const rows = (results.data || []).filter(row=> row.title);
-
-        Promise.all(rows.map(row=>
-          resolveEventCoords(row).then(coords=> ({ row, coords }))
-        )).then(resolvedRows=>{
-          const parsed = resolvedRows
-            .filter(({coords})=> coords) // drop events we couldn't place on the map
-            .map(({row, coords}, i)=>({
-              id: i + 1,
-              title: String(row.title).trim(),
-              venue: String(row.venue || "").trim(),
-              address: String(row.address || "").trim(),
-              lat: coords.lat, lng: coords.lng,
-              time: String(row.day_time || "").trim(),
-              live: String(row.live || "").trim().toUpperCase() === "TRUE",
-              going: parseInt(row.going, 10) || 0,
-              fromGroup: parseInt(row.from_group, 10) || 0,
-              host: cleanHostName(row.host),
-              desc: String(row.description || "").trim(),
-              startsIn: String(row.status_note || "").trim(),
-              category: String(row.category || "").trim(),
-              parking: String(row.parking || "").trim(),
-              alcohol: String(row.alcohol || "").trim().toUpperCase() === "TRUE",
-              g: i % gradients.length
-            }));
-
-          if(parsed.length){
-            events = parsed;
-            recomputeDistances();
-            if(map) updateMapMarkers();
-            renderHome();
-            showToast(`Loaded ${parsed.length} events from your sheet`);
-          }
+/* ---------- PWA: service worker registration ---------- */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("service-worker.js", { updateViaCache: "none" })
+      .then((reg)=>{
+        document.addEventListener("visibilitychange", ()=>{
+          if(document.visibilityState === "visible") reg.update().catch(()=>{});
         });
-      },
-      error: ()=>{ /* stays on FALLBACK_EVENTS, no need to alarm anyone testing */ }
-    });
-  }
-
-  function renderHome(){
-    if(map) updateMapMarkers();
-
-    const list = document.getElementById("homeList");
-    list.innerHTML = "";
-    // closest first — this list is the dedicated "List view", not a preview
-    const sorted = events.slice().sort((a,b)=> a.distanceMiles - b.distanceMiles);
-    sorted.forEach(ev=>{
-      const row = document.createElement("div");
-      row.className = "ev-card";
-      row.addEventListener("click", ()=> openSheet(ev.id));
-      const sub = [ev.distance, ev.startsIn].filter(Boolean).join(" · ");
-      row.innerHTML = `
-        <div class="ev-thumb" style="background:${gradients[ev.g]}">${ev.title[0]}</div>
-        <div class="ev-info">
-          <p class="t">${ev.title}</p>
-          <p class="s">${sub}</p>
-        </div>
-        ${ev.live ? '<span class="pill live">LIVE</span>' : (state.rsvped.has(ev.id) ? '<span class="pill soft">Going</span>' : '')}
-      `;
-      list.appendChild(row);
-    });
-  }
-
-  /* ---------------- event detail sheet ---------------- */
-  const sheetOverlay = document.getElementById("sheetOverlay");
-  let sheetEventId = null;
-
-  function openSheet(id){
-    const ev = events.find(e=>e.id===id);
-    if(!ev) return;
-    sheetEventId = id;
-    document.getElementById("sheetPhoto").style.background = gradients[ev.g];
-    const badgesWrap = document.getElementById("sheetBadges");
-    const badgeParts = [];
-    if(ev.live) badgeParts.push('<span class="sheet-badge live">LIVE</span>');
-    if(ev.category) badgeParts.push('<span class="sheet-badge category">' + ev.category + '</span>');
-    badgesWrap.innerHTML = badgeParts.join("");
-    document.getElementById("sheetTitle").textContent = ev.title;
-    document.getElementById("sheetMeta").textContent = `${ev.venue} · ${ev.time}`;
-    document.getElementById("sheetGoing").textContent = `${ev.going} going · ${ev.fromGroup} from your group`;
-    document.getElementById("sheetHost").textContent = `Hosted by ${cleanHostName(ev.host)}`;
-    const extrasWrap = document.getElementById("sheetExtras");
-    extrasWrap.innerHTML = "";
-    if(ev.parking){
-      const p = document.createElement("div");
-      p.className = "sheet-note";
-      p.textContent = `Parking: ${ev.parking}`;
-      extrasWrap.appendChild(p);
-    }
-    if(ev.alcohol){
-      const badge = document.createElement("span");
-      badge.className = "sheet-21";
-      badge.textContent = "21+";
-      extrasWrap.appendChild(badge);
-    }
-    extrasWrap.style.display = extrasWrap.innerHTML ? "flex" : "none";
-    document.getElementById("sheetDesc").textContent = ev.desc;
-    const btn = document.getElementById("sheetRsvp");
-    btn.textContent = state.rsvped.has(id) ? "You're going ✓" : "RSVP — Free with Membership";
-    btn.disabled = false;
-    sheetOverlay.classList.add("show");
-  }
-  document.getElementById("closeSheet").addEventListener("click", ()=> sheetOverlay.classList.remove("show"));
-  sheetOverlay.addEventListener("click",(e)=>{ if(e.target===sheetOverlay) sheetOverlay.classList.remove("show"); });
-
-  document.getElementById("sheetRsvp").addEventListener("click", ()=>{
-    if(sheetEventId==null) return;
-    const ev = events.find(e=>e.id===sheetEventId);
-    if(state.rsvped.has(sheetEventId)){
-      sheetOverlay.classList.remove("show");
-      return;
-    }
-    rsvpToEvent(ev);
-    sheetOverlay.classList.remove("show");
+      })
+      .catch(()=>{});
   });
+}
 
-  function rsvpToEvent(ev){
-    state.rsvped.add(ev.id);
-    renderHome();
-    if(ev.live){
-      runCheckIn(ev);
-    } else {
-      showToast(`RSVP'd to ${ev.title}`);
-    }
-  }
-
-  /* ---------------- check-in overlay ---------------- */
-  function runCheckIn(ev){
-    state.streak += 1;
-    state.points += 50;
-    state.eventsAttended += 1;
-    document.getElementById("checkinEventName").textContent = ev.title;
-    document.getElementById("checkinPts").textContent = "+50 points earned";
-    const flamesWrap = document.getElementById("checkinFlames");
-    flamesWrap.innerHTML = "";
-    for(let i=0;i<Math.min(state.streak,6);i++){
-      const f = document.createElement("div");
-      f.className = "flame on";
-      f.textContent = "🔥";
-      flamesWrap.appendChild(f);
-    }
-    document.getElementById("checkinUnlock").textContent =
-      state.streak % 5 === 0 ? "Unlocked: Free bar credit" : `${5 - (state.streak % 5)} more week${(5-(state.streak%5))===1?"":"s"} unlocks: Free bar credit`;
-    document.getElementById("checkinOverlay").classList.add("show");
-  }
-  document.getElementById("checkinDone").addEventListener("click", ()=>{
-    document.getElementById("checkinOverlay").classList.remove("show");
-    renderProfile();
-    showToast("Checked in — streak updated");
-  });
-
-  function currentEventTag(){
-    const live = events.find(ev=> ev.live);
-    const ev = live || events[0];
-    return ev ? ev.title : "Comuna";
-  }
-
-  /* ---------------- capture ---------------- */
-  document.getElementById("modePhoto").addEventListener("click", (e)=>{
-    state.captureMode = "PHOTO";
-    e.target.classList.add("active");
-    document.getElementById("modeVideo").classList.remove("active");
-    document.getElementById("recBadge").classList.remove("show");
-  });
-  document.getElementById("modeVideo").addEventListener("click", (e)=>{
-    state.captureMode = "VIDEO";
-    e.target.classList.add("active");
-    document.getElementById("modePhoto").classList.remove("active");
-    document.getElementById("recBadge").classList.add("show");
-  });
-  document.getElementById("shutterBtn").addEventListener("click", ()=>{
-    const flash = document.getElementById("flash");
-    flash.classList.add("show");
-    setTimeout(()=> flash.classList.remove("show"), 110);
-    const tagged = currentEventTag();
-    state.captures.unshift({title: tagged, user:"You", time:"Just now", g: Math.floor(Math.random()*gradients.length)});
-    showToast(state.captureMode === "PHOTO" ? "Photo captured" : "Video captured");
-  });
-
-  /* ---------------- rewards ---------------- */
-  function renderRewards(){
-    document.getElementById("pointsBig").textContent = state.points.toLocaleString() + " pts";
-    const badgeGrid = document.getElementById("badgeGrid");
-    badgeGrid.innerHTML = "";
-    const badgeIcons = {Regular:"🔁", Explorer:"🧭", "Host's Pick":"⭐", "Early Riser":"🌅"};
-    Object.entries(state.badges).forEach(([name, earned])=>{
-      const item = document.createElement("div");
-      item.className = "badge-item" + (earned ? " earned":"");
-      item.innerHTML = `<div class="badge-circle ${earned?'earned':'locked'}">${badgeIcons[name]}</div><span>${name}</span>`;
-      badgeGrid.appendChild(item);
-    });
-    const rewards = [
-      {name:"$10 bar credit · Ten Speed Coffee", cost:500},
-      {name:"Free class · Sunday Ceramics", cost:800},
-      {name:"Priority RSVP for a month", cost:1200}
-    ];
-    const list = document.getElementById("redeemList");
-    list.innerHTML = "";
-    rewards.forEach(r=>{
-      const row = document.createElement("div");
-      row.className = "redeem-row";
-      row.innerHTML = `
-        <div><p class="t">${r.name}</p><p class="s">${r.cost} pts</p></div>
-        <button class="redeem-btn" ${state.points < r.cost ? "disabled":""}>Redeem</button>
-      `;
-      row.querySelector("button").addEventListener("click", ()=>{
-        if(state.points >= r.cost){
-          state.points -= r.cost;
-          showToast("Redeemed! Check your email for the code.");
-          renderRewards();
-          renderProfile();
-        }
-      });
-      list.appendChild(row);
-    });
-  }
-
-  /* ---------------- leaderboard ---------------- */
-  function renderLeaderboard(){
-    const base = [
-      {name:"Jordan M.", pts:2140},
-      {name:"Priya K.", pts:1980},
-      {name:"You", pts:state.points, me:true},
-      {name:"Marcus T.", pts:1110},
-      {name:"Ghazi A.", pts:980}
-    ].sort((a,b)=> b.pts - a.pts);
-    const wrap = document.getElementById("lbScroll");
-    wrap.innerHTML = "";
-    base.forEach((p,i)=>{
-      const row = document.createElement("div");
-      row.className = "lb-row" + (p.me ? " me":"");
-      row.innerHTML = `
-        <div class="lb-rank">${i+1}</div>
-        <div class="lb-avatar"></div>
-        <div class="lb-name">${p.name}</div>
-        <div class="lb-pts">${p.pts.toLocaleString()} pts</div>
-      `;
-      wrap.appendChild(row);
-    });
-  }
-
-  /* ---------------- alerts ---------------- */
-  function renderBell(){
-    const dot = document.getElementById("bellCount");
-    dot.textContent = state.unreadAlerts;
-    dot.style.display = state.unreadAlerts > 0 ? "flex" : "none";
-  }
-  function renderAlerts(){
-    const items = [
-      {t:"Your group starts in 30 min", s:"The Oviatt Penthouse", c:"var(--alert)"},
-      {t:"New spot opened near you", s:"Griffith Park Sunrise Hike · 0.6 mi", c:"var(--accent)"},
-      {t:"Priya checked in", s:"Rooftop Jazz Session", c:"var(--muted)"},
-      {t:"You unlocked a badge", s:'"Regular" — 4 weeks in a row', c:"var(--accent)"}
-    ];
-    const wrap = document.getElementById("alertsScroll");
-    wrap.innerHTML = "";
-    items.forEach(it=>{
-      const row = document.createElement("div");
-      row.className = "alert-row";
-      row.innerHTML = `<div class="stripe" style="background:${it.c}"></div><div><p class="t">${it.t}</p><p class="s">${it.s}</p></div>`;
-      wrap.appendChild(row);
-    });
-  }
-
-  /* ---------------- profile ---------------- */
-  function renderProfile(){
-    document.getElementById("profStreak").textContent = state.streak + "wk";
-    document.getElementById("profPoints").textContent = state.points.toLocaleString();
-    document.getElementById("profEvents").textContent = state.eventsAttended;
-    document.getElementById("tierPill").textContent = state.tier + " Tier";
-    const grid = document.getElementById("captureGrid");
-    grid.innerHTML = "";
-    const items = state.captures.slice(0,6);
-    if(items.length === 0){
-      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--muted);font-size:11.5px;padding:14px 0;">No captures yet — try the Capture tab</div>';
-      return;
-    }
-    items.forEach(p=>{
-      const c = document.createElement("div");
-      c.className = "cell";
-      c.style.background = gradients[p.g];
-      c.textContent = p.title[0];
-      grid.appendChild(c);
-    });
-  }
-
-  /* ---------------- installed-app mode ---------------- */
-  function isStandalone(){
-    return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
-  }
-  if(isStandalone()){
-    document.body.classList.add("standalone-app");
-  }
-  document.getElementById("devtoolsToggle").addEventListener("click", ()=>{
-    document.body.classList.toggle("devtools-open");
-  });
-
-  if("serviceWorker" in navigator){
-    window.addEventListener("load", ()=>{
-      // updateViaCache:"none" keeps the SW script itself from being served
-      // out of HTTP cache, so update checks always see the latest deploy
-      navigator.serviceWorker.register("service-worker.js", { updateViaCache: "none" })
-        .then((reg)=>{
-          // installed PWAs can sit backgrounded for a long time — check for
-          // a new app-shell version whenever the app comes back to the front
-          document.addEventListener("visibilitychange", ()=>{
-            if(document.visibilityState === "visible") reg.update().catch(()=>{});
-          });
-        })
-        .catch(()=>{});
-    });
-  }
-
-  /* ---------------- init ---------------- */
-  renderHome();
-  renderBell();
-  showScreen("onb-1");
-  loadEventsFromSheet();
+/* ---------- boot ---------- */
+function boot(){
+  ['asideMark','onbMark','homeMark'].forEach(id=>wordmark(document.getElementById(id)));
+  buildOnb(); updateDot(); current=''; go('onb1',false); history=[];
+  tryMapbox(); loadSheet();
+}
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(boot); else boot();
 })();
 </script>
 </body>
