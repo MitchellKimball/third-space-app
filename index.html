@@ -202,10 +202,6 @@ img{ max-width:100% }
 .lbrow:last-child{ border-bottom:0 }
 .lbrow .r{ font-family:var(--display); font-weight:900; font-size:20px; color:var(--muted) }
 .lbrow.me{ font-weight:700 } .lbrow.me .r{ color:var(--red) }
-.reward{ display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--card); border-radius:16px; padding:14px; margin-top:10px }
-.reward .t{ font-weight:700; font-size:14.5px } .reward .s{ font-size:12px; color:var(--muted) }
-.reward button{ background:var(--red); color:#fff; border-radius:30px; padding:8px 14px; font-weight:700; font-size:13px; flex:none }
-.reward button:disabled{ background:#CDBF9F }
 
 /* ---------- profile / alerts ---------- */
 .prof{ display:flex; gap:14px; align-items:center; margin:8px 0 6px }
@@ -340,8 +336,6 @@ img{ max-width:100% }
         <div class="patches" id="patchList"></div>
         <div class="h2">Silver Lake explorers this month</div>
         <div class="lb" id="lbList"></div>
-        <div class="h2">Spend your points</div>
-        <div id="rewardList"></div>
       </div>
     </section>
 
@@ -844,12 +838,9 @@ function renderPassport(){
   document.getElementById('patchList').innerHTML=PATCHES.map(p=>{ const ok=p.ok(); return `<div class="patch ${ok?'':'locked'}">${patchSVG(p.t,p.s,p.sc,92,110)}<div>${ok?'Earned':'Locked'}</div></div>`; }).join('');
   const lb=[['Ana P.',2410],['Jordan M.',1980],['Mitchell K.',S.points],['Sam T.',1105],['Priya K.',960]].sort((a,b)=>b[1]-a[1]);
   document.getElementById('lbList').innerHTML=lb.map((r,i)=>`<div class="lbrow ${r[0]==='Mitchell K.'?'me':''}"><div class="r">${i+1}</div><div>${r[0]}${r[0]==='Mitchell K.'?' (you)':''}</div><div>${r[1].toLocaleString()} pts</div></div>`).join('');
-  const rw=[{id:'tsc',t:'$10 at Ten Speed Coffee',s:'Any drink or pastry',cost:500},{id:'otw',t:'Free ceramics class seat',s:'Otherwild Studio',cost:1500},{id:'patch',t:'Embroidered Silver Lake patch',s:'Pick up at any partner event',cost:800}];
-  document.getElementById('rewardList').innerHTML=rw.map(r=>{ const used=S.redeemed.includes(r.id); return `<div class="reward"><div><div class="t">${r.t}</div><div class="s">${r.s} · ${r.cost} pts</div></div><button data-redeem="${r.id}" data-cost="${r.cost}" ${used||S.points<r.cost?'disabled':''}>${used?'Redeemed':'Redeem'}</button></div>`; }).join('');
 }
 document.getElementById('passTabs').addEventListener('click',e=>{ const b=e.target.closest('[data-tab]'); if(!b) return; passTab=b.dataset.tab; renderPassport(); });
 
-document.getElementById('rewardList').addEventListener('click',e=>{ const b=e.target.closest('[data-redeem]'); if(!b||b.disabled) return; S.points-=+b.dataset.cost; S.redeemed.push(b.dataset.redeem); save(); renderPassport(); toast('Redeemed. Show this at the counter.'); });
 
 /* ---------- profile / alerts ---------- */
 function renderProfile(){ document.getElementById('pfStamps').textContent=Object.keys(S.places).length+Object.keys(visitedHoods()).length+Object.keys(visitedCities()).length+1; document.getElementById('pfVisits').textContent=S.visits; document.getElementById('pfStreak').textContent=S.streak; document.getElementById('pfAlerts').textContent=S.alertsRead?'All caught up':'3 new'; }
