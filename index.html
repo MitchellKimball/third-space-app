@@ -528,6 +528,15 @@ const CATS = {
   markets:  { label:'Markets & Shopping',  short:'Markets',   bg:'#244D3A' },
   community:{ label:'Community & Causes',  short:'Community', bg:'#C9533D' }
 };
+/* ---------- place types: each gets its own passport page ---------- */
+const KINDS = {
+  cornerstone:{ label:'Cornerstone', blurb:'the anchors: parks, plazas, libraries' },
+  regular:    { label:'Regular',     blurb:'everyday spots you keep coming back to' },
+  niche:      { label:'Niche',       blurb:'specialty spots with a scene of their own' },
+  popup:      { label:'Pop-up',      blurb:'here for a moment, then gone' }
+};
+// Sheet column "place_type" sets this; otherwise guess from the category.
+function kindOf(p){ if(KINDS[p.kind]) return p.kind; return {outdoors:'cornerstone',community:'cornerstone',markets:'popup',art:'niche',wellness:'niche'}[p.cat||p.category]||'regular'; }
 function catArt(k){
   const P='#F3E7D1', I='#26251F';
   switch(k){
@@ -546,16 +555,16 @@ function catIcon(k,size){ const c=CATS[k]||CATS.community; return `<svg width="$
 
 /* ---------- demo events (used when the Sheet can't be reached) ---------- */
 const DEMO_EVENTS = [
-  {id:1, title:"Rooftop Jazz Session", venue:"The Oviatt Penthouse", lat:34.0478, lng:-118.2563, time:"Tue · 8:00 PM", live:true, startsIn:"starts in 12 min", going:12, fromGroup:3, host:"Maya R.", desc:"Small-group table, live trio, one round included.", category:"music", parking:"Street parking after 8pm", alcohol:true},
-  {id:2, title:"Sunday Ceramics Pop-up", venue:"Otherwild Studio", lat:34.0928, lng:-118.2515, time:"Sun · 2:00 PM", startsIn:"6 spots left", going:6, fromGroup:2, host:"Devon L.", desc:"Hand-build a small bowl, glaze included. No experience needed.", category:"art", parking:"Free garage behind the studio", alcohol:false},
-  {id:3, title:"Griffith Park Sunrise Hike", venue:"Observatory Trailhead", lat:34.1184, lng:-118.3004, time:"Sat · 6:30 AM", startsIn:"9 going", going:9, fromGroup:1, host:"Priya K.", desc:"Easy 3-mile loop, coffee after at the trailhead. Bring layers.", category:"outdoors", parking:"Lot parking at sunrise", alcohol:false},
-  {id:4, title:"Silver Lake Supper Club", venue:"Ten Speed Coffee", lat:34.0869, lng:-118.2702, time:"Thu · 7:00 PM", startsIn:"7 going", going:7, fromGroup:4, host:"Jordan M.", desc:"A rotating dinner series at a different neighborhood spot each week.", category:"food", parking:"Metered street parking nearby", alcohol:true},
-  {id:5, title:"Tuesday Farmers Market", venue:"Sunset Triangle Plaza", lat:34.0834, lng:-118.2742, time:"Tue · 2:00 PM", startsIn:"on now", going:23, fromGroup:1, host:"Silver Lake Farmers Market", desc:"Stone fruit, tamales and neighbors. Grab dinner fixings on the way home.", category:"markets", parking:"Street parking on Griffith Park Blvd", alcohol:false},
-  {id:6, title:"Wednesday Comedy", venue:"Bar Bandini", lat:34.0779, lng:-118.2626, time:"Wed · 8:00 PM", startsIn:"14 going", going:14, fromGroup:2, host:"Bar Bandini", desc:"A weekly stand-up show. Cheap drinks, small room, good laughs.", category:"music", parking:"Street parking on Sunset", alcohol:true},
-  {id:7, title:"Friday Night Market", venue:"Logan St.", lat:34.0768, lng:-118.2598, time:"Fri · 3:00 PM", startsIn:"live DJ at 6", going:31, fromGroup:3, host:"Echo Park Farmers Market", desc:"Produce, food trucks and a DJ as the sun goes down.", category:"markets", parking:"Walk if you can, it gets busy", alcohol:false},
-  {id:8, title:"Sunset Volleyball", venue:"Will Rogers State Beach", lat:34.0367, lng:-118.5309, time:"Wed · 6:00 PM", startsIn:"8 going", going:8, fromGroup:2, host:"Ghazi A.", desc:"Casual co-ed games, all levels. Tacos after.", category:"wellness", parking:"Free lot near the beach entrance", alcohol:false},
-  {id:9, title:"Lake Cleanup & Coffee", venue:"Echo Park Lake", lat:34.0726, lng:-118.2606, time:"Sat · 9:00 AM", startsIn:"11 going", going:11, fromGroup:1, host:"Neighbors of Echo Park", desc:"An hour of picking up around the lake, then coffee on the lawn. Gloves provided.", category:"community", parking:"Street parking on Park Ave", alcohol:false},
-  {id:10, title:"Board Game Night", venue:"Stories Books & Cafe", lat:34.0777, lng:-118.2605, time:"Thu · 7:30 PM", startsIn:"4 spots left", going:8, fromGroup:0, host:"Stories", desc:"Bring a game or borrow one. Tables of four, strangers welcome.", category:"games", parking:"Street parking on Sunset", alcohol:false}
+  {id:1, kind:"popup", title:"Rooftop Jazz Session", venue:"The Oviatt Penthouse", lat:34.0478, lng:-118.2563, time:"Tue · 8:00 PM", live:true, startsIn:"starts in 12 min", going:12, fromGroup:3, host:"Maya R.", desc:"Small-group table, live trio, one round included.", category:"music", parking:"Street parking after 8pm", alcohol:true},
+  {id:2, kind:"niche", title:"Sunday Ceramics Pop-up", venue:"Otherwild Studio", lat:34.0928, lng:-118.2515, time:"Sun · 2:00 PM", startsIn:"6 spots left", going:6, fromGroup:2, host:"Devon L.", desc:"Hand-build a small bowl, glaze included. No experience needed.", category:"art", parking:"Free garage behind the studio", alcohol:false},
+  {id:3, kind:"cornerstone", title:"Griffith Park Sunrise Hike", venue:"Observatory Trailhead", lat:34.1184, lng:-118.3004, time:"Sat · 6:30 AM", startsIn:"9 going", going:9, fromGroup:1, host:"Priya K.", desc:"Easy 3-mile loop, coffee after at the trailhead. Bring layers.", category:"outdoors", parking:"Lot parking at sunrise", alcohol:false},
+  {id:4, kind:"regular", title:"Silver Lake Supper Club", venue:"Ten Speed Coffee", lat:34.0869, lng:-118.2702, time:"Thu · 7:00 PM", startsIn:"7 going", going:7, fromGroup:4, host:"Jordan M.", desc:"A rotating dinner series at a different neighborhood spot each week.", category:"food", parking:"Metered street parking nearby", alcohol:true},
+  {id:5, kind:"cornerstone", title:"Tuesday Farmers Market", venue:"Sunset Triangle Plaza", lat:34.0834, lng:-118.2742, time:"Tue · 2:00 PM", startsIn:"on now", going:23, fromGroup:1, host:"Silver Lake Farmers Market", desc:"Stone fruit, tamales and neighbors. Grab dinner fixings on the way home.", category:"markets", parking:"Street parking on Griffith Park Blvd", alcohol:false},
+  {id:6, kind:"regular", title:"Wednesday Comedy", venue:"Bar Bandini", lat:34.0779, lng:-118.2626, time:"Wed · 8:00 PM", startsIn:"14 going", going:14, fromGroup:2, host:"Bar Bandini", desc:"A weekly stand-up show. Cheap drinks, small room, good laughs.", category:"music", parking:"Street parking on Sunset", alcohol:true},
+  {id:7, kind:"popup", title:"Friday Night Market", venue:"Logan St.", lat:34.0768, lng:-118.2598, time:"Fri · 3:00 PM", startsIn:"live DJ at 6", going:31, fromGroup:3, host:"Echo Park Farmers Market", desc:"Produce, food trucks and a DJ as the sun goes down.", category:"markets", parking:"Walk if you can, it gets busy", alcohol:false},
+  {id:8, kind:"cornerstone", title:"Sunset Volleyball", venue:"Will Rogers State Beach", lat:34.0367, lng:-118.5309, time:"Wed · 6:00 PM", startsIn:"8 going", going:8, fromGroup:2, host:"Ghazi A.", desc:"Casual co-ed games, all levels. Tacos after.", category:"wellness", parking:"Free lot near the beach entrance", alcohol:false},
+  {id:9, kind:"cornerstone", title:"Lake Cleanup & Coffee", venue:"Echo Park Lake", lat:34.0726, lng:-118.2606, time:"Sat · 9:00 AM", startsIn:"11 going", going:11, fromGroup:1, host:"Neighbors of Echo Park", desc:"An hour of picking up around the lake, then coffee on the lawn. Gloves provided.", category:"community", parking:"Street parking on Park Ave", alcohol:false},
+  {id:10, kind:"regular", title:"Board Game Night", venue:"Stories Books & Cafe", lat:34.0777, lng:-118.2605, time:"Thu · 7:30 PM", startsIn:"4 spots left", going:8, fromGroup:0, host:"Stories", desc:"Bring a game or borrow one. Tables of four, strangers welcome.", category:"games", parking:"Street parking on Sunset", alcohol:false}
 ];
 
 let events = DEMO_EVENTS.slice();
@@ -566,11 +575,11 @@ const PARTIFUL = { 4:"https://partiful.com/e/example-3", 1:"https://partiful.com
 /* ---------- state ---------- */
 // Every check-in stamps a PLACE. Neighborhood, city and state stamps are earned from the places you've been.
 const START = { places:{
-    'Ten Speed Coffee':      {n:12, cat:'food',      lat:34.0869, lng:-118.2702},
-    'Sunset Triangle Plaza': {n:4,  cat:'markets',   lat:34.0834, lng:-118.2742},
-    'Edendale Library':      {n:1,  cat:'community', lat:34.0860, lng:-118.2640},
-    'Echo Park Lake':        {n:2,  cat:'outdoors',  lat:34.0726, lng:-118.2606},
-    'Vista Theatre':         {n:1,  cat:'music',     lat:34.0976, lng:-118.2871}
+    'Ten Speed Coffee':      {kind:'regular', n:12, cat:'food',      lat:34.0869, lng:-118.2702},
+    'Sunset Triangle Plaza': {kind:'cornerstone', n:4,  cat:'markets',   lat:34.0834, lng:-118.2742},
+    'Edendale Library':      {kind:'cornerstone', n:1,  cat:'community', lat:34.0860, lng:-118.2640},
+    'Echo Park Lake':        {kind:'cornerstone', n:2,  cat:'outdoors',  lat:34.0726, lng:-118.2606},
+    'Vista Theatre':         {kind:'niche', n:1,  cat:'music',     lat:34.0976, lng:-118.2871}
   }, points:1240, streak:4, visits:18, rsvp:[4], checked:[], redeemed:[], alertsRead:false, nb:'Silver Lake', loc:null, name:'Mitchell Kimball', interests:[], joined:'2026-01-15' };
 let S;
 function load(){ try{ const r=localStorage.getItem('comuna_v3'); S = r? Object.assign(JSON.parse(JSON.stringify(START)), JSON.parse(r)) : JSON.parse(JSON.stringify(START)); }catch(e){ S=JSON.parse(JSON.stringify(START)); } }
@@ -885,7 +894,7 @@ function shareEv(ev){
 function checkIn(ev){
   const hood=hoodByName(ev.hood), city=cityOf(hood);
   const hadHood=!!visitedHoods()[hood.name], hadCity=!!visitedCities()[city], hadCat=Object.values(S.places).some(p=>p.cat===ev.category);
-  const pl=S.places[ev.venue] || (S.places[ev.venue]={n:0,cat:ev.category,lat:ev.lat,lng:ev.lng});
+  const pl=S.places[ev.venue] || (S.places[ev.venue]={n:0,cat:ev.category,kind:kindOf(ev),lat:ev.lat,lng:ev.lng});
   const firstPlace=pl.n===0; pl.n++;
   S.checked.push(ev.id); S.visits++; S.points+=50; save();
   overlay.classList.remove('on');
@@ -934,43 +943,34 @@ document.getElementById('calPrev').onclick=()=>{ calView=new Date(calView.getFul
 document.getElementById('calNext').onclick=()=>{ calView=new Date(calView.getFullYear(),calView.getMonth()+1,1); renderPlans(); };
 document.getElementById('calToday').onclick=()=>{ calSel=today0(); calView=new Date(calSel.getFullYear(),calSel.getMonth(),1); renderPlans(); };
 
-/* ---------- passport: pages for places, neighborhoods, cities and states ---------- */
-let passTab='places';
+/* ---------- passport: a page per place type, plus neighborhoods ---------- */
+let passTab='cornerstone';
 const PATCHES=[ {t:'FIRST STAMP',s:'WELCOME',sc:'hills',ok:()=>Object.keys(S.places).length>=1},
   {t:'THREE HOODS',s:'EXPLORER',sc:'lake',ok:()=>Object.keys(visitedHoods()).length>=3},
   {t:'REGULAR',s:'5 VISITS, 1 PLACE',sc:'hills',ok:()=>Object.values(S.places).some(p=>p.n>=5)},
   {t:'ALL 8 KINDS',s:'TRIED EVERYTHING',sc:'night',ok:()=>new Set(Object.values(S.places).map(p=>p.cat)).size>=8},
   {t:'COAST TO LAKE',s:'SANTA MONICA',sc:'beach',ok:()=>!!visitedCities()['Santa Monica']} ];
 function renderPassport(){
-  const places=S.places, H=visitedHoods(), Ci=visitedCities();
-  const nP=Object.keys(places).length, nH=Object.keys(H).length, nC=Object.keys(Ci).length;
+  const places=S.places, H=visitedHoods();
+  const nP=Object.keys(places).length, nH=Object.keys(H).length;
   document.getElementById('passCount').textContent=`${nP} places, ${nH} neighborhoods`;
   document.getElementById('passBar').style.width=Math.min(100,nH/HOODS.length*100)+'%';
   document.getElementById('psStreak').textContent=S.streak+' wk'; document.getElementById('psVisits').textContent=S.visits; document.getElementById('psPts').textContent=S.points.toLocaleString();
   document.getElementById('passSeal').innerHTML=omark(130,'#F3E7D1','#F3E7D1');
-  const tabs=[['places','Places',nP],['hoods','Neighborhoods',nH],['cities','Cities',nC],['states','States',1]];
+  const byKind=k=>Object.entries(places).filter(([,p])=>kindOf(p)===k);
+  const tabs=[...Object.keys(KINDS).map(k=>[k,KINDS[k].label,byKind(k).length]),['hoods','Neighborhoods',nH]];
   document.getElementById('passTabs').innerHTML=tabs.map(t=>`<button role="tab" aria-selected="${t[0]===passTab}" class="${t[0]===passTab?'on':''}" data-tab="${t[0]}">${t[1]} ${t[2]}</button>`).join('');
   const rots=[-7,5,-3,8,-5,4,-9,6,-4,7];
   let html='';
-  if(passTab==='places'){
-    const list=Object.entries(places).sort((a,b)=>b[1].n-a[1].n);
-    const tried=new Set(list.map(([,p])=>p.cat));
-    html=`<div class="ph"><b>Places</b><span>a stamp for every spot you check in</span></div><div class="pagegrid">`+
+  if(KINDS[passTab]){
+    const list=byKind(passTab).sort((a,b)=>b[1].n-a[1].n);
+    html=`<div class="ph"><b>${KINDS[passTab].label}</b><span>${KINDS[passTab].blurb}</span></div><div class="pagegrid">`+
       list.map(([name,p],i)=>`<div class="slot">${placeStamp(name,hoodOf(p).name,p.cat,p.n,rots[i%rots.length])}</div>`).join('')+
-      Object.keys(CATS).filter(k=>!tried.has(k)).slice(0,list.length%2?1:2).map(k=>`<div class="slot"><div class="ghost-rect">your first ${CATS[k].short.toLowerCase()} spot?</div></div>`).join('')+
-      `</div><div class="pagenote">${tried.size} of 8 kinds of places so far</div>`;
+      `<div class="slot"><div class="ghost-rect">${list.length?'next':'your first'} ${KINDS[passTab].label.toLowerCase()} spot?</div></div>`.repeat(list.length%2?1:2)+
+      `</div><div class="pagenote">${list.length} ${KINDS[passTab].label.toLowerCase()} spot${list.length===1?'':'s'} stamped</div>`;
   } else if(passTab==='hoods'){
     html=`<div class="ph"><b>Neighborhoods</b><span>earned with your first place in each</span></div><div class="pagegrid">`+
       HOODS.map((h,i)=> H[h.name]? `<div class="slot">${stampSVG(h.name.toUpperCase(),`${H[h.name]} VISIT${H[h.name]>1?'S':''} · COMUNA`,h.glyph,h.color,132,rots[i])}</div>` : `<div class="slot"><div class="ghost-stamp">${h.name}?</div></div>`).join('')+`</div>`;
-  } else if(passTab==='cities'){
-    const cities=['Los Angeles','Santa Monica','Pasadena','Long Beach'];
-    const col={ 'Los Angeles':[C.green,C.paper], 'Santa Monica':[C.blue,C.paper], 'Pasadena':[C.red,C.paper], 'Long Beach':[C.sun,C.ink] };
-    html=`<div class="ph"><b>Cities</b><span>every city you've explored</span></div><div class="pagegrid">`+
-      cities.map((c,i)=> Ci[c]? `<div class="slot">${cityLabel(c,`${Ci[c]} CHECK-INS`,col[c][0],col[c][1],150,100,rots[i])}</div>` : `<div class="slot"><div class="ghost-rect" style="border-radius:50%;width:140px">${c}?</div></div>`).join('')+`</div>`;
-  } else {
-    html=`<div class="ph"><b>States</b><span>for when Comuna goes on the road</span></div><div class="pagegrid">`+
-      `<div class="slot">${stampSVG('CALIFORNIA','EST. 2026 · COMUNA','star',C.red,136,-6)}</div><div class="slot"><div class="ghost-stamp" style="width:128px;height:128px">next state?</div></div></div>`+
-      `<div class="pagenote">LA only for now. New cities unlock as Comuna launches them.</div>`;
   }
   document.getElementById('passPage').innerHTML=html;
   document.getElementById('patchList').innerHTML=PATCHES.map(p=>{ const ok=p.ok(); return `<div class="patch ${ok?'':'locked'}">${patchSVG(p.t,p.s,p.sc,92,110)}<div>${ok?'Earned':'Locked'}</div></div>`; }).join('');
@@ -1015,7 +1015,7 @@ function loadSheet(){
     const rows=Papa.parse(txt,{header:true,skipEmptyLines:true}).data.filter(r=>r.title && r.lat && r.lng);
     if(!rows.length) return;
     const catMap=c=>/music|comedy|night|film|movie/i.test(c)?'music':/dinner|food|drink|supper|coffee/i.test(c)?'food':/fitness|wellness|yoga|run/i.test(c)?'wellness':/hike|outdoor|beach|park/i.test(c)?'outdoors':/art|pop|craft|making/i.test(c)?'art':/game|trivia|social/i.test(c)?'games':/market|shop/i.test(c)?'markets':'community';
-    events=rows.map((r,i)=>({ id:100+i, title:r.title, venue:r.venue||'', lat:parseFloat(r.lat), lng:parseFloat(r.lng), time:r.day_time||'', live:/true/i.test(r.live), startsIn:r.status_note||'', going:parseInt(r.going)||0, fromGroup:parseInt(r.from_group)||0, host:(r.host||'').split(' — ')[0], desc:r.description||'', category:catMap(r.category), parking:r.parking||'', alcohol: r.alcohol? /true|yes/i.test(r.alcohol) : undefined }));
+    events=rows.map((r,i)=>({ id:100+i, title:r.title, venue:r.venue||'', lat:parseFloat(r.lat), lng:parseFloat(r.lng), time:r.day_time||'', live:/true/i.test(r.live), startsIn:r.status_note||'', going:parseInt(r.going)||0, fromGroup:parseInt(r.from_group)||0, host:(r.host||'').split(' — ')[0], desc:r.description||'', category:catMap(r.category), kind:(/corner/i.test(r.place_type)?'cornerstone':/niche/i.test(r.place_type)?'niche':/pop/i.test(r.place_type)?'popup':/regular/i.test(r.place_type)?'regular':''), parking:r.parking||'', alcohol: r.alcohol? /true|yes/i.test(r.alcohol) : undefined }));
     usingDemo=false; if(current==='home') renderHome();
   }).catch(()=>{});
 }
