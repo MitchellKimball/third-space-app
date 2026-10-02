@@ -169,6 +169,12 @@ img{ max-width:100% }
 .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px }
 
 /* ---------- stamp modal ---------- */
+.recmodal{ position:absolute; inset:0; z-index:55; display:none; align-items:flex-end; background:rgba(38,37,31,.5) }
+.recmodal.on{ display:flex }
+.recmodal .box{ background:var(--paper); width:100%; max-height:86%; overflow-y:auto; border-radius:26px 26px 0 0; padding:22px 20px calc(20px + env(safe-area-inset-bottom,0px)) }
+.recmodal .k{ font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--red) }
+.recmodal .h1{ color:var(--green); margin:6px 0 4px }
+.recmodal .why{ font-size:11px; color:var(--muted); margin-top:2px }
 .stampmodal{ position:absolute; inset:0; z-index:60; display:none; align-items:center; justify-content:center; background:rgba(36,77,58,.94); color:var(--paper); flex-direction:column; text-align:center; padding:30px }
 .stampmodal.on{ display:flex }
 .stampmodal .stampbox{ animation:thunk .45s cubic-bezier(.2,1.6,.4,1) both }
@@ -466,6 +472,13 @@ img{ max-width:100% }
     </nav>
 
     <div class="overlay" id="overlay"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+    <div class="recmodal" id="recModal" role="dialog" aria-modal="true" aria-labelledby="recTitle"><div class="box">
+      <div class="k" id="recKicker">Picked for you this week</div>
+      <div class="h1" id="recTitle">Your week, nearby</div>
+      <p class="sub" id="recSub"></p>
+      <div id="recList"></div>
+      <button class="btn green" id="recClose" style="margin-top:16px">Explore the map</button>
+    </div></div>
     <div class="stampmodal" id="stampModal" role="dialog" aria-modal="true"></div>
     <div class="toast" id="toast"></div>
   </div></div>
@@ -642,7 +655,7 @@ function go(id, push=true){
   screens.forEach(s=>s.classList.toggle('on', s.dataset.s===id));
   nav.classList.toggle('hide', ['onb1','onb2','onb3','onb4','host','alerts'].includes(id));
   nav.querySelectorAll('button').forEach(b=>{ const on=b.dataset.nav===id; b.classList.toggle('on',on); b.querySelector('svg').setAttribute('stroke', on?C.green:C.muted); });
-  if(id==='home'){ renderHome(); setTimeout(()=>{ if(map) map.resize(); else drawPaper(); },30); }
+  if(id==='home'){ renderHome(); maybeWeeklyPicks(); setTimeout(()=>{ if(map) map.resize(); else drawPaper(); },30); }
   if(id==='plans') renderPlans();
   if(id==='passport') renderPassport();
   if(id==='profile') renderProfile();
@@ -695,6 +708,36 @@ suNext.onclick=()=>{
 };
 function shortName(){ const p=(S.name||'').split(' ').filter(Boolean); return p.length? p[0]+(p[1]?` ${p[p.length-1][0].toUpperCase()}.`:'') : 'You'; }
 function renderNames(){ const n=shortName(); document.getElementById('passName').textContent=`${n} · Los Angeles`; document.getElementById('pfName').textContent=n; document.getElementById('pfAvatar').textContent=n[0]; document.getElementById('pfHood').textContent=`${S.nb} · exploring since ${new Date(S.joined||Date.now()).toLocaleString('en-US',{month:'long'})}`; }
+
+/* ---------- weekly picks: once a week, 5-8 events within 15 minutes, matched to your interests ---------- */
+const WEEK_MS=7*24*60*60*1000, MIN_RECS=5, MAX_RECS=8;
+function weeklyPicks(){
+  enrich();
+  const want=Object.keys(CATS).filter(k=>(S.interests||[]).includes(CATS[k].label));
+  const near=events.filter(ev=>ev.mi<=NEARBY_MILES && !S.checked.includes(ev.id)).sort((a,b)=>a.mi-b.mi);
+  const match=near.filter(ev=>want.includes(ev.category));
+  // too few matches: top up with the closest other events so there's always a real list
+  const extra=match.length<MIN_RECS ? near.filter(ev=>!match.includes(ev)).slice(0,MIN_RECS-match.length) : [];
+  return { match:match.slice(0,MAX_RECS), extra };
+}
+function maybeWeeklyPicks(){
+  if(!(S.interests||[]).length || Date.now()-(S.lastPicks||0)<WEEK_MS) return;
+  const {match,extra}=weeklyPicks(); if(!match.length && !extra.length) return;
+  S.lastPicks=Date.now(); save();
+  const row=(ev,why)=>`<button class="pick" data-rec="${ev.id}"><div class="n">${catDot(ev.category,18)}</div>
+    <div><div class="when">${ev.time}</div><div class="t">${ev.title}</div><div class="m">${ev.venue}</div><div class="why">${why}</div></div>
+    <div class="dist">${mins(ev.mi)}<small>min away</small></div></button>`;
+  const first=(S.name||'').split(' ')[0];
+  document.getElementById('recTitle').textContent=first?`${first}, here's your week`:'Your week, nearby';
+  document.getElementById('recSub').textContent=`${match.length+extra.length} things within 15 minutes, picked from what you're into.`;
+  document.getElementById('recList').innerHTML=match.map(ev=>row(ev,`Because you like ${CATS[ev.category].label}`)).join('')
+    + (extra.length? `<div class="h2" style="font-size:15px;margin-top:16px">Also close by</div>`+extra.map(ev=>row(ev,CATS[ev.category].label)).join('') : '');
+  setTimeout(()=>document.getElementById('recModal').classList.add('on'),350);
+}
+const recModal=document.getElementById('recModal');
+document.getElementById('recClose').onclick=()=>recModal.classList.remove('on');
+recModal.addEventListener('click',e=>{ if(e.target===recModal){ recModal.classList.remove('on'); return; } const r=e.target.closest('[data-rec]'); if(r){ recModal.classList.remove('on'); openSheet(+r.dataset.rec); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') recModal.classList.remove('on'); });
 
 /* ---------- home ---------- */
 let filter='All';
