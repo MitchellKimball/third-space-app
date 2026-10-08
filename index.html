@@ -337,7 +337,7 @@ img{ max-width:100% }
   <div class="aside">
     <div class="wm" id="asideMark" style="font-size:34px"></div>
     <h1>Explore where you live.</h1>
-    <p>An interactive prototype of the Comuna app, rebuilt on Brand Guide v2. Tap through the phone: find tonight's picks, say you're in, check in, and collect the neighborhood stamp.</p>
+    <p>An interactive prototype of the Comuna app, rebuilt on Brand Guide v2. Tap through the phone: find tonight's picks, RSVP, check in, and collect the neighborhood stamp.</p>
     <p class="note">nothing is saved to a server. it all lives in your browser.</p>
     <p id="mapStatus" style="font-size:12.5px">Map: loading…</p>
     <div class="jump" id="jump"></div>
@@ -794,15 +794,15 @@ function kitSlides(){
      <p class="sub">Comuna finds the good stuff happening around you: shows, markets, run clubs, pop-ups, supper clubs. Here's what's out there right now.</p>
      <div class="kitstats"><div class="kitstat"><b>${drive20}</b><span>events within a 15–20 min drive</span></div><div class="kitstat"><b>${all}</b><span>events across LA right now</span></div></div>
      <p class="sub" style="font-size:13px">New events get added every week.</p>`,
-    `<div class="k">How it works</div><div class="h1" id="kitTitle">Find it. Say you're in. Show up.</div>
+    `<div class="k">How it works</div><div class="h1" id="kitTitle">Find it. RSVP. Show up.</div>
      <ol class="kitsteps">
       <li><div><b>Explore the map</b><span>Tap a pin or swipe the cards. Switch <b style="display:inline">Near me</b> to <b style="display:inline">All LA</b> to see everything.</span></div></li>
-      <li><div><b>Tap "I'm in"</b><span>It lands in your Plans, so you won't forget. Invite friends from there.</span></div></li>
+      <li><div><b>Tap "RSVP"</b><span>It lands in your Plans, so you won't forget. Invite friends from there.</span></div></li>
       <li><div><b>Check in when you get there</b><span>Tap "I'm here" at the event to collect the stamp.</span></div></li>
      </ol>`,
     `<div class="k">Your passport</div><div class="h1" id="kitTitle">Collect stamps, points and patches.</div>
      <div class="kitart">${stamp}</div>
-     <div class="kitpts"><span>Say "I'm in" to an event</span><b>+10</b></div>
+     <div class="kitpts"><span>RSVP to an event</span><b>+10</b></div>
      <div class="kitpts"><span>Check in when you show up</span><b>+50</b></div>
      <p class="sub" style="margin-top:12px">Every place you visit earns a stamp, and your first visit in each neighborhood earns its neighborhood stamp. Hit milestones (three neighborhoods, five visits to one spot) to unlock patches.</p>`,
     `<div class="k">A few more things</div><div class="h1" id="kitTitle">You're all set.</div>
@@ -853,7 +853,7 @@ function renderHome(){ setTimeout(syncHeadH,0);
   document.getElementById('picks').innerHTML = P.map((ev,i)=>{
     const done=S.checked.includes(ev.id), inn=S.rsvp.includes(ev.id);
     return `<button class="pick" data-ev="${ev.id}"><div class="n">${catDot(ev.category,18)}${done?'<span class="chk">&check;</span>':''}</div>
-      <div><div class="when">${ev.live?'\u{1F534} ':''}${ev.startsIn||ev.time}</div><div class="t">${ev.title}</div><div class="m">${ev.venue}${inn&&!done?' · you\'re in':''}</div></div>
+      <div><div class="when">${ev.live?'\u{1F534} ':''}${ev.startsIn||ev.time}</div><div class="t">${ev.title}</div><div class="m">${ev.venue}${inn&&!done?' · RSVP\'d':''}</div></div>
       <div class="dist">${mins(ev.mi)}<small>min away</small></div></button>`; }).join('')
     + `<div class="endnote">that's the list. go have fun.</div><div class="demo-tag">${usingDemo?'Demo events · connect the Google Sheet to go live':'Live events from the Comuna sheet'}</div>`;
   const first=P[0]; document.getElementById('mapNote').textContent = first ? (first.live? `${first.title.split(' ').slice(0,2).join(' ')}: ${first.startsIn}` : '') : '';
@@ -1013,9 +1013,9 @@ function openSheet(id){
     ${(ev.parking||ev.alcohol!==undefined)?`<div class="practical">${ev.parking?`Parking: ${ev.parking}<br>`:''}${ev.alcohol===true?'Drinks available, 21+ to drink':ev.alcohol===false?'Alcohol-free':''}</div>`:''}
     ${done? `<button class="btn green" disabled>Stamped. See you next time.</button>`
       : inn? `<div class="row2"><button class="btn ghost" id="shareBtn">Invite friends</button><button class="btn primary" id="checkBtn">I'm here: check in</button></div>`
-      : `<div class="row2"><button class="btn ghost" id="shareBtn">Invite friends</button><button class="btn primary" id="rsvpBtn">I'm in</button></div>`}`;
+      : `<div class="row2"><button class="btn ghost" id="shareBtn">Invite friends</button><button class="btn primary" id="rsvpBtn">RSVP</button></div>`}`;
   overlay.classList.add('on');
-  const r=document.getElementById('rsvpBtn'); if(r) r.onclick=()=>{ S.rsvp.push(id); S.points+=10; save(); toast('You\'re in: +10 points. It\'s in your plans.'); openSheet(id); renderHome(); };
+  const r=document.getElementById('rsvpBtn'); if(r) r.onclick=()=>{ S.rsvp.push(id); S.points+=10; save(); toast('RSVP\'d: +10 points. It\'s in your plans.'); openSheet(id); renderHome(); };
   const c=document.getElementById('checkBtn'); if(c) c.onclick=()=>checkIn(ev);
   const sh=document.getElementById('shareBtn'); if(sh) sh.onclick=()=>shareEv(ev);
 }
@@ -1068,8 +1068,8 @@ function renderPlans(){
   document.getElementById('dayHead').innerHTML=`${calSel.toLocaleString('en-US',{weekday:'long'})} <span>${calSel.toLocaleString('en-US',{month:'long'})} ${ordinal(calSel.getDate())}</span>`;
   const list=(byDay[ymd(calSel)]||[]).slice().sort((a,b)=>S.rsvp.includes(b.id)-S.rsvp.includes(a.id));
   document.getElementById('planList').innerHTML = list.length? list.map(ev=>{ const inn=S.rsvp.includes(ev.id), done=S.checked.includes(ev.id);
-    return `<div class="dayev"><button data-open="${ev.id}" style="display:flex;gap:12px;align-items:center;flex:1;min-width:0;text-align:left">${catDot(ev.category,16)}<div class="x">${inn?`<div class="tag">${done?'Stamped':"You're in"}</div>`:''}<div class="t">${ev.title}</div><div class="u">${ev.venue} · ${ev.time.split('·').pop().trim()}</div><div class="u">${ev.going} going · ${mins(ev.mi)} min away</div></div></button>${inn?`<button data-share="${ev.id}" aria-label="Copy Partiful invite" title="Copy Partiful invite"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#26251F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v13"/></svg></button>`:''}</div>`; }).join('')
-    : `<div class="empty"><span class="hand">free ${+calSel===+t?'tonight':'that day'}?</span>Nothing on this day yet. Tap "I'm in" on a pick and it lands here.</div>`;
+    return `<div class="dayev"><button data-open="${ev.id}" style="display:flex;gap:12px;align-items:center;flex:1;min-width:0;text-align:left">${catDot(ev.category,16)}<div class="x">${inn?`<div class="tag">${done?'Stamped':"RSVP'd"}</div>`:''}<div class="t">${ev.title}</div><div class="u">${ev.venue} · ${ev.time.split('·').pop().trim()}</div><div class="u">${ev.going} going · ${mins(ev.mi)} min away</div></div></button>${inn?`<button data-share="${ev.id}" aria-label="Copy Partiful invite" title="Copy Partiful invite"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#26251F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v13"/></svg></button>`:''}</div>`; }).join('')
+    : `<div class="empty"><span class="hand">free ${+calSel===+t?'tonight':'that day'}?</span>Nothing on this day yet. RSVP to a pick and it lands here.</div>`;
   const inv=[{id:8,from:'Ghazi',t:'Sun · Sunset Volleyball'},{id:1,from:'Maya',t:'Tue · Rooftop Jazz Session'}];
   document.getElementById('inviteList').innerHTML=inv.map(i=>`<div class="planrow"><div class="d">${i.from} invited you</div><div class="t">${i.t}</div><div class="u">${PARTIFUL[i.id]}</div><div class="acts"><button data-open="${i.id}">See it</button></div></div>`).join('');
 }
