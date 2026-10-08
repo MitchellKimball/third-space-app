@@ -143,8 +143,9 @@ img{ max-width:100% }
 .endnote{ text-align:center; margin:20px 0 4px; font-family:var(--hand); font-size:21px; color:var(--muted) }
 .demo-tag{ text-align:center; font-size:11px; color:var(--muted); margin-top:4px }
 /* map mode: the map fills the screen; header, chips and a swipeable row of picks float over it */
-#homeScreen:not(.home-list) .homehead{ position:relative; z-index:6; padding-bottom:14px; background:linear-gradient(var(--paper) 72%, rgba(243,231,209,0)); pointer-events:none }
+#homeScreen:not(.home-list) .homehead{ position:relative; z-index:6; padding-bottom:14px; background:linear-gradient(var(--paper) 84%, rgba(243,231,209,0)); pointer-events:none }
 #homeScreen:not(.home-list) .homehead > *{ pointer-events:auto }
+#homeScreen:not(.home-list) .chips{ padding-top:12px }
 #homeScreen:not(.home-list) .mapwrap{ position:absolute; inset:0; height:auto; min-height:0; margin:0; border-radius:0 }
 #homeScreen:not(.home-list) .mapwrap .toggle{ top:auto; bottom:calc(var(--navh) + 128px) }
 #homeScreen:not(.home-list) .maplabel{ bottom:calc(var(--navh) + 134px) }
@@ -297,9 +298,9 @@ img{ max-width:100% }
 .hostscr .h2{ color:var(--sun) }
 
 /* ---------- nav ---------- */
-.nav{ position:absolute; left:0; right:0; bottom:0; z-index:30; display:grid; grid-template-columns:repeat(4,1fr); background:var(--card); border-top:1px solid var(--line); padding:8px 6px calc(10px + env(safe-area-inset-bottom,0px)) }
+.nav{ position:absolute; left:0; right:0; bottom:0; z-index:30; display:grid; grid-template-columns:repeat(4,1fr); background:var(--card); border-top:1px solid var(--line); padding:10px 6px calc(12px + env(safe-area-inset-bottom,0px)) }
 .nav.hide{ display:none }
-.nav button{ display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; font-weight:700; color:var(--muted); padding:4px 0 }
+.nav button{ display:flex; align-items:center; justify-content:center; color:var(--muted); padding:6px 0 }
 .nav button.on{ color:var(--green) }
 .nav button.on svg{ stroke:var(--green) }
 .toast{ position:absolute; left:50%; bottom:96px; transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:30px; font-size:13.5px; font-weight:500; z-index:80; opacity:0; transition:opacity .2s; pointer-events:none; white-space:nowrap }
@@ -341,8 +342,6 @@ img{ max-width:100% }
         <div class="mini-map" id="miniMap" style="height:230px"></div>
         <div class="hand" style="font-size:20px;color:var(--red);margin-bottom:10px">we only use your location while the app is open</div>
         <button class="btn green" id="allowLoc">Use my location</button>
-        <div class="or">or pick your neighborhood</div>
-        <select class="field" id="hoodSelect" aria-label="Your neighborhood" style="margin-top:0"><option value="">Choose a neighborhood</option></select>
         <button class="btn primary" id="locNext" style="margin-top:auto;margin-top:18px" disabled>Continue</button>
       </div>
     </section>
@@ -380,7 +379,8 @@ img{ max-width:100% }
       </div>
       <div style="padding:2px 20px 0">
         <div class="h1" id="homeTitle">Explore your neighborhood</div>
-        <p class="sub" id="homeSub">5 picks within 15 minutes</p>
+      </div>
+      <div class="chips" id="chips"></div>
       </div>
       <div class="chips" id="chips"></div>
       </div>
@@ -476,10 +476,10 @@ img{ max-width:100% }
     </section>
 
     <nav class="nav" id="nav">
-      <button data-go="home" data-nav="home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17s-5-4.6-5-8.5a5 5 0 0 1 10 0c0 3.9-5 8.5-5 8.5z"/><circle cx="12" cy="8.5" r="1.8"/><path d="M8 16.2c-2.4.4-4 1.2-4 2.1 0 1.5 3.6 2.7 8 2.7s8-1.2 8-2.7c0-.9-1.6-1.7-4-2.1"/></svg>Map</button>
-      <button data-go="plans" data-nav="plans"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Plans</button>
-      <button data-go="passport" data-nav="passport"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="11" r="3.5"/><path d="M9 17h6"/></svg>Passport</button>
-      <button data-go="profile" data-nav="profile"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>You</button>
+      <button data-go="home" data-nav="home" aria-label="Map"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17s-5-4.6-5-8.5a5 5 0 0 1 10 0c0 3.9-5 8.5-5 8.5z"/><circle cx="12" cy="8.5" r="1.8"/><path d="M8 16.2c-2.4.4-4 1.2-4 2.1 0 1.5 3.6 2.7 8 2.7s8-1.2 8-2.7c0-.9-1.6-1.7-4-2.1"/></svg></button>
+      <button data-go="plans" data-nav="plans" aria-label="Plans"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
+      <button data-go="passport" data-nav="passport" aria-label="Passport"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M4.6 7.5h14.8M4.6 16.5h14.8"/></svg></button>
+      <button id="addSoon" aria-label="Add an event (coming soon)"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 8v8M8 12h8"/></svg></button>
     </nav>
 
     <div class="overlay" id="overlay"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
@@ -672,7 +672,7 @@ function go(id, push=true){
   if(id==='profile') renderProfile();
   if(id==='alerts'){ renderAlerts(); S.alertsRead=true; save(); updateDot(); }
   if(id==='host') renderHost();
-  if(id==='onb2'){ drawMini(); hoodSel.value=S.loc?S.nb:''; locNext.disabled=!S.loc; }
+  if(id==='onb2'){ drawMini(); locNext.disabled=!S.loc; }
   if(id==='onb3') renderInterests();
   if(id==='onb4') suUpdate();
   if(id==='profile'||id==='passport') renderNames();
@@ -690,15 +690,13 @@ function buildOnb(){
   <div style="right:4px;top:40px">${stampSVG('ECHO PARK','COMUNA · EST. 2026','lotus','#C9533D',136,9)}</div>
   <div style="left:96px;top:150px">${stampSVG('LOS FELIZ','COMUNA · LOS ANGELES','palm',C.sun,138,4)}</div>`;
 }
-const hoodSel=document.getElementById('hoodSelect'), locNext=document.getElementById('locNext');
-hoodSel.innerHTML+=HOODS.map(h=>`<option>${h.name}</option>`).join('');
-function setHood(name,loc){ const h=hoodByName(name); S.nb=h.name; S.loc=loc||{lat:h.lat,lng:h.lng}; save(); rebuildMap(); hoodSel.value=h.name; locNext.disabled=false; drawMini(); }
-hoodSel.addEventListener('change',()=>{ if(hoodSel.value) setHood(hoodSel.value); else locNext.disabled=true; });
+const locNext=document.getElementById('locNext');
+function setHood(name,loc){ const h=hoodByName(name); S.nb=h.name; S.loc=loc||{lat:h.lat,lng:h.lng}; save(); rebuildMap(); locNext.disabled=false; drawMini(); }
 locNext.onclick=()=>go('onb3');
 document.getElementById('allowLoc').addEventListener('click',()=>{
-  if(!navigator.geolocation){ toast('Location isn\'t available. Pick your neighborhood instead.'); return; }
+  if(!navigator.geolocation){ toast('Location isn\'t available on this device. Try another browser or phone.'); return; }
   navigator.geolocation.getCurrentPosition(p=>{ const loc={lat:p.coords.latitude,lng:p.coords.longitude}; setHood(hoodOf(loc).name,loc); toast('Got it. You\'re near '+S.nb); go('onb3'); },
-    ()=>toast('No location. Pick your neighborhood instead.'), {timeout:6000});
+    ()=>toast('We need your location to show what\'s nearby. Please allow it and try again.'), {timeout:6000});
 });
 
 /* sign-up: interests */
@@ -764,8 +762,6 @@ function renderHome(){
   const cats=['All',...Object.keys(CATS).filter(k=>events.some(e=>e.category===k))];
   document.getElementById('chips').innerHTML=cats.map(c=>`<button class="chip ${c===filter?'on':''}" data-cat="${c}">${c==='All'?'Everything':CATS[c].short}</button>`).join('');
   const P=picks();
-  const inRange=P.filter(e=>e.mi<=NEARBY_MILES).length;
-  document.getElementById('homeSub').textContent = inRange ? `${inRange} pick${inRange>1?'s':''} within 15 minutes` : 'A little farther tonight, but worth it';
   document.getElementById('picks').innerHTML = P.map((ev,i)=>{
     const done=S.checked.includes(ev.id), inn=S.rsvp.includes(ev.id);
     return `<button class="pick" data-ev="${ev.id}"><div class="n">${catDot(ev.category,18)}${done?'<span class="chk">&check;</span>':''}</div>
@@ -880,6 +876,17 @@ function drawPaper(){
 }
 function drawMini(){ const el=document.getElementById('miniMap'); setTimeout(()=>{ enrich(); paintPaper(el,el.clientWidth,el.clientHeight,picks()); },20); }
 window.addEventListener('resize',()=>{ if(current==='home') drawPaper(); });
+
+/* ---------- add event (coming soon) ---------- */
+document.getElementById('addSoon').onclick=()=>{
+  sheet.innerHTML=`<div class="grab"></div>
+    <div class="cat">New feature coming soon</div>
+    <h2>Add your own events</h2>
+    <p class="desc">Know about something cool happening in the neighborhood? Soon you'll be able to add it to Comuna so your neighbors can find it too.</p>
+    <button class="btn primary" id="addSoonOk" style="margin-top:16px">Got it</button>`;
+  overlay.classList.add('on');
+  document.getElementById('addSoonOk').onclick=()=>overlay.classList.remove('on');
+};
 
 /* ---------- event sheet ---------- */
 const overlay=document.getElementById('overlay'), sheet=document.getElementById('sheet');
