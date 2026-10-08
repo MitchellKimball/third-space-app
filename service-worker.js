@@ -3,7 +3,7 @@
 // offline data strategy, just enough for a demo/beta build to qualify
 // as an installable PWA on iOS and Android.
 
-const CACHE_NAME = "third-space-demo-v16";
+const CACHE_NAME = "third-space-demo-v17";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -53,7 +53,18 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
-  );
+  const req = event.request;
+  // Only handle our own files; Supabase, Mapbox, Google Sheets etc. always go straight to the network.
+  if (req.method !== "GET" || new URL(req.url).origin !== self.location.origin) return;
+  // The page itself: network first, so a new deploy shows up on the next open; cached copy only when offline.
+  if (req.mode === "navigate" || req.url.endsWith("/index.html")) {
+    event.respondWith(
+      fetch(req, { cache: "no-cache" })
+        .then((res) => { const copy = res.clone(); caches.open(CACHE_NAME).then((c) => c.put(req, copy)); return res; })
+        .catch(() => caches.match(req).then((r) => r || caches.match("./index.html")))
+    );
+    return;
+  }
+  // Icons, stamps etc.: cache first.
+  event.respondWith(caches.match(req).then((cached) => cached || fetch(req)));
 });
