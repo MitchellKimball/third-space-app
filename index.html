@@ -329,7 +329,7 @@ img{ max-width:100% }
 /* Brand pairing "Sun on Green": green bar, Sun pill behind the active tab */
 .nav svg{ stroke:#B9C7B8; box-sizing:content-box; padding:6px 16px; border-radius:20px; transition:background .15s }
 .nav button.on svg{ stroke:var(--green); background:var(--sun) }
-.toast{ position:absolute; left:50%; bottom:96px; transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:30px; font-size:13.5px; font-weight:500; z-index:80; opacity:0; transition:opacity .2s; pointer-events:none; white-space:nowrap }
+.toast{ position:absolute; left:50%; bottom:96px; transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:30px; font-size:13.5px; font-weight:500; z-index:80; opacity:0; transition:opacity .2s; pointer-events:none; width:max-content; max-width:88%; text-align:center }
 .toast.on{ opacity:1 }
 .mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib{ opacity:.6 }
 /* Mapbox requires its logo + attribution to stay visible: tuck them in the map's top corners, just under the floating header */
@@ -463,6 +463,7 @@ img{ max-width:100% }
         <button class="linkrow" data-go="plans">Your plans <span>This week</span></button>
         <button class="linkrow" data-go="alerts">Alerts <span id="pfAlerts">3 new</span></button>
         <button class="linkrow" data-go="host" style="background:var(--green);color:var(--paper)">See it as a host <span style="color:#CFC3AB">Ten Speed Coffee</span></button>
+        <button class="linkrow" id="dbCheck">Account sync <span id="dbStatusPf">Tap to check</span></button>
       </div>
     </section>
 
@@ -1258,33 +1259,34 @@ window.addEventListener('resize',syncHeadH); setTimeout(syncHeadH,0);
 // Every write also lives in local storage first, so the app keeps working offline or if Supabase is down.
 const sb = (window.supabase && SUPABASE_URL && SUPABASE_KEY) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 // status line in the dev panel (🛠) so a phone test shows whether saves reach Supabase
-function dbStatus(msg){ const el=document.getElementById('dbStatus'); if(el) el.textContent='Database: '+msg; }
+function dbStatus(msg,bad){ const el=document.getElementById('dbStatus'); if(el) el.textContent='Database: '+msg;
+  const pf=document.getElementById('dbStatusPf'); if(pf) pf.textContent=msg; if(bad) toast('Sync problem: '+msg); }
 async function dbUser(){
-  if(!sb){ dbStatus('library failed to load (check connection)'); return null; }
+  if(!sb){ dbStatus('library failed to load (check connection)',true); return null; }
   try{
     const { data:{ session } } = await sb.auth.getSession(); if(session) return session.user;
     const { data, error } = await sb.auth.signInAnonymously(); if(error) throw error; return data.user;
-  }catch(e){ console.warn('Supabase sign-in failed', e); dbStatus('sign-in failed: '+(e.message||e)+(/anonymous/i.test(e.message||'')?' (turn on anonymous sign-ins in Supabase)':'')); return null; }
+  }catch(e){ console.warn('Supabase sign-in failed', e); dbStatus('sign-in failed: '+(e.message||e)+(/anonymous/i.test(e.message||'')?' (turn on anonymous sign-ins in Supabase)':''),true); return null; }
 }
 async function dbProfile(){
   const u=await dbUser(); if(!u) return;
   const { error } = await sb.from('profiles').upsert({ id:u.id, name:S.name||null, neighborhood:S.nb||null, interests:S.interests||[],
     // rounded to ~0.5 mi: enough for "near you", without storing anyone's exact home location
     lat:S.loc? Math.round(S.loc.lat*100)/100 : null, lng:S.loc? Math.round(S.loc.lng*100)/100 : null, points:S.points||0 });
-  if(error){ console.warn('Supabase profile save failed', error); dbStatus('profile save failed: '+error.message); } else dbStatus('connected, profile saved');
+  if(error){ console.warn('Supabase profile save failed', error); dbStatus('profile save failed: '+error.message,true); } else dbStatus('connected, profile saved');
 }
 const eidOf = ev => ev.eid || String(ev.id);
 async function dbRsvp(ev){
   if(!ev) return; const u=await dbUser(); if(!u) return;
   const { error } = await sb.from('rsvps').upsert({ user_id:u.id, event_id:eidOf(ev), event_title:ev.title });
-  if(error){ console.warn('Supabase RSVP save failed', error); dbStatus('RSVP save failed: '+error.message); }
+  if(error){ console.warn('Supabase RSVP save failed', error); dbStatus('RSVP save failed: '+error.message,true); }
   dbProfile(); loadGoing();
 }
 async function dbCheckin(ev){
   const u=await dbUser(); if(!u) return;
   const { error } = await sb.from('checkins').insert({ user_id:u.id, event_id:eidOf(ev), event_title:ev.title, venue:ev.venue||null,
     neighborhood:ev.area||ev.hood||null, category:ev.category||null });
-  if(error){ console.warn('Supabase check-in save failed', error); dbStatus('check-in save failed: '+error.message); }
+  if(error){ console.warn('Supabase check-in save failed', error); dbStatus('check-in save failed: '+error.message,true); }
   dbProfile();
 }
 // real "N going" counts from everyone's RSVPs
@@ -1297,6 +1299,8 @@ async function loadGoing(){
     if(changed && current==='home') renderHome();
   }catch(e){ console.warn('Supabase going counts failed', e); }
 }
+
+document.getElementById('dbCheck').onclick=async()=>{ dbStatus('checking…'); const u=await dbUser(); if(!u) return; dbStatus('signed in, saving profile…'); await dbProfile(); };
 
 /* ---------- live data (Google Sheet) ---------- */
 // Reads the "Comuna — LA Event Inventory" sheet (Events tab published as CSV).
