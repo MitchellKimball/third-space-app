@@ -145,8 +145,7 @@ img{ max-width:100% }
 /* map mode: the map fills the screen; header, chips and a swipeable row of picks float over it */
 #homeScreen:not(.home-list) .homehead{ position:relative; z-index:6; padding-bottom:14px; background:linear-gradient(var(--paper) 84%, rgba(243,231,209,0)); pointer-events:none }
 #homeScreen:not(.home-list) .homehead > *{ pointer-events:auto }
-#homeScreen:not(.home-list) .chips{ padding-top:6px }
-#homeScreen:not(.home-list) #homeSub{ margin-bottom:0 }
+#homeScreen:not(.home-list) .chips{ padding-top:12px }
 #homeScreen:not(.home-list) .mapwrap{ position:absolute; inset:0; height:auto; min-height:0; margin:0; border-radius:0 }
 #homeScreen:not(.home-list) .mapwrap .toggle{ top:auto; bottom:calc(var(--navh) + 128px) }
 #homeScreen:not(.home-list) .maplabel{ bottom:calc(var(--navh) + 134px) }
@@ -380,7 +379,6 @@ img{ max-width:100% }
       </div>
       <div style="padding:2px 20px 0">
         <div class="h1" id="homeTitle">Explore your neighborhood</div>
-        <p class="sub" id="homeSub">5 picks within 15 minutes</p>
       </div>
       <div class="chips" id="chips"></div>
       </div>
@@ -762,8 +760,6 @@ function renderHome(){
   const cats=['All',...Object.keys(CATS).filter(k=>events.some(e=>e.category===k))];
   document.getElementById('chips').innerHTML=cats.map(c=>`<button class="chip ${c===filter?'on':''}" data-cat="${c}">${c==='All'?'Everything':CATS[c].short}</button>`).join('');
   const P=picks();
-  const inRange=P.filter(e=>e.mi<=NEARBY_MILES).length;
-  document.getElementById('homeSub').textContent = inRange ? `${inRange} pick${inRange>1?'s':''} within 15 minutes` : 'A little farther tonight, but worth it';
   document.getElementById('picks').innerHTML = P.map((ev,i)=>{
     const done=S.checked.includes(ev.id), inn=S.rsvp.includes(ev.id);
     return `<button class="pick" data-ev="${ev.id}"><div class="n">${catDot(ev.category,18)}${done?'<span class="chk">&check;</span>':''}</div>
