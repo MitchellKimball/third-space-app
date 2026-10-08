@@ -133,6 +133,8 @@ img{ max-width:100% }
 .chips::-webkit-scrollbar{ display:none }
 .chip{ flex:none; border:1.5px solid var(--ink); border-radius:30px; padding:6px 13px; font-size:13px; font-weight:500 }
 .chip.on{ background:var(--ink); color:var(--paper) }
+.chip.when{ border-color:var(--green); color:var(--green); font-weight:700 } .chip.when.on{ background:var(--green); color:var(--paper) }
+.chipsep{ flex:none; width:1.5px; margin:4px 2px; background:#CDBF9F; border-radius:1px }
 .picks{ padding:6px 20px 110px; overflow-y:auto; flex:1 }
 .pick{ display:grid; grid-template-columns:44px 1fr auto; gap:12px; align-items:center; background:var(--card); border-radius:16px; padding:12px 14px; margin-top:10px; width:100%; text-align:left }
 .pick .n{ width:44px; height:44px; position:relative; display:grid; place-items:center }
@@ -855,18 +857,26 @@ recModal.addEventListener('click',e=>{ if(e.target===recModal){ recModal.classLi
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') recModal.classList.remove('on'); });
 
 /* ---------- home ---------- */
-let filter='All';
+let filter='All', when='any';
+// time filter: next occurrence falls today / within 7 days / within 30 days (rolling windows)
+const WHEN=[['any','Anytime'],['tonight','Tonight'],['week','This week'],['month','This month']];
+function inWindow(ev){
+  if(when==='any') return true;
+  const d=ev.start? nextDate(ev) : null; if(!d) return false;
+  const today=new Date(); today.setHours(0,0,0,0); const days=Math.round((d-today)/864e5);
+  return days>=0 && days < ({tonight:1,week:7,month:30})[when];
+}
 function enrich(){ const o=origin(); events.forEach(ev=>{ ev.mi=miles(o,ev); ev.hood=hoodOf(ev).name; }); }
 function picks(){
   enrich();
-  let list=events.filter(ev=> filter==='All' || ev.category===filter).sort((a,b)=>a.mi-b.mi);
+  let list=events.filter(ev=> (filter==='All' || ev.category===filter) && inWindow(ev)).sort((a,b)=>a.mi-b.mi);
   return list;                                    // all of LA, closest first
 }
 function inView(ev){ return true; }   // the map always frames all of LA
 function mins(mi){ return Math.max(2, Math.round(mi*3.2+2)); }
 function renderHome(){ setTimeout(syncHeadH,0);
   const cats=['All',...Object.keys(CATS).filter(k=>events.some(e=>e.category===k))];
-  document.getElementById('chips').innerHTML=cats.map(c=>`<button class="chip ${c===filter?'on':''}" data-cat="${c}">${c==='All'?'Everything':CATS[c].short}</button>`).join('');
+  document.getElementById('chips').innerHTML=WHEN.map(([k,l])=>`<button class="chip when ${k===when?'on':''}" data-when="${k}" aria-pressed="${k===when}">${l}</button>`).join('')+'<span class="chipsep" aria-hidden="true"></span>'+cats.map(c=>`<button class="chip ${c===filter?'on':''}" data-cat="${c}">${c==='All'?'Everything':CATS[c].short}</button>`).join('');
   const P=picks();
   document.getElementById('picks').innerHTML = P.map((ev,i)=>{
     const done=S.checked.includes(ev.id), inn=S.rsvp.includes(ev.id);
@@ -877,7 +887,7 @@ function renderHome(){ setTimeout(syncHeadH,0);
   const first=P[0]; document.getElementById('mapNote').textContent = first ? (first.live? `${first.title.split(' ').slice(0,2).join(' ')}: ${first.startsIn}` : '') : '';
   placePins(P);
 }
-document.getElementById('chips').addEventListener('click',e=>{ const c=e.target.closest('[data-cat]'); if(!c) return; filter=c.dataset.cat; renderHome(); });
+document.getElementById('chips').addEventListener('click',e=>{ const w=e.target.closest('[data-when]'); if(w){ when=w.dataset.when; renderHome(); if(!picks().length) toast('Nothing on the map for that yet. Try a wider window.'); return; } const c=e.target.closest('[data-cat]'); if(!c) return; filter=c.dataset.cat; renderHome(); });
 document.getElementById('picks').addEventListener('click',e=>{ const p=e.target.closest('[data-ev]'); if(p) openSheet(+p.dataset.ev); });
 document.getElementById('tMap').onclick=()=>{ document.getElementById('homeScreen').classList.remove('home-list'); tMap.classList.add('on'); tList.classList.remove('on'); setTimeout(()=>{ map?map.resize():drawPaper(); },20); };
 document.getElementById('tList').onclick=()=>{ document.getElementById('homeScreen').classList.add('home-list'); tList.classList.add('on'); tMap.classList.remove('on'); };
