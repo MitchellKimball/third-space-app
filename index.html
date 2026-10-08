@@ -345,6 +345,7 @@ img{ max-width:100% }
     <p>An interactive prototype of the Comuna app, rebuilt on Brand Guide v2. Tap through the phone: find tonight's picks, RSVP, check in, and collect the neighborhood stamp.</p>
     <p class="note">nothing is saved to a server. it all lives in your browser.</p>
     <p id="mapStatus" style="font-size:12.5px">Map: loading…</p>
+    <p id="dbStatus" style="font-size:12.5px">Database: not signed in yet</p>
     <div class="jump" id="jump"></div>
     <button class="restart" id="restart">Restart the demo</button>
   </div>
@@ -771,7 +772,7 @@ suName.addEventListener('keydown',e=>{ if(e.key==='Enter' && !suNext.disabled) s
 suNext.onclick=()=>{
   // real users start with an empty passport (the demo profile is only for showing the app before sign-up)
   Object.assign(S,{ places:{}, points:0, streak:0, visits:0, rsvp:[], checked:[], redeemed:[], alertsRead:false });
-  S.name=suName.value.trim().replace(/\s+/g,' '); S.joined=new Date().toISOString().slice(0,10); save(); renderNames(); dbProfile();
+  S.signedUp=true; S.name=suName.value.trim().replace(/\s+/g,' '); S.joined=new Date().toISOString().slice(0,10); save(); renderNames(); dbProfile();
   history=[]; S.kitSeen=false; save(); go('home'); setTimeout(openKit,400);
 };
 function shortName(){ const p=(S.name||'').split(' ').filter(Boolean); return p.length? p[0]+(p[1]?` ${p[p.length-1][0].toUpperCase()}.`:'') : 'You'; }
@@ -1256,32 +1257,34 @@ window.addEventListener('resize',syncHeadH); setTimeout(syncHeadH,0);
 /* ---------- Supabase ---------- */
 // Every write also lives in local storage first, so the app keeps working offline or if Supabase is down.
 const sb = (window.supabase && SUPABASE_URL && SUPABASE_KEY) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+// status line in the dev panel (🛠) so a phone test shows whether saves reach Supabase
+function dbStatus(msg){ const el=document.getElementById('dbStatus'); if(el) el.textContent='Database: '+msg; }
 async function dbUser(){
-  if(!sb) return null;
+  if(!sb){ dbStatus('library failed to load (check connection)'); return null; }
   try{
     const { data:{ session } } = await sb.auth.getSession(); if(session) return session.user;
     const { data, error } = await sb.auth.signInAnonymously(); if(error) throw error; return data.user;
-  }catch(e){ console.warn('Supabase sign-in failed', e); return null; }
+  }catch(e){ console.warn('Supabase sign-in failed', e); dbStatus('sign-in failed: '+(e.message||e)+(/anonymous/i.test(e.message||'')?' (turn on anonymous sign-ins in Supabase)':'')); return null; }
 }
 async function dbProfile(){
   const u=await dbUser(); if(!u) return;
   const { error } = await sb.from('profiles').upsert({ id:u.id, name:S.name||null, neighborhood:S.nb||null, interests:S.interests||[],
     // rounded to ~0.5 mi: enough for "near you", without storing anyone's exact home location
     lat:S.loc? Math.round(S.loc.lat*100)/100 : null, lng:S.loc? Math.round(S.loc.lng*100)/100 : null, points:S.points||0 });
-  if(error) console.warn('Supabase profile save failed', error);
+  if(error){ console.warn('Supabase profile save failed', error); dbStatus('profile save failed: '+error.message); } else dbStatus('connected, profile saved');
 }
 const eidOf = ev => ev.eid || String(ev.id);
 async function dbRsvp(ev){
   if(!ev) return; const u=await dbUser(); if(!u) return;
   const { error } = await sb.from('rsvps').upsert({ user_id:u.id, event_id:eidOf(ev), event_title:ev.title });
-  if(error) console.warn('Supabase RSVP save failed', error);
+  if(error){ console.warn('Supabase RSVP save failed', error); dbStatus('RSVP save failed: '+error.message); }
   dbProfile(); loadGoing();
 }
 async function dbCheckin(ev){
   const u=await dbUser(); if(!u) return;
   const { error } = await sb.from('checkins').insert({ user_id:u.id, event_id:eidOf(ev), event_title:ev.title, venue:ev.venue||null,
     neighborhood:ev.area||ev.hood||null, category:ev.category||null });
-  if(error) console.warn('Supabase check-in save failed', error);
+  if(error){ console.warn('Supabase check-in save failed', error); dbStatus('check-in save failed: '+error.message); }
   dbProfile();
 }
 // real "N going" counts from everyone's RSVPs
@@ -1373,6 +1376,7 @@ function boot(){
   ['asideMark','onbMark','homeMark'].forEach(id=>wordmark(document.getElementById(id)));
   buildOnb(); updateDot(); current=''; go('onb1',false); history=[];
   tryMapbox(); loadSheet();
+  if(S.signedUp) dbProfile();   // returning user: keep the profile in sync
 }
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(boot); else boot();
 })();
