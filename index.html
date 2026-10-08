@@ -309,6 +309,9 @@ img{ max-width:100% }
 .toast{ position:absolute; left:50%; bottom:96px; transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:30px; font-size:13.5px; font-weight:500; z-index:80; opacity:0; transition:opacity .2s; pointer-events:none; white-space:nowrap }
 .toast.on{ opacity:1 }
 .mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib{ opacity:.6 }
+/* Mapbox requires its logo + attribution to stay visible: tuck them in the map's top corners, just under the floating header */
+#homeScreen:not(.home-list) .mapboxgl-ctrl-top-left, #homeScreen:not(.home-list) .mapboxgl-ctrl-top-right{ top:var(--headh,170px) }
+#homeScreen:not(.home-list) .mapboxgl-ctrl-top-left .mapboxgl-ctrl, #homeScreen:not(.home-list) .mapboxgl-ctrl-top-right .mapboxgl-ctrl{ margin:0 10px }
 </style>
 </head>
 <body>
@@ -769,7 +772,7 @@ function picks(){
   return (near.length>=3? near : list).slice(0,MAX_PICKS);
 }
 function mins(mi){ return Math.max(2, Math.round(mi*3.2+2)); }
-function renderHome(){
+function renderHome(){ setTimeout(syncHeadH,0);
   const cats=['All',...Object.keys(CATS).filter(k=>events.some(e=>e.category===k))];
   document.getElementById('chips').innerHTML=cats.map(c=>`<button class="chip ${c===filter?'on':''}" data-cat="${c}">${c==='All'?'Everything':CATS[c].short}</button>`).join('');
   const P=picks();
@@ -841,8 +844,8 @@ function tryMapbox(){
   s.onload=()=>{ try{
       if(!mapboxgl.supported || !mapboxgl.supported()){ clearTimeout(timer); fail(); return; }
       mapboxgl.accessToken=MAPBOX_TOKEN;
-      const m=new mapboxgl.Map({container:'map',style:'mapbox://styles/mapbox/light-v11',center:[origin().lng,origin().lat],zoom:13.3,attributionControl:false,pitchWithRotate:false,dragRotate:false});
-      m.addControl(new mapboxgl.AttributionControl({compact:true}),'bottom-right');
+      const m=new mapboxgl.Map({container:'map',style:'mapbox://styles/mapbox/light-v11',center:[origin().lng,origin().lat],zoom:13.3,attributionControl:false,logoPosition:'top-left',pitchWithRotate:false,dragRotate:false});
+      m.addControl(new mapboxgl.AttributionControl({compact:true}),'top-right');
       // A token locked to another domain answers 401/403: fall back to the Paper map instead of showing a blank one.
       m.on('error',ev=>{ const er=ev&&ev.error; if(!er) return; const bad=[401,403].includes(er.status) || /401|403|Forbidden|Unauthorized/i.test(String(er.message)); if(!bad) return;
         clearTimeout(timer); markers.forEach(x=>x.remove()); markers=[]; markers.you=null; try{ m.remove(); }catch(e){} map=null; settled=true; drawPaper(); setMapStatus(false); });
@@ -1045,6 +1048,10 @@ function renderHost(){
 }
 document.getElementById('redemptionList').addEventListener('click',e=>{ const b=e.target.closest('[data-approve]'); if(!b) return; const names=['Ana P.','Sam T.','Jordan M.']; S.approved=S.approved||[]; S.approved.push(names.indexOf(b.dataset.approve)); save(); renderHost(); toast('Approved'); });
 document.getElementById('postEvent').onclick=()=>toast('Posting opens in the next build');
+
+/* keep the Mapbox corner controls just below the header, whatever its height */
+function syncHeadH(){ const h=document.querySelector('#homeScreen .homehead'); if(h&&h.offsetHeight) document.getElementById('homeScreen').style.setProperty('--headh',(h.offsetHeight-6)+'px'); }
+window.addEventListener('resize',syncHeadH); setTimeout(syncHeadH,0);
 
 /* ---------- picks row: drag with a mouse too (touch already swipes natively) ---------- */
 (function(){
