@@ -149,7 +149,9 @@ img{ max-width:100% }
 #homeScreen:not(.home-list) .mapwrap{ position:absolute; inset:0; height:auto; min-height:0; margin:0; border-radius:0 }
 #homeScreen:not(.home-list) .mapwrap .toggle{ top:auto; bottom:calc(var(--navh) + 128px) }
 #homeScreen:not(.home-list) .maplabel{ bottom:calc(var(--navh) + 134px) }
-#homeScreen:not(.home-list) .picks{ position:absolute; left:0; right:0; bottom:calc(var(--navh) + 10px); z-index:6; flex:none; display:flex; gap:10px; overflow-x:auto; overflow-y:hidden; padding:0 14px; scroll-snap-type:x mandatory; scrollbar-width:none; pointer-events:none }
+#homeScreen:not(.home-list) .picks{ position:absolute; left:0; right:0; bottom:calc(var(--navh) + 10px); z-index:6; flex:none; display:flex; gap:10px; overflow-x:auto; overflow-y:hidden; padding:0 14px; scroll-snap-type:x mandatory; scrollbar-width:none; touch-action:pan-x; cursor:grab; -webkit-overflow-scrolling:touch }
+#homeScreen:not(.home-list) .picks.dragging{ scroll-snap-type:none; cursor:grabbing }
+#homeTitle{ white-space:nowrap; font-size:30px }
 #homeScreen:not(.home-list) .picks::-webkit-scrollbar{ display:none }
 #homeScreen:not(.home-list) .pick{ flex:0 0 84%; margin:0; scroll-snap-align:center; box-shadow:0 4px 14px rgba(0,0,0,.18); pointer-events:auto }
 #homeScreen:not(.home-list) .endnote, #homeScreen:not(.home-list) .demo-tag{ display:none }
@@ -1042,6 +1044,16 @@ function renderHost(){
 }
 document.getElementById('redemptionList').addEventListener('click',e=>{ const b=e.target.closest('[data-approve]'); if(!b) return; const names=['Ana P.','Sam T.','Jordan M.']; S.approved=S.approved||[]; S.approved.push(names.indexOf(b.dataset.approve)); save(); renderHost(); toast('Approved'); });
 document.getElementById('postEvent').onclick=()=>toast('Posting opens in the next build');
+
+/* ---------- picks row: drag with a mouse too (touch already swipes natively) ---------- */
+(function(){
+  const row=document.getElementById('picks'); let down=false, x0=0, s0=0, moved=false;
+  row.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse') return; down=true; moved=false; x0=e.clientX; s0=row.scrollLeft; });
+  window.addEventListener('pointermove',e=>{ if(!down) return; const dx=e.clientX-x0; if(Math.abs(dx)>4){ moved=true; row.classList.add('dragging'); } row.scrollLeft=s0-dx; });
+  window.addEventListener('pointerup',()=>{ if(!down) return; down=false;
+    if(row.classList.contains('dragging')){ row.classList.remove('dragging'); const c=row.querySelector('.pick'); if(c){ const w=c.offsetWidth+10; row.scrollTo({left:Math.round(row.scrollLeft/w)*w, behavior:'smooth'}); } } });
+  row.addEventListener('click',e=>{ if(moved){ e.stopPropagation(); e.preventDefault(); moved=false; } },true);
+})();
 
 /* ---------- live data (Google Sheet) ---------- */
 function loadSheet(){
