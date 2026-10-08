@@ -694,9 +694,9 @@ let tt; function toast(msg){ const t=document.getElementById('toast'); t.textCon
 /* ---------- onboarding ---------- */
 function buildOnb(){
   const f=document.getElementById('stampfield');
-  f.innerHTML=`<div style="left:6px;top:10px">${hoodStamp('Silver Lake',150,-10)}</div>
-  <div style="right:4px;top:40px">${hoodStamp('Echo Park',136,9)}</div>
-  <div style="left:96px;top:150px">${hoodStamp('Los Feliz',138,4)}</div>`;
+  f.innerHTML=`<div style="left:6px;top:10px">${hoodStamp('Santa Monica',150,-10)}</div>
+  <div style="right:4px;top:40px">${hoodStamp('Silver Lake',136,9)}</div>
+  <div style="left:96px;top:150px">${hoodStamp('West Hollywood',138,4)}</div>`;
 }
 const locNext=document.getElementById('locNext');
 function setHood(name,loc){ const h=hoodByName(name); S.nb=h.name; S.loc=loc||{lat:h.lat,lng:h.lng}; save(); rebuildMap(); locNext.disabled=false; drawMini(); }
