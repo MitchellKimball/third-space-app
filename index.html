@@ -131,8 +131,6 @@ img{ max-width:100% }
 .youare{ position:absolute; transform:translate(-50%,-50%); pointer-events:none }
 .chips{ display:flex; gap:8px; overflow-x:auto; padding:14px 20px 4px; scrollbar-width:none }
 .chips::-webkit-scrollbar{ display:none }
-.chip.scope{ border-color:var(--green); color:var(--green); font-weight:700 }
-.chip.scope.on{ background:var(--green); color:var(--paper) }
 .chip{ flex:none; border:1.5px solid var(--ink); border-radius:30px; padding:6px 13px; font-size:13px; font-weight:500 }
 .chip.on{ background:var(--ink); color:var(--paper) }
 .picks{ padding:6px 20px 110px; overflow-y:auto; flex:1 }
@@ -819,7 +817,7 @@ function kitSlides(){
      <p class="sub" style="font-size:13px">New events get added daily.</p>`,
     `<div class="k">How it works</div><div class="h1" id="kitTitle">Find it. RSVP. Show up.</div>
      <ol class="kitsteps">
-      <li><div><b>Explore the map</b><span>Tap a pin or swipe the cards. Switch <b style="display:inline">Near me</b> to <b style="display:inline">All LA</b> to see everything.</span></div></li>
+      <li><div><b>Explore the map</b><span>Every event across LA is on the map. Tap a pin or swipe the cards, and zoom in to break up the clusters.</span></div></li>
       <li><div><b>Tap "RSVP"</b><span>It lands in your Plans, so you won't forget. Invite friends from there.</span></div></li>
       <li><div><b>Check in when you get there</b><span>Tap "I'm here" at the event to collect the stamp.</span></div></li>
      </ol>`,
@@ -862,16 +860,13 @@ function enrich(){ const o=origin(); events.forEach(ev=>{ ev.mi=miles(o,ev); ev.
 function picks(){
   enrich();
   let list=events.filter(ev=> filter==='All' || ev.category===filter).sort((a,b)=>a.mi-b.mi);
-  if(S.scope==='all') return list;              // All LA: every event, closest first
-  const near=list.filter(ev=>ev.mi<=NEARBY_MILES);
-  return (near.length>=3? near : list).slice(0,MAX_PICKS);
+  return list;                                    // all of LA, closest first
 }
-// how far out the map frames and draws pins: the 15-minute radius, or anywhere in LA
-function inView(ev){ return S.scope==='all' || ev.mi<=NEARBY_MILES*1.6; }
+function inView(ev){ return true; }   // the map always frames all of LA
 function mins(mi){ return Math.max(2, Math.round(mi*3.2+2)); }
 function renderHome(){ setTimeout(syncHeadH,0);
   const cats=['All',...Object.keys(CATS).filter(k=>events.some(e=>e.category===k))];
-  document.getElementById('chips').innerHTML=`<button class="chip scope ${S.scope==='all'?'on':''}" data-scope aria-pressed="${S.scope==='all'}">${S.scope==='all'?'All LA':'Near me'} ⇄</button>`+cats.map(c=>`<button class="chip ${c===filter?'on':''}" data-cat="${c}">${c==='All'?'Everything':CATS[c].short}</button>`).join('');
+  document.getElementById('chips').innerHTML=cats.map(c=>`<button class="chip ${c===filter?'on':''}" data-cat="${c}">${c==='All'?'Everything':CATS[c].short}</button>`).join('');
   const P=picks();
   document.getElementById('picks').innerHTML = P.map((ev,i)=>{
     const done=S.checked.includes(ev.id), inn=S.rsvp.includes(ev.id);
@@ -882,7 +877,7 @@ function renderHome(){ setTimeout(syncHeadH,0);
   const first=P[0]; document.getElementById('mapNote').textContent = first ? (first.live? `${first.title.split(' ').slice(0,2).join(' ')}: ${first.startsIn}` : '') : '';
   placePins(P);
 }
-document.getElementById('chips').addEventListener('click',e=>{ if(e.target.closest('[data-scope]')){ S.scope=S.scope==='all'?'near':'all'; save(); renderHome(); return; } const c=e.target.closest('[data-cat]'); if(!c) return; filter=c.dataset.cat; renderHome(); });
+document.getElementById('chips').addEventListener('click',e=>{ const c=e.target.closest('[data-cat]'); if(!c) return; filter=c.dataset.cat; renderHome(); });
 document.getElementById('picks').addEventListener('click',e=>{ const p=e.target.closest('[data-ev]'); if(p) openSheet(+p.dataset.ev); });
 document.getElementById('tMap').onclick=()=>{ document.getElementById('homeScreen').classList.remove('home-list'); tMap.classList.add('on'); tList.classList.remove('on'); setTimeout(()=>{ map?map.resize():drawPaper(); },20); };
 document.getElementById('tList').onclick=()=>{ document.getElementById('homeScreen').classList.add('home-list'); tList.classList.add('on'); tMap.classList.remove('on'); };
