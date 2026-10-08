@@ -1036,24 +1036,10 @@ document.getElementById('redemptionList').addEventListener('click',e=>{ const b=
 document.getElementById('postEvent').onclick=()=>toast('Posting opens in the next build');
 
 /* ---------- live data (Google Sheet) ---------- */
-// rows can give an address instead of lat/lng; we look it up once and remember it on this device
-async function geocode(address){
-  const key='geo:'+address.trim().toLowerCase();
-  try{ const hit=localStorage.getItem(key); if(hit) return JSON.parse(hit); }catch(e){}
-  if(!MAPBOX_TOKEN) return null;
-  try{
-    const r=await fetch('https://api.mapbox.com/search/geocode/v6/forward?q='+encodeURIComponent(address)+'&proximity=-118.27,34.08&country=us&limit=1&access_token='+MAPBOX_TOKEN);
-    const f=(await r.json()).features?.[0]; if(!f) return null;
-    const c=f.geometry.coordinates; try{ localStorage.setItem(key,JSON.stringify(c)); }catch(e){}
-    return c;
-  }catch(e){ return null; }
-}
 function loadSheet(){
   if(!SHEET_CSV_URL || !window.Papa) return;
-  fetch(SHEET_CSV_URL).then(r=>{ if(!r.ok) throw 0; return r.text(); }).then(async txt=>{
-    let rows=Papa.parse(txt,{header:true,skipEmptyLines:true}).data.filter(r=>r.title && ((r.lat && r.lng) || r.address));
-    await Promise.all(rows.map(async r=>{ if(r.lat && r.lng) return; const c=await geocode(r.address); if(c){ r.lat=c[1]; r.lng=c[0]; } }));
-    rows=rows.filter(r=>r.lat && r.lng);
+  fetch(SHEET_CSV_URL).then(r=>{ if(!r.ok) throw 0; return r.text(); }).then(txt=>{
+    const rows=Papa.parse(txt,{header:true,skipEmptyLines:true}).data.filter(r=>r.title && r.lat && r.lng);
     if(!rows.length) return;
     const catMap=c=>{ c=c||''; if(CATS[c.trim().toLowerCase()]) return c.trim().toLowerCase();
       const hit=Object.keys(CATS).find(k=>CATS[k].label.toLowerCase()===c.trim().toLowerCase()); if(hit) return hit;
