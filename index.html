@@ -131,10 +131,13 @@ img{ max-width:100% }
 .youare{ position:absolute; transform:translate(-50%,-50%); pointer-events:none }
 .chips{ display:flex; gap:8px; overflow-x:auto; padding:14px 20px 4px; scrollbar-width:none }
 .chips::-webkit-scrollbar{ display:none }
-.chip.scope{ border-color:var(--green); color:var(--green); font-weight:700 }
-.chip.scope.on{ background:var(--green); color:var(--paper) }
 .chip{ flex:none; border:1.5px solid var(--ink); border-radius:30px; padding:6px 13px; font-size:13px; font-weight:500 }
 .chip.on{ background:var(--ink); color:var(--paper) }
+.fbtn{ flex:1; display:flex; align-items:baseline; gap:6px; min-width:0; border:1.5px solid var(--ink); border-radius:14px; padding:8px 12px; font-size:14px; font-weight:700; background:var(--card); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.fbtn small{ font-size:11px; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:.05em } .fbtn i{ margin-left:auto; font-style:normal; font-size:11px; color:var(--muted) }
+.fbtn.set{ background:var(--green); border-color:var(--green); color:var(--paper) } .fbtn.set small, .fbtn.set i{ color:#CFE0D3 }
+.picklist{ display:flex; flex-direction:column; margin-top:8px } .popt{ display:flex; align-items:center; gap:10px; padding:13px 4px; border-bottom:1px dashed #DCCDAE; font-size:15px; text-align:left }
+.popt span{ flex:1 } .popt b{ font-size:13px; color:var(--muted); font-weight:500 } .popt em{ font-style:normal; color:var(--green); font-weight:900 } .popt.on span{ font-weight:700; color:var(--green) } .popt:disabled{ opacity:.4 }
 .picks{ padding:6px 20px 110px; overflow-y:auto; flex:1 }
 .pick{ display:grid; grid-template-columns:44px 1fr auto; gap:12px; align-items:center; background:var(--card); border-radius:16px; padding:12px 14px; margin-top:10px; width:100%; text-align:left }
 .pick .n{ width:44px; height:44px; position:relative; display:grid; place-items:center }
@@ -819,7 +822,7 @@ function kitSlides(){
      <p class="sub" style="font-size:13px">New events get added daily.</p>`,
     `<div class="k">How it works</div><div class="h1" id="kitTitle">Find it. RSVP. Show up.</div>
      <ol class="kitsteps">
-      <li><div><b>Explore the map</b><span>Tap a pin or swipe the cards. Switch <b style="display:inline">Near me</b> to <b style="display:inline">All LA</b> to see everything.</span></div></li>
+      <li><div><b>Explore the map</b><span>Every event across LA is on the map. Tap a pin or swipe the cards, and zoom in to break up the clusters.</span></div></li>
       <li><div><b>Tap "RSVP"</b><span>It lands in your Plans, so you won't forget. Invite friends from there.</span></div></li>
       <li><div><b>Check in when you get there</b><span>Tap "I'm here" at the event to collect the stamp.</span></div></li>
      </ol>`,
@@ -857,21 +860,27 @@ recModal.addEventListener('click',e=>{ if(e.target===recModal){ recModal.classLi
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') recModal.classList.remove('on'); });
 
 /* ---------- home ---------- */
-let filter='All';
+let filter='All', when='any';
+// time filter: next occurrence falls today / within 7 days / within 30 days (rolling windows)
+const WHEN=[['any','Anytime'],['tonight','Tonight'],['week','This week'],['month','This month']];
+function inWindow(ev){
+  if(when==='any') return true;
+  const d=ev.start? nextDate(ev) : null; if(!d) return false;
+  const today=new Date(); today.setHours(0,0,0,0); const days=Math.round((d-today)/864e5);
+  return days>=0 && days < ({tonight:1,week:7,month:30})[when];
+}
 function enrich(){ const o=origin(); events.forEach(ev=>{ ev.mi=miles(o,ev); ev.hood=hoodOf(ev).name; }); }
 function picks(){
   enrich();
-  let list=events.filter(ev=> filter==='All' || ev.category===filter).sort((a,b)=>a.mi-b.mi);
-  if(S.scope==='all') return list;              // All LA: every event, closest first
-  const near=list.filter(ev=>ev.mi<=NEARBY_MILES);
-  return (near.length>=3? near : list).slice(0,MAX_PICKS);
+  let list=events.filter(ev=> (filter==='All' || ev.category===filter) && inWindow(ev)).sort((a,b)=>a.mi-b.mi);
+  return list;                                    // all of LA, closest first
 }
-// how far out the map frames and draws pins: the 15-minute radius, or anywhere in LA
-function inView(ev){ return S.scope==='all' || ev.mi<=NEARBY_MILES*1.6; }
+function inView(ev){ return true; }   // the map always frames all of LA
 function mins(mi){ return Math.max(2, Math.round(mi*3.2+2)); }
 function renderHome(){ setTimeout(syncHeadH,0);
   const cats=['All',...Object.keys(CATS).filter(k=>events.some(e=>e.category===k))];
-  document.getElementById('chips').innerHTML=`<button class="chip scope ${S.scope==='all'?'on':''}" data-scope aria-pressed="${S.scope==='all'}">${S.scope==='all'?'All LA':'Near me'} ⇄</button>`+cats.map(c=>`<button class="chip ${c===filter?'on':''}" data-cat="${c}">${c==='All'?'Everything':CATS[c].short}</button>`).join('');
+  const wl=WHEN.find(w=>w[0]===when)[1], cl=filter==='All'?'Everything':CATS[filter].label;
+  document.getElementById('chips').innerHTML=`<button class="fbtn ${when!=='any'?'set':''}" data-pick="when"><small>When</small>${wl}<i>▾</i></button><button class="fbtn ${filter!=='All'?'set':''}" data-pick="type"><small>Type</small>${cl}<i>▾</i></button>`;
   const P=picks();
   document.getElementById('picks').innerHTML = P.map((ev,i)=>{
     const done=S.checked.includes(ev.id), inn=S.rsvp.includes(ev.id);
@@ -882,7 +891,17 @@ function renderHome(){ setTimeout(syncHeadH,0);
   const first=P[0]; document.getElementById('mapNote').textContent = first ? (first.live? `${first.title.split(' ').slice(0,2).join(' ')}: ${first.startsIn}` : '') : '';
   placePins(P);
 }
-document.getElementById('chips').addEventListener('click',e=>{ if(e.target.closest('[data-scope]')){ S.scope=S.scope==='all'?'near':'all'; save(); renderHome(); return; } const c=e.target.closest('[data-cat]'); if(!c) return; filter=c.dataset.cat; renderHome(); });
+document.getElementById('chips').addEventListener('click',e=>{ const b=e.target.closest('[data-pick]'); if(b) openPicker(b.dataset.pick); });
+// filter picker: a short list in the bottom sheet, with how many events each choice shows
+function countWith(w,c){ const ow=when, of=filter; when=w; filter=c; const n=events.filter(ev=>(filter==='All'||ev.category===filter)&&inWindow(ev)).length; when=ow; filter=of; return n; }
+function openPicker(kind){
+  const opts= kind==='when' ? WHEN.map(([k,l])=>[k,l,countWith(k,filter),k===when])
+    : ['All',...Object.keys(CATS).filter(k=>events.some(e=>e.category===k))].map(k=>[k,k==='All'?'Everything':CATS[k].label,countWith(when,k),k===filter]);
+  sheet.innerHTML=`<div class="grab"></div><div class="cat">${kind==='when'?'When':'Type of event'}</div>
+    <div class="picklist">${opts.map(([k,l,n,on])=>`<button class="popt ${on?'on':''}" data-opt="${k}" ${n||k==='any'||k==='All'?'':'disabled'}>${kind==='type'&&k!=='All'?catDot(k,12):''}<span>${l}</span><b>${n}</b>${on?'<em>✓</em>':''}</button>`).join('')}</div>`;
+  overlay.classList.add('on');
+  sheet.querySelector('.picklist').onclick=e=>{ const o=e.target.closest('[data-opt]'); if(!o||o.disabled) return; if(kind==='when') when=o.dataset.opt; else filter=o.dataset.opt; overlay.classList.remove('on'); renderHome(); };
+}
 document.getElementById('picks').addEventListener('click',e=>{ const p=e.target.closest('[data-ev]'); if(p) openSheet(+p.dataset.ev); });
 document.getElementById('tMap').onclick=()=>{ document.getElementById('homeScreen').classList.remove('home-list'); tMap.classList.add('on'); tList.classList.remove('on'); setTimeout(()=>{ map?map.resize():drawPaper(); },20); };
 document.getElementById('tList').onclick=()=>{ document.getElementById('homeScreen').classList.add('home-list'); tList.classList.add('on'); tMap.classList.remove('on'); };
