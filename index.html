@@ -173,13 +173,17 @@ img{ max-width:100% }
 .sheet{ width:100%; background:var(--paper); border-radius:26px 26px 0 0; padding:10px 22px 26px; max-height:88%; overflow-y:auto; animation:up .25s ease-out }
 @keyframes up{ from{ transform:translateY(40px); opacity:.6 } to{ transform:none; opacity:1 } }
 @media (prefers-reduced-motion:reduce){ .sheet{ animation:none } }
-.grab{ width:42px; height:5px; border-radius:3px; background:var(--line); margin:0 auto 12px }
+.grab{ width:42px; height:5px; border-radius:3px; background:var(--line); margin:0 auto 12px; cursor:grab }
+.sheet .x{ position:sticky; top:0; float:right; margin:-4px -8px 0 0; width:32px; height:32px; border-radius:50%; background:var(--card); color:var(--muted); font-size:20px; line-height:1; display:grid; place-items:center; z-index:2 }
 .sheet .cat{ color:var(--red); font-weight:700; font-size:12px; letter-spacing:.06em; text-transform:uppercase }
 .sheet h2{ font-family:var(--display); font-weight:900; font-size:36px; line-height:.95; text-transform:uppercase; margin:6px 0 6px; color:var(--green) }
 .facts{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0 }
 .fact{ background:var(--card); border-radius:12px; padding:10px 12px }
 .fact .k{ font-size:11px; color:var(--muted) }
 .fact .v{ font-weight:700; font-size:14px; margin-top:2px }
+.fact .more{ font-size:11.5px; color:var(--muted); margin-top:4px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden }
+.badges{ display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 0 } .badges span{ font-size:12px; font-weight:700; padding:4px 10px; border-radius:20px; background:var(--card); color:var(--green); border:1px solid #DCCDAE }
+.actions{ display:flex; gap:8px; margin:0 0 14px; flex-wrap:wrap } .act{ flex:1; min-width:30%; text-align:center; font-size:13px; font-weight:700; padding:10px 8px; border-radius:12px; border:1.5px solid var(--green); color:var(--green); background:transparent; text-decoration:none }
 .desc{ font-size:14.5px; line-height:1.5; margin:4px 0 12px }
 .host{ display:flex; align-items:center; gap:10px; margin:6px 0 14px; font-size:13.5px }
 .avatar{ width:36px; height:36px; border-radius:50%; background:var(--sun); color:var(--ink); display:grid; place-items:center; font-family:var(--display); font-weight:900; font-size:16px }
@@ -864,7 +868,7 @@ function renderHome(){ setTimeout(syncHeadH,0);
   document.getElementById('picks').innerHTML = P.map((ev,i)=>{
     const done=S.checked.includes(ev.id), inn=S.rsvp.includes(ev.id);
     return `<button class="pick" data-ev="${ev.id}"><div class="n">${catDot(ev.category,18)}${done?'<span class="chk">&check;</span>':''}</div>
-      <div><div class="when">${ev.live?'\u{1F534} ':''}${ev.startsIn||ev.time}</div><div class="t">${ev.title}</div><div class="m">${ev.venue}${inn&&!done?' · RSVP\'d':''}</div></div>
+      <div><div class="when">${ev.live?'\u{1F534} ':''}${ev.startsIn||(ev.start?nextWhen(ev):ev.time)}</div><div class="t">${ev.title}</div><div class="m">${ev.venue}${inn&&!done?' · RSVP\'d':''}</div></div>
       <div class="dist">${mins(ev.mi)}<small>min away</small></div></button>`; }).join('')
     + `<div class="endnote">that's the list. go have fun.</div><div class="demo-tag">${usingDemo?'Demo events · connect the Google Sheet to go live':'Live events from the Comuna sheet'}</div>`;
   const first=P[0]; document.getElementById('mapNote').textContent = first ? (first.live? `${first.title.split(' ').slice(0,2).join(' ')}: ${first.startsIn}` : '') : '';
@@ -1012,6 +1016,40 @@ document.getElementById('addSoon').onclick=()=>{
   document.getElementById('addSoonOk').onclick=()=>overlay.classList.remove('on');
 };
 
+/* ---------- event details: next date, badges, directions, calendar ---------- */
+function hm(v){ const m=String(v||'').trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp][Mm])?$/); if(!m) return null; let h=+m[1]; if(m[3]){ const pm=/p/i.test(m[3]); h=h%12+(pm?12:0); } return [h,+m[2]]; }
+// next date this event happens (today or later), from its start date + recurrence
+function nextDate(ev){
+  const d0=ev.start; if(!d0) return null; const today=new Date(); today.setHours(0,0,0,0);
+  const rec=(ev.rec||'').toLowerCase(), step=/biweekly/.test(rec)?14 : /weekly/.test(rec)?7 : /daily/.test(rec)?1 : 0;
+  if(d0>=today || !step) return /seasonal/.test(rec) && d0<today && (!ev.end||ev.end>=today)? today : d0;
+  const n=new Date(d0); while(n<today) n.setDate(n.getDate()+step); return (ev.end && n>ev.end)? null : n;
+}
+function nextWhen(ev){
+  const d=nextDate(ev); if(!d) return ev.time||'Soon';
+  const today=new Date(); today.setHours(0,0,0,0); const diff=Math.round((d-today)/864e5);
+  const day=diff===0?'Today':diff===1?'Tomorrow':d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  return [day,fmtTime(ev.t0)].filter(Boolean).join(' · ');
+}
+function badges(ev){
+  const b=[]; if(/free/i.test(ev.price)) b.push('Free'); else if(/donation|pay-what/i.test(ev.price)) b.push('Pay what you can'); else if(/paid/i.test(ev.price)) b.push('Paid');
+  if(ev.age) b.push(ev.age); if(/indoor/i.test(ev.setting)) b.push('Indoor'); else if(/outdoor/i.test(ev.setting)) b.push('Outdoor'); else if(/both/i.test(ev.setting)) b.push('Indoor + outdoor');
+  if(ev.rsvpReq) b.push('RSVP required'); return b;
+}
+function directionsUrl(ev){ const q=encodeURIComponent(ev.address||`${ev.venue}, Los Angeles, CA`);
+  return /iPhone|iPad|Macintosh/.test(navigator.userAgent)? `https://maps.apple.com/?daddr=${q}` : `https://www.google.com/maps/dir/?api=1&destination=${q}`; }
+function addToCalendar(ev){
+  const d=nextDate(ev)||new Date(), a=hm(ev.t0)||[19,0], b=hm(ev.t1);
+  const st=new Date(d); st.setHours(a[0],a[1],0,0); const en=new Date(st); if(b){ en.setHours(b[0],b[1],0,0); if(en<=st) en.setDate(en.getDate()+1); } else en.setHours(st.getHours()+2);
+  const f=x=>x.getFullYear()+String(x.getMonth()+1).padStart(2,'0')+String(x.getDate()).padStart(2,'0')+'T'+String(x.getHours()).padStart(2,'0')+String(x.getMinutes()).padStart(2,'0')+'00';
+  const esc=t=>String(t||'').replace(/([,;\\])/g,'\\$1').replace(/\n/g,' ');
+  const rec=(ev.rec||'').toLowerCase(), rr=/biweekly/.test(rec)?'RRULE:FREQ=WEEKLY;INTERVAL=2' : /weekly/.test(rec)?'RRULE:FREQ=WEEKLY' : /daily/.test(rec)?'RRULE:FREQ=DAILY' : '';
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Comuna//EN','BEGIN:VEVENT','UID:comuna-'+ev.id+'-'+Date.now()+'@comuna','DTSTAMP:'+f(new Date()),'DTSTART:'+f(st),'DTEND:'+f(en), rr,
+    'SUMMARY:'+esc(ev.title),'LOCATION:'+esc([ev.venue,ev.address].filter(Boolean).join(', ')),'DESCRIPTION:'+esc(ev.desc),'END:VEVENT','END:VCALENDAR'].filter(Boolean).join('\r\n');
+  const url=URL.createObjectURL(new Blob([ics],{type:'text/calendar'})); const l=document.createElement('a'); l.href=url; l.download=(ev.title||'event').replace(/[^\w]+/g,'-').slice(0,40)+'.ics'; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(url),2000);
+  toast('Calendar file ready: open it to add the event');
+}
+
 /* ---------- event sheet ---------- */
 const overlay=document.getElementById('overlay'), sheet=document.getElementById('sheet');
 const faceCols=[C.green,C.red,C.blue,C.sun,C.ink];
@@ -1020,24 +1058,47 @@ function openSheet(id){
   const inn=S.rsvp.includes(id), done=S.checked.includes(id);
   const initials=(ev.host||'?').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();
   const faces=Array.from({length:Math.min(ev.fromGroup||0,4)},(_,i)=>`<span style="background:${faceCols[i]}">${'AJKLR'[i]}</span>`).join('');
-  sheet.innerHTML=`<div class="grab"></div>
+  sheet.innerHTML=`<button class="x" id="sheetX" aria-label="Close">&times;</button><div class="grab"></div>
     <div class="cat" style="display:flex;align-items:center;gap:8px">${catDot(ev.category,12)}${CATS[catKey(ev.category)].label} · ${ev.area||ev.hood}</div>
     <h2>${ev.title}</h2>
     <div class="sub">${ev.venue}</div>
-    <div class="facts"><div class="fact"><div class="k">When</div><div class="v">${ev.time||'Soon'}</div></div><div class="fact"><div class="k">How far</div><div class="v">${mins(ev.mi)} min · ${ev.mi.toFixed(1)} mi</div></div></div>
+    ${badges(ev).length?`<div class="badges">${badges(ev).map(x=>`<span>${x}</span>`).join('')}</div>`:''}
+    <div class="facts"><div class="fact"><div class="k">${ev.start&&!/one-off/i.test(ev.rec||'')?'Next':'When'}</div><div class="v">${ev.start?nextWhen(ev):(ev.time||'Soon')}</div>${ev.start&&ev.recDetail&&!/one-off/i.test(ev.rec)?`<div class="more">${ev.recDetail}</div>`:''}</div><div class="fact"><div class="k">How far</div><div class="v">${mins(ev.mi)} min · ${ev.mi.toFixed(1)} mi</div></div></div>
     ${ev.going?`<div class="goingrow">${faces?`<div class="faces">${faces}</div>`:''}${ev.going} going${ev.fromGroup?`, ${ev.fromGroup} you know`:''}</div>`:''}
     ${ev.desc?`<p class="desc">${ev.desc}</p>`:''}
+    <div class="actions">
+      <a class="act" href="${directionsUrl(ev)}" target="_blank" rel="noopener">Directions</a>
+      <button class="act" id="calBtn" aria-label="Add to calendar">+ Calendar</button>
+      ${(ev.ticket||ev.source)?`<a class="act" href="${ev.ticket||ev.source}" target="_blank" rel="noopener">${ev.ticket?(/paid/i.test(ev.price)?'Get tickets':'RSVP link'):'Event page'}</a>`:''}
+    </div>
     <div class="host"><div class="avatar">${initials}</div><div><b>${ev.host||'Local host'}</b><div class="sub" style="font-size:12px">Hosting on Comuna</div></div></div>
     ${(ev.parking||ev.alcohol!==undefined)?`<div class="practical">${ev.parking?`Parking: ${ev.parking}<br>`:''}${ev.alcohol===true?'Drinks available, 21+ to drink':ev.alcohol===false?'Alcohol-free':''}</div>`:''}
     ${done? `<button class="btn green" disabled>Stamped. See you next time.</button>`
       : inn? `<div class="row2"><button class="btn ghost" id="shareBtn">Invite friends</button><button class="btn primary" id="checkBtn">I'm here: check in</button></div>`
       : `<div class="row2"><button class="btn ghost" id="shareBtn">Invite friends</button><button class="btn primary" id="rsvpBtn">RSVP</button></div>`}`;
   overlay.classList.add('on');
+  document.getElementById('sheetX').onclick=()=>overlay.classList.remove('on');
+  document.getElementById('calBtn').onclick=()=>addToCalendar(ev);
   const r=document.getElementById('rsvpBtn'); if(r) r.onclick=()=>{ S.rsvp.push(id); S.points+=10; save(); overlay.classList.remove('on'); renderHome(); showRsvp(events.find(e=>e.id===id)); };
   const c=document.getElementById('checkBtn'); if(c) c.onclick=()=>checkIn(ev);
   const sh=document.getElementById('shareBtn'); if(sh) sh.onclick=()=>shareEv(ev);
 }
 overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.classList.remove('on'); });
+
+/* swipe the event sheet down to close (touch, or drag with a mouse). Only starts when the sheet is scrolled to the top. */
+(function(){
+  let y0=null, dy=0, t0=0;
+  const start=y=>{ if(sheet.scrollTop>0) return; y0=y; dy=0; t0=Date.now(); sheet.style.transition='none'; };
+  const move=(y,e)=>{ if(y0===null) return; dy=Math.max(0,y-y0); if(dy>0){ sheet.style.transform=`translateY(${dy}px)`; if(e&&e.cancelable) e.preventDefault(); } };
+  const end=()=>{ if(y0===null) return; const fast=dy/(Date.now()-t0+1)>0.6; y0=null; sheet.style.transition='transform .2s ease-out';
+    if(dy>110 || (fast && dy>40)){ sheet.style.transform='translateY(100%)'; setTimeout(()=>{ overlay.classList.remove('on'); sheet.style.transform=''; sheet.style.transition=''; },200); }
+    else { sheet.style.transform=''; } dy=0; };
+  sheet.addEventListener('touchstart',e=>start(e.touches[0].clientY),{passive:true});
+  sheet.addEventListener('touchmove',e=>move(e.touches[0].clientY,e),{passive:false});
+  sheet.addEventListener('touchend',end); sheet.addEventListener('touchcancel',end);
+  sheet.addEventListener('mousedown',e=>{ if(e.target.closest('button,a,input')) return; start(e.clientY); });
+  window.addEventListener('mousemove',e=>move(e.clientY)); window.addEventListener('mouseup',end);
+})();
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ overlay.classList.remove('on'); document.getElementById('stampModal').classList.remove('on'); } });
 function shareEv(ev){
   const url=PARTIFUL[ev.id]||'https://partiful.com/e/example';
@@ -1234,7 +1295,9 @@ function loadSheet(){
     const catMap=c=>{ c=c||''; if(CATS[c.trim().toLowerCase()]) return c.trim().toLowerCase();
       const hit=Object.keys(CATS).find(k=>CATS[k].label.toLowerCase()===c.trim().toLowerCase()); if(hit) return hit;
       return /comedy|improv|theat|perform|drag/i.test(c)?'comedy':/film|movie|cinema|screening|media|podcast/i.test(c)?'film':/immersive|experien|installation/i.test(c)?'immersive':/night|club|dj|dance party|bar/i.test(c)?'nightlife':/music|concert|jazz|art|gallery|museum/i.test(c)?'music':/dinner|food|drink|supper|coffee|wine|beer/i.test(c)?'food':/fitness|wellness|yoga|run|health|medit/i.test(c)?'wellness':/workshop|class|craft|making|learn|lecture|talk/i.test(c)?'workshops':/hike|outdoor|beach|park|nature|garden/i.test(c)?'outdoors':/sport|game|trivia|volley|pickle|soccer|basketball/i.test(c)?'sports':/meetup|social|mixer|networking|speed/i.test(c)?'social':/market|shop|vintage|flea/i.test(c)?'markets':'community'; };
-    events=rows.map((r,i)=>({ id:100+i, title:r['event name'], venue:r['venue name']||'', lat:r.lat, lng:r.lng, area:r['neighborhood']||'', time:whenText(r), live:false, startsIn:'', going:0, fromGroup:0, host:r['host / organizer']||'', desc:r['short description']||'', category:catMap(r['primary category']), kind:(/corner/i.test(r['tier'])?'cornerstone':/niche/i.test(r['tier'])?'niche':/pop/i.test(r['tier'])?'popup':/regular/i.test(r['tier'])?'regular':''), parking:r['parking & transit']||'', alcohol:undefined }));
+    events=rows.map((r,i)=>({ id:100+i, title:r['event name'], venue:r['venue name']||'', lat:r.lat, lng:r.lng, area:r['neighborhood']||'', time:whenText(r), live:false, startsIn:'', going:0, fromGroup:0, host:r['host / organizer']||'', desc:r['short description']||'', category:catMap(r['primary category']), kind:(/corner/i.test(r['tier'])?'cornerstone':/niche/i.test(r['tier'])?'niche':/pop/i.test(r['tier'])?'popup':/regular/i.test(r['tier'])?'regular':''), parking:r['parking & transit']||'', alcohol:undefined,
+      address:[r['street address'],r['city'],r['zip']].filter(Boolean).join(', '), price:r['free / paid']||'', age:r['age']||'', setting:r['indoor / outdoor']||'', rsvpReq:/^y/i.test(r['rsvp required?']||''),
+      ticket:r['ticket / rsvp link']||'', source:r['source url']||'', rec:r['recurrence']||'', recDetail:r['recurrence detail']||'', start:parseDay(r['start date']), end:parseDay(r['end date']), t0:r['start time']||'', t1:r['end time']||'' }));
     usingDemo=false; if(current==='home') renderHome();
   }).catch(()=>{});
 }
