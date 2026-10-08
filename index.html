@@ -329,7 +329,7 @@ img{ max-width:100% }
         <div class="wm" id="onbMark" style="font-size:40px;color:var(--paper)"></div>
         <div class="stampfield" id="stampfield"></div>
         <h1 class="big">Your neighborhood has plans.</h1>
-        <p class="lede">Five or so good things happening near you right now. Say you're in, show up, collect the stamp.</p>
+        <p class="lede">Explore local events, experiences and pop-ups near you.</p>
         <button class="btn primary" data-go="onb2" style="margin-top:auto">Get started</button>
       </div>
     </section>
@@ -518,7 +518,11 @@ const HOODS = [
   { name:'Griffith Park',lat:34.1184, lng:-118.3004, glyph:'peak',   color:C.green },
   { name:'Downtown',     lat:34.0478, lng:-118.2563, glyph:'tower',  color:C.ink },
   { name:'Highland Park',lat:34.1115, lng:-118.1920, glyph:'sun',    color:C.sun },
-  { name:'Santa Monica', lat:34.0195, lng:-118.4912, glyph:'wave',   color:C.blue, city:'Santa Monica' }
+  { name:'Santa Monica', lat:34.0195, lng:-118.4912, glyph:'wave',   color:C.blue, city:'Santa Monica' },
+  { name:'Venice',       lat:33.9850, lng:-118.4695, glyph:'wave',   color:C.sun },
+  { name:'Beverly Hills',lat:34.0736, lng:-118.4004, glyph:'palm',   color:C.red,  city:'Beverly Hills' },
+  { name:'West Hollywood',lat:34.0900,lng:-118.3617, glyph:'sun',    color:C.ink,  city:'West Hollywood' },
+  { name:'Culver City',  lat:34.0211, lng:-118.3965, glyph:'tower',  color:C.sun,  city:'Culver City' }
 ];
 
 /* ---------- categories: each gets a colored dot ---------- */
@@ -609,6 +613,12 @@ function glyph(kind,c){
   return g;
 }
 let sid=0;
+// illustrated neighborhood stamps (stamps/*.png); places without one fall back to the drawn SVG stamp
+const STAMP_IMG = { 'Silver Lake':'silver-lake', 'Echo Park':'echo-park', 'Los Feliz':'los-feliz', 'Downtown':'downtown', 'Santa Monica':'santa-monica',
+  'Venice':'venice', 'Beverly Hills':'beverly-hills', 'West Hollywood':'west-hollywood', 'Culver City':'culver-city' };
+function hoodStamp(name,size,rot){
+  return `<img src="stamps/${STAMP_IMG[name]}.png" alt="${name} stamp" width="${size}" height="${size}" style="transform:rotate(${rot||0}deg);display:block;margin:0 auto;filter:drop-shadow(0 2px 4px rgba(0,0,0,.18))">`;
+}
 function stampSVG(top,bottom,kind,c,size,rot,fill){
   const r=size/2, a='sa'+(++sid), b='sb'+sid, Rt=r-27*size/170, Rb=r-15*size/170, s=size/170;
   return `<svg width="${size}" height="${size}" viewBox="${-r} ${-r} ${size} ${size}" style="transform:rotate(${rot||0}deg);overflow:visible;display:block" aria-hidden="true">
@@ -684,9 +694,9 @@ let tt; function toast(msg){ const t=document.getElementById('toast'); t.textCon
 /* ---------- onboarding ---------- */
 function buildOnb(){
   const f=document.getElementById('stampfield');
-  f.innerHTML=`<div style="left:6px;top:10px">${stampSVG('SILVER LAKE','EXPLORE WHERE YOU LIVE','ripple','#F3E7D1',150,-10)}</div>
-  <div style="right:4px;top:40px">${stampSVG('ECHO PARK','COMUNA · EST. 2026','lotus','#C9533D',136,9)}</div>
-  <div style="left:96px;top:150px">${stampSVG('LOS FELIZ','COMUNA · LOS ANGELES','palm',C.sun,138,4)}</div>`;
+  f.innerHTML=`<div style="left:6px;top:10px">${hoodStamp('Silver Lake',150,-10)}</div>
+  <div style="right:4px;top:40px">${hoodStamp('Echo Park',136,9)}</div>
+  <div style="left:96px;top:150px">${hoodStamp('Los Feliz',138,4)}</div>`;
 }
 const locNext=document.getElementById('locNext');
 function setHood(name,loc){ const h=hoodByName(name); S.nb=h.name; S.loc=loc||{lat:h.lat,lng:h.lng}; save(); rebuildMap(); locNext.disabled=false; drawMini(); }
@@ -998,7 +1008,7 @@ function renderPassport(){
       `</div><div class="pagenote">${list.length} ${KINDS[passTab].label.toLowerCase()} spot${list.length===1?'':'s'} stamped</div>`;
   } else if(passTab==='hoods'){
     html=`<div class="ph"><b>Neighborhoods</b><span>earned with your first place in each</span></div><div class="pagegrid">`+
-      HOODS.map((h,i)=> H[h.name]? `<div class="slot">${stampSVG(h.name.toUpperCase(),`${H[h.name]} VISIT${H[h.name]>1?'S':''} · COMUNA`,h.glyph,h.color,132,rots[i])}</div>` : `<div class="slot"><div class="ghost-stamp">${h.name}?</div></div>`).join('')+`</div>`;
+      HOODS.map((h,i)=> H[h.name]? `<div class="slot">${STAMP_IMG[h.name] ? hoodStamp(h.name,128,rots[i%rots.length])+`<div class="pagenote" style="margin-top:4px">${H[h.name]} visit${H[h.name]>1?'s':''}</div>` : stampSVG(h.name.toUpperCase(),`${H[h.name]} VISIT${H[h.name]>1?'S':''} · COMUNA`,h.glyph,h.color,132,rots[i%rots.length])}</div>` : `<div class="slot"><div class="ghost-stamp">${h.name}?</div></div>`).join('')+`</div>`;
   }
   document.getElementById('passPage').innerHTML=html;
   document.getElementById('patchList').innerHTML=PATCHES.map(p=>{ const ok=p.ok(); return `<div class="patch ${ok?'':'locked'}">${patchSVG(p.t,p.s,p.sc,92,110)}<div>${ok?'Earned':'Locked'}</div></div>`; }).join('');
