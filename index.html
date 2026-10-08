@@ -300,11 +300,12 @@ img{ max-width:100% }
 .hostscr .h2{ color:var(--sun) }
 
 /* ---------- nav ---------- */
-.nav{ position:absolute; left:0; right:0; bottom:0; z-index:30; display:grid; grid-template-columns:repeat(4,1fr); background:var(--card); border-top:1px solid var(--line); padding:10px 6px calc(12px + env(safe-area-inset-bottom,0px)) }
+.nav{ position:absolute; left:0; right:0; bottom:0; z-index:30; display:grid; grid-template-columns:repeat(4,1fr); background:var(--green); border-top:0; padding:10px 6px calc(12px + env(safe-area-inset-bottom,0px)) }
 .nav.hide{ display:none }
-.nav button{ display:flex; align-items:center; justify-content:center; color:var(--muted); padding:6px 0 }
-.nav button.on{ color:var(--green) }
-.nav button.on svg{ stroke:var(--green) }
+.nav button{ display:flex; align-items:center; justify-content:center; color:#B9C7B8; padding:2px 0 }
+/* Brand pairing "Sun on Green": green bar, Sun pill behind the active tab */
+.nav svg{ stroke:#B9C7B8; box-sizing:content-box; padding:6px 16px; border-radius:20px; transition:background .15s }
+.nav button.on svg{ stroke:var(--green); background:var(--sun) }
 .toast{ position:absolute; left:50%; bottom:96px; transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:30px; font-size:13.5px; font-weight:500; z-index:80; opacity:0; transition:opacity .2s; pointer-events:none; white-space:nowrap }
 .toast.on{ opacity:1 }
 .mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib{ opacity:.6 }
