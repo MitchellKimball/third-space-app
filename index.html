@@ -793,7 +793,7 @@ function kitSlides(){
     `<div class="k">Neighborhood starter kit</div><div class="h1" id="kitTitle">Welcome to ${hood}${first?`, ${first}`:''}.</div>
      <p class="sub">Comuna finds the good stuff happening around you: shows, markets, run clubs, pop-ups, supper clubs. Here's what's out there right now.</p>
      <div class="kitstats"><div class="kitstat"><b>${drive20}</b><span>events within a 15–20 min drive</span></div><div class="kitstat"><b>${all}</b><span>events across LA right now</span></div></div>
-     <p class="sub" style="font-size:13px">New events get added every week.</p>`,
+     <p class="sub" style="font-size:13px">New events get added daily.</p>`,
     `<div class="k">How it works</div><div class="h1" id="kitTitle">Find it. RSVP. Show up.</div>
      <ol class="kitsteps">
       <li><div><b>Explore the map</b><span>Tap a pin or swipe the cards. Switch <b style="display:inline">Near me</b> to <b style="display:inline">All LA</b> to see everything.</span></div></li>
@@ -869,19 +869,26 @@ const tMap=document.getElementById('tMap'), tList=document.getElementById('tList
 let map=null, markers=[], paperDrawn=false;
 function pinEl(ev,i){ const el=document.createElement('div'); const done=S.checked.includes(ev.id); el.className='pin'+(ev.live&&!done?' live':''); el.style.background=CATS[catKey(ev.category)].bg; el.innerHTML=(done?'<span class="chk">&check;</span>':''); el.setAttribute('role','button'); el.setAttribute('aria-label',ev.title); el.tabIndex=0; el.onclick=e=>{ e.stopPropagation(); openSheet(ev.id); }; el.onkeydown=e=>{ if(e.key==='Enter') openSheet(ev.id); }; return el; }
 /* pin clustering: pins closer than ~40px on screen merge into a numbered bubble; tap it to zoom in.
-   Recomputed after every pan/zoom, so bubbles split apart as you zoom. */
-let lastPins=[]; const CLUSTER_PX=40;
+   Recomputed after every pan/zoom, so bubbles split apart as you zoom. At street level (zoom 15+) nothing
+   clusters; events sharing an address fan out in a small ring so each one can be tapped. */
+let lastPins=[]; const CLUSTER_PX=40, STREET_ZOOM=15;
 function drawClusters(){
   if(!map) return; const you=markers.you; markers.forEach(m=>m.remove()); markers=[]; markers.you=you;
-  const groups=[];
-  lastPins.forEach(ev=>{ const pt=map.project([ev.lng,ev.lat]); const g=groups.find(g=>Math.hypot(g.x-pt.x,g.y-pt.y)<CLUSTER_PX);
+  const street=map.getZoom()>=STREET_ZOOM, radius=street? 14 : CLUSTER_PX, groups=[];
+  lastPins.forEach(ev=>{ const pt=map.project([ev.lng,ev.lat]); const g=groups.find(g=>Math.hypot(g.x-pt.x,g.y-pt.y)<radius);
     if(g){ g.list.push(ev); g.x=(g.x*(g.list.length-1)+pt.x)/g.list.length; g.y=(g.y*(g.list.length-1)+pt.y)/g.list.length; } else groups.push({x:pt.x,y:pt.y,list:[ev]}); });
   groups.forEach(g=>{
-    if(g.list.length===1){ const ev=g.list[0]; markers.push(new mapboxgl.Marker({element:pinEl(ev)}).setLngLat([ev.lng,ev.lat]).addTo(map)); return; }
-    const el=document.createElement('div'); const n=g.list.length; el.className='cluster'; el.textContent=n; const d=Math.min(52,30+Math.sqrt(n)*4); el.style.width=el.style.height=d+'px';
+    const n=g.list.length;
+    if(n===1 || street){
+      // same spot at street level: fan the pins out around the shared point
+      const ring=n===1? 0 : 16+n*3;
+      g.list.forEach((ev,i)=>{ const a=-Math.PI/2+i*2*Math.PI/n;
+        markers.push(new mapboxgl.Marker({element:pinEl(ev),offset:[Math.round(ring*Math.cos(a)),Math.round(ring*Math.sin(a))]}).setLngLat([ev.lng,ev.lat]).addTo(map)); });
+      return; }
+    const el=document.createElement('div'); el.className='cluster'; el.textContent=n; const d=Math.min(52,30+Math.sqrt(n)*4); el.style.width=el.style.height=d+'px';
     el.setAttribute('role','button'); el.setAttribute('aria-label',n+' events here, zoom in'); el.tabIndex=0;
     const zoomIn=e=>{ e&&e.stopPropagation(); const b=new mapboxgl.LngLatBounds(); g.list.forEach(ev=>b.extend([ev.lng,ev.lat]));
-      if(map.getZoom()>=16.5) openSheet(g.list[0].id); else map.fitBounds(b,{padding:80,maxZoom:Math.max(map.getZoom()+2,15),duration:500}); };
+      map.fitBounds(b,{padding:80,maxZoom:Math.max(map.getZoom()+2,STREET_ZOOM+0.5),duration:500}); };
     el.onclick=zoomIn; el.onkeydown=e=>{ if(e.key==='Enter') zoomIn(); };
     markers.push(new mapboxgl.Marker({element:el}).setLngLat(map.unproject([g.x,g.y])).addTo(map)); });
 }
