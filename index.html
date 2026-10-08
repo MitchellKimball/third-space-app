@@ -196,6 +196,17 @@ img{ max-width:100% }
 .recmodal .k{ font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--red) }
 .recmodal .h1{ color:var(--green); margin:6px 0 4px }
 .recmodal .why{ font-size:11px; color:var(--muted); margin-top:2px }
+/* neighborhood starter kit: shown once, right after sign-up */
+.kit .box{ min-height:62% }
+.kitdots{ display:flex; gap:6px; margin-bottom:14px } .kitdots i{ flex:1; height:4px; border-radius:2px; background:#E2D5BA } .kitdots i.on{ background:var(--green) }
+.kitnav{ display:grid; grid-template-columns:1fr 2fr; gap:10px; margin-top:18px }
+.kitstats{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0 6px }
+.kitstat{ background:var(--card); border-radius:16px; padding:14px } .kitstat b{ display:block; font-family:var(--display); font-weight:900; font-size:40px; line-height:1; color:var(--green) } .kitstat span{ font-size:12.5px; color:var(--muted) }
+.kitsteps{ margin:12px 0 0; padding:0; list-style:none; counter-reset:k } .kitsteps li{ counter-increment:k; display:grid; grid-template-columns:34px 1fr; gap:10px; padding:10px 0; border-bottom:1px dashed #DCCDAE; font-size:14px }
+.kitsteps li:last-child{ border:0 } .kitsteps li::before{ content:counter(k); width:30px; height:30px; border-radius:50%; background:var(--sun); color:var(--green); font-family:var(--display); font-weight:900; font-size:17px; display:grid; place-items:center }
+.kitsteps b{ display:block; color:var(--ink) } .kitsteps span{ color:var(--muted); font-size:13px }
+.kitpts{ display:flex; justify-content:space-between; align-items:center; background:var(--card); border-radius:14px; padding:12px 14px; margin-top:8px; font-size:14px } .kitpts b{ font-family:var(--display); font-weight:900; font-size:22px; color:var(--red) }
+.kitart{ display:flex; justify-content:center; align-items:center; gap:4px; margin:10px 0 2px }
 .stampmodal{ position:absolute; inset:0; z-index:60; display:none; align-items:center; justify-content:center; background:rgba(36,77,58,.94); color:var(--paper); flex-direction:column; text-align:center; padding:30px }
 .stampmodal.on{ display:flex }
 .stampmodal .stampbox{ animation:thunk .45s cubic-bezier(.2,1.6,.4,1) both }
@@ -501,6 +512,11 @@ img{ max-width:100% }
       <div id="recList"></div>
       <button class="btn green" id="recClose" style="margin-top:16px">Explore the map</button>
     </div></div>
+    <div class="recmodal kit" id="kitModal" role="dialog" aria-modal="true" aria-labelledby="kitTitle"><div class="box">
+      <div class="kitdots" id="kitDots"></div>
+      <div id="kitBody"></div>
+      <div class="kitnav"><button class="btn ghost" id="kitBack">Back</button><button class="btn primary" id="kitNext">Next</button></div>
+    </div></div>
     <div class="stampmodal" id="stampModal" role="dialog" aria-modal="true"></div>
     <div class="toast" id="toast"></div>
   </div></div>
@@ -735,7 +751,7 @@ suName.addEventListener('input',suUpdate);
 suName.addEventListener('keydown',e=>{ if(e.key==='Enter' && !suNext.disabled) suNext.click(); });
 suNext.onclick=()=>{
   S.name=suName.value.trim().replace(/\s+/g,' '); S.joined=new Date().toISOString().slice(0,10); save(); renderNames();
-  history=[]; go('home'); toast(`Welcome, ${S.name.split(' ')[0]}. Your passport is ready.`);
+  history=[]; S.kitSeen=false; save(); go('home'); setTimeout(openKit,400);
 };
 function shortName(){ const p=(S.name||'').split(' ').filter(Boolean); return p.length? p[0]+(p[1]?` ${p[p.length-1][0].toUpperCase()}.`:'') : 'You'; }
 function renderNames(){ const n=shortName(); document.getElementById('passName').textContent=`${n} · Los Angeles`; document.getElementById('pfName').textContent=n; document.getElementById('pfAvatar').textContent=n[0]; document.getElementById('pfHood').textContent=`${S.nb} · exploring since ${new Date(S.joined||Date.now()).toLocaleString('en-US',{month:'long'})}`; }
@@ -752,6 +768,7 @@ function weeklyPicks(){
   return { match:match.slice(0,MAX_RECS), extra };
 }
 function maybeWeeklyPicks(){
+  if(S.kitSeen===false) return;   // the starter kit goes first; it hands off to these picks when closed
   if(!(S.interests||[]).length || Date.now()-(S.lastPicks||0)<WEEK_MS) return;
   const {match,extra}=weeklyPicks(); if(!match.length && !extra.length) return;
   S.lastPicks=Date.now(); save();
@@ -765,6 +782,52 @@ function maybeWeeklyPicks(){
     + (extra.length? `<div class="h2" style="font-size:15px;margin-top:16px">Also close by</div>`+extra.map(ev=>row(ev,CATS[ev.category].label)).join('') : '');
   setTimeout(()=>document.getElementById('recModal').classList.add('on'),350);
 }
+/* ---------- neighborhood starter kit ---------- */
+let kitStep=0;
+const kitModal=document.getElementById('kitModal');
+function kitSlides(){
+  enrich();
+  const drive20=events.filter(ev=>mins(ev.mi)<=20).length, all=events.length, first=(S.name||'').split(' ')[0], hood=S.nb||'your neighborhood';
+  const stamp=STAMP_IMG[hood]? hoodStamp(hood,96,-8) : omark(72);
+  return [
+    `<div class="k">Neighborhood starter kit</div><div class="h1" id="kitTitle">Welcome to ${hood}${first?`, ${first}`:''}.</div>
+     <p class="sub">Comuna finds the good stuff happening around you: shows, markets, run clubs, pop-ups, supper clubs. Here's what's out there right now.</p>
+     <div class="kitstats"><div class="kitstat"><b>${drive20}</b><span>events within a 15–20 min drive</span></div><div class="kitstat"><b>${all}</b><span>events across LA right now</span></div></div>
+     <p class="sub" style="font-size:13px">New events get added every week.</p>`,
+    `<div class="k">How it works</div><div class="h1" id="kitTitle">Find it. Say you're in. Show up.</div>
+     <ol class="kitsteps">
+      <li><div><b>Explore the map</b><span>Tap a pin or swipe the cards. Switch <b style="display:inline">Near me</b> to <b style="display:inline">All LA</b> to see everything.</span></div></li>
+      <li><div><b>Tap "I'm in"</b><span>It lands in your Plans, so you won't forget. Invite friends from there.</span></div></li>
+      <li><div><b>Check in when you get there</b><span>Tap "I'm here" at the event to collect the stamp.</span></div></li>
+     </ol>`,
+    `<div class="k">Your passport</div><div class="h1" id="kitTitle">Collect stamps, points and patches.</div>
+     <div class="kitart">${stamp}</div>
+     <div class="kitpts"><span>Say "I'm in" to an event</span><b>+10</b></div>
+     <div class="kitpts"><span>Check in when you show up</span><b>+50</b></div>
+     <p class="sub" style="margin-top:12px">Every place you visit earns a stamp, and your first visit in each neighborhood earns its neighborhood stamp. Hit milestones (three neighborhoods, five visits to one spot) to unlock patches.</p>`,
+    `<div class="k">A few more things</div><div class="h1" id="kitTitle">You're all set.</div>
+     <ol class="kitsteps">
+      <li><div><b>Weekly picks</b><span>Once a week we'll pull together 5–8 things near you, matched to what you're into.</span></div></li>
+      <li><div><b>Climb the leaderboard</b><span>See how you stack up against other ${hood} explorers each month.</span></div></li>
+      <li><div><b>Know about something cool?</b><span>Soon you'll be able to add your own events with the + tab.</span></div></li>
+     </ol>`
+  ];
+}
+function renderKit(){
+  const sl=kitSlides(), last=kitStep===sl.length-1;
+  document.getElementById('kitDots').innerHTML=sl.map((_,i)=>`<i class="${i<=kitStep?'on':''}"></i>`).join('');
+  document.getElementById('kitBody').innerHTML=sl[kitStep];
+  document.getElementById('kitBack').style.visibility=kitStep?'visible':'hidden';
+  document.getElementById('kitNext').textContent=last? 'Let\'s go' : 'Next';
+  kitModal.querySelector('.box').scrollTop=0;
+}
+function openKit(){ kitStep=0; renderKit(); kitModal.classList.add('on'); }
+function closeKit(){ kitModal.classList.remove('on'); S.kitSeen=true; save(); maybeWeeklyPicks(); }
+document.getElementById('kitNext').onclick=()=>{ if(kitStep<kitSlides().length-1){ kitStep++; renderKit(); } else closeKit(); };
+document.getElementById('kitBack').onclick=()=>{ if(kitStep){ kitStep--; renderKit(); } };
+kitModal.addEventListener('click',e=>{ if(e.target===kitModal) closeKit(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && kitModal.classList.contains('on')) closeKit(); });
+
 const recModal=document.getElementById('recModal');
 document.getElementById('recClose').onclick=()=>recModal.classList.remove('on');
 recModal.addEventListener('click',e=>{ if(e.target===recModal){ recModal.classList.remove('on'); return; } const r=e.target.closest('[data-rec]'); if(r){ recModal.classList.remove('on'); openSheet(+r.dataset.rec); } });
@@ -952,7 +1015,7 @@ function openSheet(id){
       : inn? `<div class="row2"><button class="btn ghost" id="shareBtn">Invite friends</button><button class="btn primary" id="checkBtn">I'm here: check in</button></div>`
       : `<div class="row2"><button class="btn ghost" id="shareBtn">Invite friends</button><button class="btn primary" id="rsvpBtn">I'm in</button></div>`}`;
   overlay.classList.add('on');
-  const r=document.getElementById('rsvpBtn'); if(r) r.onclick=()=>{ S.rsvp.push(id); save(); toast('You\'re in. It\'s in your plans.'); openSheet(id); renderHome(); };
+  const r=document.getElementById('rsvpBtn'); if(r) r.onclick=()=>{ S.rsvp.push(id); S.points+=10; save(); toast('You\'re in: +10 points. It\'s in your plans.'); openSheet(id); renderHome(); };
   const c=document.getElementById('checkBtn'); if(c) c.onclick=()=>checkIn(ev);
   const sh=document.getElementById('shareBtn'); if(sh) sh.onclick=()=>shareEv(ev);
 }
