@@ -129,6 +129,8 @@ img{ max-width:100% }
 .youare{ position:absolute; transform:translate(-50%,-50%); pointer-events:none }
 .chips{ display:flex; gap:8px; overflow-x:auto; padding:14px 20px 4px; scrollbar-width:none }
 .chips::-webkit-scrollbar{ display:none }
+.chip.scope{ border-color:var(--green); color:var(--green); font-weight:700 }
+.chip.scope.on{ background:var(--green); color:var(--paper) }
 .chip{ flex:none; border:1.5px solid var(--ink); border-radius:30px; padding:6px 13px; font-size:13px; font-weight:500 }
 .chip.on{ background:var(--ink); color:var(--paper) }
 .picks{ padding:6px 20px 110px; overflow-y:auto; flex:1 }
@@ -773,13 +775,16 @@ function enrich(){ const o=origin(); events.forEach(ev=>{ ev.mi=miles(o,ev); ev.
 function picks(){
   enrich();
   let list=events.filter(ev=> filter==='All' || ev.category===filter).sort((a,b)=>a.mi-b.mi);
+  if(S.scope==='all') return list;              // All LA: every event, closest first
   const near=list.filter(ev=>ev.mi<=NEARBY_MILES);
   return (near.length>=3? near : list).slice(0,MAX_PICKS);
 }
+// how far out the map frames and draws pins: the 15-minute radius, or anywhere in LA
+function inView(ev){ return S.scope==='all' || ev.mi<=NEARBY_MILES*1.6; }
 function mins(mi){ return Math.max(2, Math.round(mi*3.2+2)); }
 function renderHome(){ setTimeout(syncHeadH,0);
   const cats=['All',...Object.keys(CATS).filter(k=>events.some(e=>e.category===k))];
-  document.getElementById('chips').innerHTML=cats.map(c=>`<button class="chip ${c===filter?'on':''}" data-cat="${c}">${c==='All'?'Everything':CATS[c].short}</button>`).join('');
+  document.getElementById('chips').innerHTML=`<button class="chip scope ${S.scope==='all'?'on':''}" data-scope aria-pressed="${S.scope==='all'}">${S.scope==='all'?'All LA':'Near me'} ⇄</button>`+cats.map(c=>`<button class="chip ${c===filter?'on':''}" data-cat="${c}">${c==='All'?'Everything':CATS[c].short}</button>`).join('');
   const P=picks();
   document.getElementById('picks').innerHTML = P.map((ev,i)=>{
     const done=S.checked.includes(ev.id), inn=S.rsvp.includes(ev.id);
@@ -790,7 +795,7 @@ function renderHome(){ setTimeout(syncHeadH,0);
   const first=P[0]; document.getElementById('mapNote').textContent = first ? (first.live? `${first.title.split(' ').slice(0,2).join(' ')}: ${first.startsIn}` : '') : '';
   placePins(P);
 }
-document.getElementById('chips').addEventListener('click',e=>{ const c=e.target.closest('[data-cat]'); if(!c) return; filter=c.dataset.cat; renderHome(); });
+document.getElementById('chips').addEventListener('click',e=>{ if(e.target.closest('[data-scope]')){ S.scope=S.scope==='all'?'near':'all'; save(); renderHome(); return; } const c=e.target.closest('[data-cat]'); if(!c) return; filter=c.dataset.cat; renderHome(); });
 document.getElementById('picks').addEventListener('click',e=>{ const p=e.target.closest('[data-ev]'); if(p) openSheet(+p.dataset.ev); });
 document.getElementById('tMap').onclick=()=>{ document.getElementById('homeScreen').classList.remove('home-list'); tMap.classList.add('on'); tList.classList.remove('on'); setTimeout(()=>{ map?map.resize():drawPaper(); },20); };
 document.getElementById('tList').onclick=()=>{ document.getElementById('homeScreen').classList.add('home-list'); tList.classList.add('on'); tMap.classList.remove('on'); };
@@ -802,7 +807,7 @@ function pinEl(ev,i){ const el=document.createElement('div'); const done=S.check
 function placePins(P){
   if(map){ const you=markers.you; markers.forEach(m=>m.remove()); markers=P.map((ev,i)=> new mapboxgl.Marker({element:pinEl(ev,i)}).setLngLat([ev.lng,ev.lat]).addTo(map)); markers.you=you;
     if(!markers.you){ const y=document.createElement('div'); y.innerHTML=omark(30); markers.you=new mapboxgl.Marker({element:y}).setLngLat([origin().lng,origin().lat]).addTo(map); }
-    const b=new mapboxgl.LngLatBounds(); P.filter(e=>e.mi<=NEARBY_MILES*1.6).forEach(e=>b.extend([e.lng,e.lat])); b.extend([origin().lng,origin().lat]); map.fitBounds(b,{padding:48,maxZoom:15,duration:600});
+    const b=new mapboxgl.LngLatBounds(); P.filter(inView).forEach(e=>b.extend([e.lng,e.lat])); b.extend([origin().lng,origin().lat]); map.fitBounds(b,{padding:48,maxZoom:15,duration:600});
   } else drawPaper();
 }
 /* Brand Guide v2 "Paper" map style, applied on top of Mapbox Light.
@@ -863,7 +868,7 @@ function rebuildMap(){ if(map){ if(markers.you){ markers.you.remove(); markers.y
 
 function rng(seed){ return ()=>{ seed=(seed*16807)%2147483647; return (seed-1)/2147483646; }; }
 function projector(w,h,P){
-  const o=origin(); const pts=[o,...P.filter(e=>e.mi<=NEARBY_MILES*1.6)];
+  const o=origin(); const pts=[o,...P.filter(inView)];
   let la0=Math.min(...pts.map(p=>p.lat)), la1=Math.max(...pts.map(p=>p.lat)), lo0=Math.min(...pts.map(p=>p.lng)), lo1=Math.max(...pts.map(p=>p.lng));
   const k=Math.cos(o.lat*Math.PI/180); let dLa=Math.max(la1-la0,.012), dLo=Math.max((lo1-lo0)*k,.012);
   const pad=.22, aspect=w/h; if(dLo/dLa<aspect) dLo=dLa*aspect; else dLa=dLo/aspect;
@@ -885,7 +890,7 @@ function paintPaper(host,w,h,P,opts={}){
   s+='</svg>';
   host.innerHTML=s;
   const o=proj(origin()); const you=document.createElement('div'); you.className='youare'; you.style.left=o.x+'px'; you.style.top=o.y+'px'; you.innerHTML=omark(30); host.appendChild(you);
-  if(!opts.noPins) P.forEach((ev,i)=>{ if(ev.mi>NEARBY_MILES*1.6) return; const p=proj(ev); const el=pinEl(ev,i); el.style.position='absolute'; el.style.left=p.x+'px'; el.style.top=p.y+'px'; host.appendChild(el); });
+  if(!opts.noPins) P.forEach((ev,i)=>{ if(!inView(ev)) return; const p=proj(ev); const el=pinEl(ev,i); el.style.position='absolute'; el.style.left=p.x+'px'; el.style.top=p.y+'px'; host.appendChild(el); });
 }
 function drawPaper(){
   if(map) return;
