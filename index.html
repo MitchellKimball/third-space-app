@@ -138,6 +138,10 @@ img{ max-width:100% }
 .pick .when{ font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--red); text-transform:uppercase }
 .pick .t{ font-weight:700; font-size:15px; margin:2px 0 1px; line-height:1.2 }
 .pick .m{ font-size:12.5px; color:var(--muted) }
+/* long sheet text (recurrence notes, venue names) stays on fixed lines so cards keep one height */
+.pick > div{ min-width:0 }
+.pick .when, .pick .m{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.pick .t{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden }
 .pick .dist{ font-family:var(--display); font-weight:800; font-size:20px; color:var(--green); text-align:right; line-height:1 }
 .pick .dist small{ display:block; font-family:var(--sans); font-weight:500; font-size:10.5px; color:var(--muted) }
 .endnote{ text-align:center; margin:20px 0 4px; font-family:var(--hand); font-size:21px; color:var(--muted) }
@@ -508,7 +512,7 @@ img{ max-width:100% }
    and the demo events below, so nothing breaks.
 ============================================ */
 const MAPBOX_TOKEN = "pk.eyJ1IjoibWl0Y2hlbGxraW1iYWxsOTQiLCJhIjoiY210dHNsenB6MDZxaDJ6cTNxamUxcTVybCJ9.1-J_H9klBRnP4I14GnPDxQ";
-const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRk_0p6stmfzdl4hpX-Y1WANrcjzZIanA4iCOLVZoPT8Oy_mumavhY8upsadmV5fiU7qTgumjliNBTV/pub?output=csv";
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRc8YZ_R2AEpJsTWW9tEJpLH4Qoge0F3KpCKQCXqTQYiFdYmlcA9JyzSlrIpZJUow/pub?gid=138654843&single=true&output=csv";
 const DEFAULT_CENTER = { lat: 34.0869, lng: -118.2702 }; // Silver Lake
 const NEARBY_MILES = 3.5;   // roughly a 15-minute weeknight drive in these neighborhoods
 const MAX_PICKS = 6;        // short list, not infinite scroll
@@ -912,7 +916,7 @@ function openSheet(id){
   const initials=(ev.host||'?').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();
   const faces=Array.from({length:Math.min(ev.fromGroup||0,4)},(_,i)=>`<span style="background:${faceCols[i]}">${'AJKLR'[i]}</span>`).join('');
   sheet.innerHTML=`<div class="grab"></div>
-    <div class="cat" style="display:flex;align-items:center;gap:8px">${catDot(ev.category,12)}${CATS[catKey(ev.category)].label} · ${ev.hood}</div>
+    <div class="cat" style="display:flex;align-items:center;gap:8px">${catDot(ev.category,12)}${CATS[catKey(ev.category)].label} · ${ev.area||ev.hood}</div>
     <h2>${ev.title}</h2>
     <div class="sub">${ev.venue}</div>
     <div class="facts"><div class="fact"><div class="k">When</div><div class="v">${ev.time||'Soon'}</div></div><div class="fact"><div class="k">How far</div><div class="v">${mins(ev.mi)} min · ${ev.mi.toFixed(1)} mi</div></div></div>
@@ -1065,15 +1069,54 @@ window.addEventListener('resize',syncHeadH); setTimeout(syncHeadH,0);
 })();
 
 /* ---------- live data (Google Sheet) ---------- */
+// Reads the "Comuna — LA Event Inventory" sheet (Events tab published as CSV).
+// Header row is found by its "Event Name" cell, so title rows above it are fine.
+// Rows without a street address are skipped; addresses become map pins via Mapbox geocoding (cached per device).
+async function geocode(address){
+  const key='geo:'+address.trim().toLowerCase();
+  try{ const hit=localStorage.getItem(key); if(hit) return JSON.parse(hit); }catch(e){}
+  if(!MAPBOX_TOKEN) return null;
+  try{
+    const r=await fetch('https://api.mapbox.com/search/geocode/v6/forward?q='+encodeURIComponent(address)+'&proximity=-118.30,34.06&country=us&limit=1&access_token='+MAPBOX_TOKEN);
+    if(!r.ok) return null;
+    const f=(await r.json()).features?.[0]; if(!f) return null;
+    const c=f.geometry.coordinates; try{ localStorage.setItem(key,JSON.stringify(c)); }catch(e){}
+    return c;
+  }catch(e){ return null; }
+}
+function parseDay(v){ if(!v) return null; const d=new Date(String(v).trim().replace(/^(\d{4})-(\d\d)-(\d\d)$/,'$1/$2/$3')); return isNaN(d)? null : d; }
+function fmtTime(v){
+  v=String(v||'').trim(); if(!v) return '';
+  const m=v.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp][Mm])?$/); if(!m) return v;
+  let h=+m[1]; const ap=m[3]? m[3].toUpperCase() : (h>=12?'PM':'AM'); if(!m[3]) h=h%12||12;
+  return `${h}${m[2]==='00'?'':':'+m[2]} ${ap}`;
+}
+function whenText(r){
+  const t=fmtTime(r['start time']), d=parseDay(r['start date']), rec=(r['recurrence']||'').trim(), det=(r['recurrence detail']||'').trim();
+  const day=d? d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}) : '';
+  const lead= rec && !/one-off/i.test(rec) ? (det||rec) : day;
+  return [lead,t].filter(Boolean).join(' · ');
+}
+async function mapLimit(items,n,fn){ let i=0; await Promise.all(Array.from({length:n},async()=>{ while(i<items.length){ const k=i++; await fn(items[k],k); } })); }
 function loadSheet(){
   if(!SHEET_CSV_URL || !window.Papa) return;
-  fetch(SHEET_CSV_URL).then(r=>{ if(!r.ok) throw 0; return r.text(); }).then(txt=>{
-    const rows=Papa.parse(txt,{header:true,skipEmptyLines:true}).data.filter(r=>r.title && r.lat && r.lng);
+  fetch(SHEET_CSV_URL).then(r=>{ if(!r.ok) throw 0; return r.text(); }).then(async txt=>{
+    const grid=Papa.parse(txt,{skipEmptyLines:true}).data;
+    const hi=grid.findIndex(row=>row.some(c=>/^event name/i.test(String(c).trim())));
+    if(hi<0) return;
+    const keys=grid[hi].map(c=>String(c).replace(/\*/g,'').trim().toLowerCase());
+    const today=new Date(); today.setHours(0,0,0,0);
+    let rows=grid.slice(hi+1).map(row=>Object.fromEntries(keys.map((k,i)=>[k,(row[i]||'').trim()])))
+      .filter(r=>r['event name'] && r['street address'])                       // no address yet → not shown
+      .filter(r=>!/cancel|past|archiv/i.test(r['status']||''))                 // everything else shows, verified or not
+      .filter(r=>{ if(!/one-off|seasonal/i.test(r['recurrence']||'')) return true; const end=parseDay(r['end date'])||parseDay(r['start date']); return !end || end>=today; });
+    await mapLimit(rows,6,async r=>{ const c=await geocode([r['street address'],r['city']||'Los Angeles',r['zip'],'CA'].filter(Boolean).join(', ')); if(c){ r.lng=c[0]; r.lat=c[1]; } });
+    rows=rows.filter(r=>r.lat!=null);
     if(!rows.length) return;
     const catMap=c=>{ c=c||''; if(CATS[c.trim().toLowerCase()]) return c.trim().toLowerCase();
       const hit=Object.keys(CATS).find(k=>CATS[k].label.toLowerCase()===c.trim().toLowerCase()); if(hit) return hit;
       return /comedy|improv|theat|perform|drag/i.test(c)?'comedy':/film|movie|cinema|screening|media|podcast/i.test(c)?'film':/immersive|experien|installation/i.test(c)?'immersive':/night|club|dj|dance party|bar/i.test(c)?'nightlife':/music|concert|jazz|art|gallery|museum/i.test(c)?'music':/dinner|food|drink|supper|coffee|wine|beer/i.test(c)?'food':/fitness|wellness|yoga|run|health|medit/i.test(c)?'wellness':/workshop|class|craft|making|learn|lecture|talk/i.test(c)?'workshops':/hike|outdoor|beach|park|nature|garden/i.test(c)?'outdoors':/sport|game|trivia|volley|pickle|soccer|basketball/i.test(c)?'sports':/meetup|social|mixer|networking|speed/i.test(c)?'social':/market|shop|vintage|flea/i.test(c)?'markets':'community'; };
-    events=rows.map((r,i)=>({ id:100+i, title:r.title, venue:r.venue||'', lat:parseFloat(r.lat), lng:parseFloat(r.lng), time:r.day_time||'', live:/true/i.test(r.live), startsIn:r.status_note||'', going:parseInt(r.going)||0, fromGroup:parseInt(r.from_group)||0, host:(r.host||'').split(' — ')[0], desc:r.description||'', category:catMap(r.category), kind:(/corner/i.test(r.place_type)?'cornerstone':/niche/i.test(r.place_type)?'niche':/pop/i.test(r.place_type)?'popup':/regular/i.test(r.place_type)?'regular':''), parking:r.parking||'', alcohol: r.alcohol? /true|yes/i.test(r.alcohol) : undefined }));
+    events=rows.map((r,i)=>({ id:100+i, title:r['event name'], venue:r['venue name']||'', lat:r.lat, lng:r.lng, area:r['neighborhood']||'', time:whenText(r), live:false, startsIn:'', going:0, fromGroup:0, host:r['host / organizer']||'', desc:r['short description']||'', category:catMap(r['primary category']), kind:(/corner/i.test(r['tier'])?'cornerstone':/niche/i.test(r['tier'])?'niche':/pop/i.test(r['tier'])?'popup':/regular/i.test(r['tier'])?'regular':''), parking:r['parking & transit']||'', alcohol:undefined }));
     usingDemo=false; if(current==='home') renderHome();
   }).catch(()=>{});
 }
