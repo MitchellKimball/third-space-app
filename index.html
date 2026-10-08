@@ -309,6 +309,9 @@ img{ max-width:100% }
 .toast{ position:absolute; left:50%; bottom:96px; transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:30px; font-size:13.5px; font-weight:500; z-index:80; opacity:0; transition:opacity .2s; pointer-events:none; white-space:nowrap }
 .toast.on{ opacity:1 }
 .mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib{ opacity:.6 }
+/* Mapbox requires its logo + attribution to stay visible: lift them above the pick cards so the floating nav doesn't cover them */
+#homeScreen:not(.home-list) .mapboxgl-ctrl-bottom-left{ bottom:calc(var(--navh) + 104px); display:flex; align-items:center }
+#homeScreen:not(.home-list) .mapboxgl-ctrl-bottom-left .mapboxgl-ctrl{ margin:0 0 0 10px }
 </style>
 </head>
 <body>
@@ -842,7 +845,7 @@ function tryMapbox(){
       if(!mapboxgl.supported || !mapboxgl.supported()){ clearTimeout(timer); fail(); return; }
       mapboxgl.accessToken=MAPBOX_TOKEN;
       const m=new mapboxgl.Map({container:'map',style:'mapbox://styles/mapbox/light-v11',center:[origin().lng,origin().lat],zoom:13.3,attributionControl:false,pitchWithRotate:false,dragRotate:false});
-      m.addControl(new mapboxgl.AttributionControl({compact:true}),'bottom-right');
+      m.addControl(new mapboxgl.AttributionControl({compact:true}),'bottom-left');
       // A token locked to another domain answers 401/403: fall back to the Paper map instead of showing a blank one.
       m.on('error',ev=>{ const er=ev&&ev.error; if(!er) return; const bad=[401,403].includes(er.status) || /401|403|Forbidden|Unauthorized/i.test(String(er.message)); if(!bad) return;
         clearTimeout(timer); markers.forEach(x=>x.remove()); markers=[]; markers.you=null; try{ m.remove(); }catch(e){} map=null; settled=true; drawPaper(); setMapStatus(false); });
