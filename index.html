@@ -341,8 +341,6 @@ img{ max-width:100% }
         <div class="mini-map" id="miniMap" style="height:230px"></div>
         <div class="hand" style="font-size:20px;color:var(--red);margin-bottom:10px">we only use your location while the app is open</div>
         <button class="btn green" id="allowLoc">Use my location</button>
-        <div class="or">or pick your neighborhood</div>
-        <select class="field" id="hoodSelect" aria-label="Your neighborhood" style="margin-top:0"><option value="">Choose a neighborhood</option></select>
         <button class="btn primary" id="locNext" style="margin-top:auto;margin-top:18px" disabled>Continue</button>
       </div>
     </section>
@@ -672,7 +670,7 @@ function go(id, push=true){
   if(id==='profile') renderProfile();
   if(id==='alerts'){ renderAlerts(); S.alertsRead=true; save(); updateDot(); }
   if(id==='host') renderHost();
-  if(id==='onb2'){ drawMini(); hoodSel.value=S.loc?S.nb:''; locNext.disabled=!S.loc; }
+  if(id==='onb2'){ drawMini(); locNext.disabled=!S.loc; }
   if(id==='onb3') renderInterests();
   if(id==='onb4') suUpdate();
   if(id==='profile'||id==='passport') renderNames();
@@ -690,15 +688,13 @@ function buildOnb(){
   <div style="right:4px;top:40px">${stampSVG('ECHO PARK','COMUNA · EST. 2026','lotus','#C9533D',136,9)}</div>
   <div style="left:96px;top:150px">${stampSVG('LOS FELIZ','COMUNA · LOS ANGELES','palm',C.sun,138,4)}</div>`;
 }
-const hoodSel=document.getElementById('hoodSelect'), locNext=document.getElementById('locNext');
-hoodSel.innerHTML+=HOODS.map(h=>`<option>${h.name}</option>`).join('');
-function setHood(name,loc){ const h=hoodByName(name); S.nb=h.name; S.loc=loc||{lat:h.lat,lng:h.lng}; save(); rebuildMap(); hoodSel.value=h.name; locNext.disabled=false; drawMini(); }
-hoodSel.addEventListener('change',()=>{ if(hoodSel.value) setHood(hoodSel.value); else locNext.disabled=true; });
+const locNext=document.getElementById('locNext');
+function setHood(name,loc){ const h=hoodByName(name); S.nb=h.name; S.loc=loc||{lat:h.lat,lng:h.lng}; save(); rebuildMap(); locNext.disabled=false; drawMini(); }
 locNext.onclick=()=>go('onb3');
 document.getElementById('allowLoc').addEventListener('click',()=>{
-  if(!navigator.geolocation){ toast('Location isn\'t available. Pick your neighborhood instead.'); return; }
+  if(!navigator.geolocation){ toast('Location isn\'t available on this device. Try another browser or phone.'); return; }
   navigator.geolocation.getCurrentPosition(p=>{ const loc={lat:p.coords.latitude,lng:p.coords.longitude}; setHood(hoodOf(loc).name,loc); toast('Got it. You\'re near '+S.nb); go('onb3'); },
-    ()=>toast('No location. Pick your neighborhood instead.'), {timeout:6000});
+    ()=>toast('We need your location to show what\'s nearby. Please allow it and try again.'), {timeout:6000});
 });
 
 /* sign-up: interests */
