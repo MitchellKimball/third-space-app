@@ -622,8 +622,9 @@ let sid=0;
 // illustrated neighborhood stamps (stamps/*.png); places without one fall back to the drawn SVG stamp
 const STAMP_IMG = { 'Silver Lake':'silver-lake', 'Echo Park':'echo-park', 'Los Feliz':'los-feliz', 'Downtown':'downtown', 'Santa Monica':'santa-monica',
   'Venice':'venice', 'Beverly Hills':'beverly-hills', 'West Hollywood':'west-hollywood', 'Culver City':'culver-city' };
-function hoodStamp(name,size,rot){
-  return `<img src="stamps/${STAMP_IMG[name]}.png" alt="${name} stamp" width="${size}" height="${size}" style="transform:rotate(${rot||0}deg);display:block;margin:0 auto;filter:drop-shadow(0 2px 4px rgba(0,0,0,.18))">`;
+// inked rubber-stamp impressions; light=true picks the pale-ink version for dark backgrounds
+function hoodStamp(name,size,rot,light){
+  return `<img src="stamps/${STAMP_IMG[name]}${light?'-light':''}.png" alt="${name} stamp" width="${size}" height="${size}" style="transform:rotate(${rot||0}deg);display:block;margin:0 auto">`;
 }
 function stampSVG(top,bottom,kind,c,size,rot,fill){
   const r=size/2, a='sa'+(++sid), b='sb'+sid, Rt=r-27*size/170, Rb=r-15*size/170, s=size/170;
@@ -700,9 +701,9 @@ let tt; function toast(msg){ const t=document.getElementById('toast'); t.textCon
 /* ---------- onboarding ---------- */
 function buildOnb(){
   const f=document.getElementById('stampfield');
-  f.innerHTML=`<div style="left:6px;top:10px">${hoodStamp('Santa Monica',150,-10)}</div>
-  <div style="right:4px;top:40px">${hoodStamp('Silver Lake',136,9)}</div>
-  <div style="left:96px;top:150px">${hoodStamp('West Hollywood',138,4)}</div>`;
+  f.innerHTML=`<div style="left:6px;top:10px">${hoodStamp('Santa Monica',150,-10,true)}</div>
+  <div style="right:4px;top:40px">${hoodStamp('Silver Lake',136,9,true)}</div>
+  <div style="left:96px;top:150px">${hoodStamp('West Hollywood',138,4,true)}</div>`;
 }
 const locNext=document.getElementById('locNext');
 function setHood(name,loc){ const h=hoodByName(name); S.nb=h.name; S.loc=loc||{lat:h.lat,lng:h.lng}; save(); rebuildMap(); locNext.disabled=false; drawMini(); }
