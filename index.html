@@ -430,7 +430,7 @@ img{ max-width:100% }
         <div class="wm" id="homeMark" style="font-size:28px"></div>
         <div style="display:flex;gap:8px;align-items:center">
           <button class="betapill" id="betaBtn" aria-label="Beta: send feedback">Beta · Feedback</button>
-          <button class="iconbtn" data-go="alerts" aria-label="Alerts"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#26251F" stroke-width="2" stroke-linecap="round"><path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4z"/><path d="M10 21h4"/></svg><span class="dot" id="alertDot">3</span></button>
+          <button class="iconbtn" data-go="alerts" aria-label="Alerts"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#26251F" stroke-width="2" stroke-linecap="round"><path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4z"/><path d="M10 21h4"/></svg><span class="dot" id="alertDot" style="display:none"></span></button>
         </div>
       </div>
       <div style="padding:2px 20px 0">
@@ -490,7 +490,7 @@ img{ max-width:100% }
         <div class="stats3"><div><b id="pfStamps">3</b>stamps</div><div><b id="pfVisits">18</b>check-ins</div><div><b id="pfStreak">4</b>week streak</div></div>
         <button class="linkrow" data-go="passport">Your passport <span>Stamps, patches, points</span></button>
         <button class="linkrow" data-go="plans">Your plans <span>This week</span></button>
-        <button class="linkrow" data-go="alerts">Alerts <span id="pfAlerts">3 new</span></button>
+        <button class="linkrow" data-go="alerts">Alerts <span id="pfAlerts">All caught up</span></button>
         <button class="linkrow" data-go="host" style="background:var(--green);color:var(--paper)">See it as a host <span style="color:#CFC3AB">Ten Speed Coffee</span></button>
         <button class="linkrow" id="dbCheck">Account sync <span id="dbStatusPf">Tap to check</span></button>
       </div>
@@ -763,7 +763,7 @@ function go(id, push=true){
   if(id==='plans') renderPlans();
   if(id==='passport') renderPassport();
   if(id==='profile') renderProfile();
-  if(id==='alerts'){ renderAlerts(); S.alertsRead=true; save(); updateDot(); }
+  if(id==='alerts'){ renderAlerts(); S.alertsSeen=[...new Set([...(S.alertsSeen||[]),...ALERTS.map(a=>a.key)])].slice(-200); save(); updateDot(); }
   if(id==='host') renderHost();
   if(id==='onb2'){ drawMini(); locNext.disabled=!S.loc; }
   if(id==='onb3') renderInterests();
@@ -909,7 +909,7 @@ function picks(){
 }
 function inView(ev){ return true; }   // the map always frames all of LA
 function mins(mi){ return Math.max(2, Math.round(mi*3.2+2)); }
-function renderHome(){ setTimeout(syncHeadH,0);
+function renderHome(){ try{ updateDot(); }catch(e){} setTimeout(syncHeadH,0);
   const cats=['All',...Object.keys(CATS).filter(k=>events.some(e=>e.category===k))];
   const wl=WHEN.find(w=>w[0]===when)[1], cl=[tier!=='any'?KINDS[tier].plural:'', filter!=='All'?CATS[filter].short:''].filter(Boolean).join(' · ')||'Everything';
   document.getElementById('chips').innerHTML=`<button class="fbtn ${when!=='any'?'set':''}" data-pick="when"><small>When</small>${wl}<i>▾</i></button><button class="fbtn ${filter!=='All'||tier!=='any'?'set':''}" data-pick="type"><small>Type</small>${cl}<i>▾</i></button>`;
@@ -1229,9 +1229,9 @@ function addToCalendar(ev){
   const esc=t=>String(t||'').replace(/([,;\\])/g,'\\$1').replace(/\n/g,' ');
   const rec=(ev.rec||'').toLowerCase(), rr=/biweekly/.test(rec)?'RRULE:FREQ=WEEKLY;INTERVAL=2' : /weekly/.test(rec)?'RRULE:FREQ=WEEKLY' : /daily/.test(rec)?'RRULE:FREQ=DAILY' : '';
   const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Comuna//EN','BEGIN:VEVENT','UID:comuna-'+ev.id+'-'+Date.now()+'@comuna','DTSTAMP:'+f(new Date()),'DTSTART:'+f(st),'DTEND:'+f(en), rr,
-    'SUMMARY:'+esc(ev.title),'LOCATION:'+esc([ev.venue,ev.address].filter(Boolean).join(', ')),'DESCRIPTION:'+esc(ev.desc),'END:VEVENT','END:VCALENDAR'].filter(Boolean).join('\r\n');
+    'SUMMARY:'+esc(ev.title),'LOCATION:'+esc([ev.venue,ev.address].filter(Boolean).join(', ')),'DESCRIPTION:'+esc(ev.desc),'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+esc(ev.title+' starts in 2 hours'),'TRIGGER:-PT2H','END:VALARM','END:VEVENT','END:VCALENDAR'].filter(Boolean).join('\r\n');
   const url=URL.createObjectURL(new Blob([ics],{type:'text/calendar'})); const l=document.createElement('a'); l.href=url; l.download=(ev.title||'event').replace(/[^\w]+/g,'-').slice(0,40)+'.ics'; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(url),2000);
-  toast('Calendar file ready: open it to add the event');
+  toast('Calendar file ready: open it to add the event (with a 2-hour reminder)');
 }
 
 /* ---------- event sheet ---------- */
@@ -1317,10 +1317,11 @@ function showRsvp(ev){
   m.innerHTML=`<div class="stampbox">${rsvpStamp(ev)}</div>
     <h3>${needsRsvp(ev)?'Saved. Finish your RSVP':'Saved to your plans'}</h3>
     <p>${ev.title}${ev.venue&&ev.venue!==ev.title?` at ${ev.venue}`:''}. ${needsRsvp(ev)?'Complete the RSVP on the host\'s page so they hold your spot. ':''}+10 points, and it's in your Plans. Check in when you get there for the stamp and +50 more.</p>
-    <div class="unlocks"><button class="btn ghost" id="rsvpInvite" style="border-color:var(--paper);color:var(--paper);padding:10px 18px">Invite friends</button></div>
+    <div class="unlocks"><button class="btn ghost" id="rsvpCal" style="border-color:var(--paper);color:var(--paper);padding:10px 18px">Remind me (+ Calendar)</button><button class="btn ghost" id="rsvpInvite" style="border-color:var(--paper);color:var(--paper);padding:10px 18px">Invite friends</button></div>
     <button class="btn primary" id="closeStamp" style="max-width:260px">Nice</button>`;
   m.classList.add('on');
   document.getElementById('closeStamp').onclick=()=>m.classList.remove('on');
+  document.getElementById('rsvpCal').onclick=()=>addToCalendar(ev);
   document.getElementById('rsvpInvite').onclick=()=>{ m.classList.remove('on'); openSheet(ev.id); setTimeout(()=>document.getElementById('shareBtn')?.click(),50); };
 }
 
@@ -1415,14 +1416,25 @@ document.getElementById('passTabs').addEventListener('click',e=>{ const b=e.targ
 
 
 /* ---------- profile / alerts ---------- */
-function renderProfile(){ document.getElementById('pfStamps').textContent=Object.keys(S.places).length+Object.keys(visitedHoods()).length+Object.keys(visitedCities()).length+1; document.getElementById('pfVisits').textContent=S.visits; document.getElementById('pfStreak').textContent=S.streak; document.getElementById('pfAlerts').textContent=S.alertsRead?'All caught up':'3 new'; }
-const ALERTS=[ {t:'Rooftop Jazz starts in 12 minutes',s:'3 friends are already there.',w:'Just now',ic:'music',ev:1}, {t:'Maya invited you',s:'Tue · Rooftop Jazz Session',w:'1 hr ago',ic:'invite',ev:1}, {t:'One more stop for the Explorer patch',s:'Try somewhere in Frogtown this week.',w:'Yesterday',ic:'stamp'}, {t:'Ten Speed Coffee approved your $10 credit',s:'It\'s in your passport.',w:'2 days ago',ic:'coffee'} ];
+function renderProfile(){ document.getElementById('pfStamps').textContent=Object.keys(S.places).length+Object.keys(visitedHoods()).length+Object.keys(visitedCities()).length+1; document.getElementById('pfVisits').textContent=S.visits; document.getElementById('pfStreak').textContent=S.streak; document.getElementById('pfAlerts').textContent=(buildAlerts(),unseen().length)?`${unseen().length} new`:'All caught up'; }
+// reminders for events you saved (Interested/RSVP) happening in the next 7 days
+let ALERTS=[];
+function buildAlerts(){
+  const t=today0(), out=[];
+  (S.rsvp||[]).forEach(id=>{ const ev=events.find(e=>e.id===id); if(!ev || S.checked.includes(id)) return;
+    const d=ev.start? nextDate(ev) : evDate(ev); if(!d) return; const days=Math.round((d-t)/864e5); if(days<0||days>6) return;
+    const when=days===0?'Today':days===1?'Tomorrow':d.toLocaleString('en-US',{weekday:'long'}), tm=ev.t0? fmtTime(ev.t0) : (String(ev.time||'').split('·')[1]||'').trim();
+    out.push({ key:id+'@'+ymd(d), days, t:`${when}: ${ev.title}`, s:[ev.venue,tm].filter(Boolean).join(' · '), w:d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}), ic:'cal', ev:id }); });
+  ALERTS=out.sort((a,b)=>a.days-b.days); return ALERTS;
+}
+const unseen=()=>ALERTS.filter(a=>!(S.alertsSeen||[]).includes(a.key));
 function renderAlerts(){
-  const icon=k=>({music:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${C.red}" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,invite:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${C.blue}" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>`,stamp:`<svg width="22" height="22" viewBox="-28 -28 56 56">${glyph('star',C.sun)}</svg>`,coffee:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${C.green}" stroke-width="2"><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 10h2a2 2 0 0 1 0 4h-2"/></svg>`}[k]);
-  document.getElementById('alertList').innerHTML=ALERTS.map((a,i)=>`<button class="alert ${!S.alertsRead&&i<3?'unread':''}" ${a.ev?`data-alert-ev="${a.ev}"`:''}><div class="ic">${icon(a.ic)}</div><div><div class="t">${a.t}</div><div class="s">${a.s}</div><div class="w">${a.w}</div></div></button>`).join('');
+  buildAlerts(); const seen=S.alertsSeen||[];
+  const icon=k=>({cal:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${C.red}" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>`,music:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${C.red}" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,invite:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${C.blue}" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>`,stamp:`<svg width="22" height="22" viewBox="-28 -28 56 56">${glyph('star',C.sun)}</svg>`,coffee:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${C.green}" stroke-width="2"><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 10h2a2 2 0 0 1 0 4h-2"/></svg>`}[k]);
+  document.getElementById('alertList').innerHTML=ALERTS.length? ALERTS.map((a,i)=>`<button class="alert ${seen.includes(a.key)?'':'unread'}" ${a.ev?`data-alert-ev="${a.ev}"`:''}><div class="ic">${icon(a.ic)}</div><div><div class="t">${a.t}</div><div class="s">${a.s}</div><div class="w">${a.w}</div></div></button>`).join('') : `<div class="empty"><span class="hand">all quiet</span>No alerts yet. Tap "Interested" on an event and we'll remind you here when it's coming up.</div>`;
 }
 document.getElementById('alertList').addEventListener('click',e=>{ const a=e.target.closest('[data-alert-ev]'); if(a) openSheet(+a.dataset.alertEv); });
-function updateDot(){ const d=document.getElementById('alertDot'); d.style.display=S.alertsRead?'none':'grid'; }
+function updateDot(){ buildAlerts(); const n=unseen().length, d=document.getElementById('alertDot'); d.textContent=n; d.style.display=n?'grid':'none'; }
 
 /* ---------- host ---------- */
 let hostExtra=0;
