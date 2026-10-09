@@ -306,6 +306,11 @@ img{ max-width:100% }
 .lbrow{ display:grid; grid-template-columns:28px 1fr auto; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px }
 .lbrow:last-child{ border-bottom:0 }
 .lbrow .r{ font-family:var(--display); font-weight:900; font-size:20px; color:var(--muted) }
+.youmk{ position:relative; z-index:20; display:grid; place-items:center; pointer-events:none }
+.youmk svg{ position:relative; filter:drop-shadow(0 1px 2px rgba(0,0,0,.25)) }
+.youmk .pulse{ position:absolute; left:50%; top:50%; width:100%; height:100%; margin:-50% 0 0 -50%; border-radius:50%; background:var(--red); opacity:0; animation:youPulse 2.6s ease-out infinite }
+@keyframes youPulse{ 0%{ transform:scale(1); opacity:.35 } 100%{ transform:scale(2.8); opacity:0 } }
+@media (prefers-reduced-motion: reduce){ .youmk .pulse{ animation:none; transform:scale(1.7); opacity:.18 } }
 .lbrow.me{ font-weight:700 } .lbrow.me .r{ color:var(--red) }
 
 /* ---------- profile / alerts ---------- */
@@ -729,6 +734,8 @@ function cityLabel(title,sub,bg,fg,w=160,h=106,rot=0){
   <text x="${w/2}" y="${h/2+29}" text-anchor="middle" font-family="DM Sans" font-weight="700" font-size="8" letter-spacing="2" fill="${fg}">${sub}</text></svg>`;
 }
 
+// "you are here": the Comuna mark with a soft pulse behind it, always above event pins
+function youEl(size){ const y=document.createElement('div'); y.className='youmk'; y.setAttribute('aria-label','You are here'); y.innerHTML=`<span class="pulse"></span>${omark(size)}`; return y; }
 function omark(size,ring,dot){ const r=size/2, sw=Math.max(2,size*.085); return `<svg width="${size}" height="${size}" viewBox="${-r} ${-r} ${size} ${size}" aria-hidden="true"><circle r="${r-sw/2}" fill="none" stroke="${ring||C.sun}" stroke-width="${sw}"/><circle r="${r*.42}" fill="none" stroke="${ring||C.sun}" stroke-width="${sw*.8}"/><circle r="${r*.14}" fill="${dot||C.red}"/></svg>`; }
 function wordmark(el){ const px=parseFloat(getComputedStyle(el).fontSize); el.innerHTML=`COMUNA${omark(px*.6)}`; el.setAttribute('aria-label','Comuna'); }
 function patchSVG(title,sub,scene,w,h){
@@ -977,7 +984,7 @@ function drawClusters(){
 function placePins(P){
   if(map){ const you=markers.you; lastPins=P; drawClusters(); markers.you=you;
     if(!map._clusterHook){ map._clusterHook=true; map.on('moveend',drawClusters); }
-    if(!markers.you){ const y=document.createElement('div'); y.innerHTML=omark(30); markers.you=new mapboxgl.Marker({element:y}).setLngLat([origin().lng,origin().lat]).addTo(map); }
+    if(!markers.you){ const y=youEl(30); markers.you=new mapboxgl.Marker({element:y}).setLngLat([origin().lng,origin().lat]).addTo(map); }
     const b=new mapboxgl.LngLatBounds(); P.filter(inView).forEach(e=>b.extend([e.lng,e.lat])); b.extend([origin().lng,origin().lat]); map.fitBounds(b,{padding:48,maxZoom:15,duration:600});
   } else drawPaper();
 }
@@ -1090,7 +1097,7 @@ function drawMini(){
   }catch(e){ mini=null; paintMini(el); }
 }
 let miniYouMk=null;
-function miniYou(){ if(!mini || !S.loc) return; if(!miniYouMk){ const y=document.createElement('div'); y.innerHTML=omark(26); miniYouMk=new mapboxgl.Marker({element:y}).setLngLat([S.loc.lng,S.loc.lat]).addTo(mini); } else miniYouMk.setLngLat([S.loc.lng,S.loc.lat]); }
+function miniYou(){ if(!mini || !S.loc) return; if(!miniYouMk){ const y=youEl(26); miniYouMk=new mapboxgl.Marker({element:y}).setLngLat([S.loc.lng,S.loc.lat]).addTo(mini); } else miniYouMk.setLngLat([S.loc.lng,S.loc.lat]); }
 function paintMini(el){ setTimeout(()=>{ if(mini) return; enrich(); paintPaper(el,el.clientWidth,el.clientHeight,picks()); },20); }
 window.addEventListener('resize',()=>{ if(current==='home') drawPaper(); });
 
