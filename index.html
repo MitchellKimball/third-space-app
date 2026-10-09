@@ -823,7 +823,7 @@ function maybeDailyPicks(){
   const today=new Date().toDateString(); if(S.lastPicksDay===today) return;
   const picks=dailyPicks(); if(!picks.length) return;
   S.lastPicksDay=today; save();
-  const row=ev=>`<button class="pick" data-rec="${ev.id}"><div class="n">${catDot(ev.category,18)}</div>
+  const row=ev=>`<button class="pick" data-rec="${ev.id}"><div class="n">${tierIcon(kindOf(ev),28,CATS[catKey(ev.category)].bg)}</div>
     <div><div class="when">${KINDS[kindOf(ev)].label}</div><div class="t">${ev.title}</div><div class="m">${ev.venue}${ev.start?' · '+nextWhen(ev):ev.time?' · '+ev.time:''}</div></div>
     <div class="dist">${mins(ev.mi)}<small>min away</small></div></button>`;
   const first=(S.name||'').split(' ')[0];
