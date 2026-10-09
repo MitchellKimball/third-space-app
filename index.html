@@ -949,34 +949,34 @@ function placePins(P){
 /* Brand Guide v2 "Paper" map style, applied on top of Mapbox Light.
    Paper land, Map Blue water, soft green parks, white streets, Ink labels. POIs hidden so Comuna pins lead. */
 const MAPCOL={ land:'#EFE2C8', water:'#AFC0D8', park:'#C9D4B5', building:'#E6D6B8', road:'#FBF6EA', major:'#FFFFFF', label:'#26251F', halo:'#F3E7D1', minorLabel:'#6B675A' };
-function styleMapbox(){
-  const L=map.getStyle().layers||[];
+function styleMapbox(m=map){
+  const L=m.getStyle().layers||[];
   L.forEach(l=>{ const id=l.id; try{
-    if(l.type==='background') map.setPaintProperty(id,'background-color',MAPCOL.land);
+    if(l.type==='background') m.setPaintProperty(id,'background-color',MAPCOL.land);
     else if(l.type==='fill'){
-      if(/water/.test(id)) map.setPaintProperty(id,'fill-color',MAPCOL.water);
-      else if(/landcover|hillshade/.test(id)) { map.setPaintProperty(id,'fill-color',MAPCOL.land); map.setPaintProperty(id,'fill-opacity',0); }
-      else if(id==='landuse') { map.setPaintProperty(id,'fill-color',['match',['get','class'],['park','pitch','grass','cemetery','wood','scrub','golf_course','agriculture'],MAPCOL.park,'rgba(239,226,200,0)']); map.setPaintProperty(id,'fill-opacity',.85); }
-      else if(/park|pitch|grass|wood|national|golf|cemetery/.test(id)) { map.setPaintProperty(id,'fill-color',MAPCOL.park); map.setPaintProperty(id,'fill-opacity',.8); }
-      else if(/building/.test(id)) map.setPaintProperty(id,'fill-color',MAPCOL.building);
-      else map.setPaintProperty(id,'fill-color',MAPCOL.land);
+      if(/water/.test(id)) m.setPaintProperty(id,'fill-color',MAPCOL.water);
+      else if(/landcover|hillshade/.test(id)) { m.setPaintProperty(id,'fill-color',MAPCOL.land); m.setPaintProperty(id,'fill-opacity',0); }
+      else if(id==='landuse') { m.setPaintProperty(id,'fill-color',['match',['get','class'],['park','pitch','grass','cemetery','wood','scrub','golf_course','agriculture'],MAPCOL.park,'rgba(239,226,200,0)']); m.setPaintProperty(id,'fill-opacity',.85); }
+      else if(/park|pitch|grass|wood|national|golf|cemetery/.test(id)) { m.setPaintProperty(id,'fill-color',MAPCOL.park); m.setPaintProperty(id,'fill-opacity',.8); }
+      else if(/building/.test(id)) m.setPaintProperty(id,'fill-color',MAPCOL.building);
+      else m.setPaintProperty(id,'fill-color',MAPCOL.land);
     }
     else if(l.type==='line'){
-      if(/water/.test(id)) map.setPaintProperty(id,'line-color',MAPCOL.water);
-      else if(/motorway|trunk|primary/.test(id)) map.setPaintProperty(id,'line-color',MAPCOL.major);
-      else if(/road|street|bridge|tunnel|path|secondary|tertiary/.test(id)) map.setPaintProperty(id,'line-color',MAPCOL.road);
-      else if(/admin|boundary/.test(id)) map.setLayoutProperty(id,'visibility','none');
+      if(/water/.test(id)) m.setPaintProperty(id,'line-color',MAPCOL.water);
+      else if(/motorway|trunk|primary/.test(id)) m.setPaintProperty(id,'line-color',MAPCOL.major);
+      else if(/road|street|bridge|tunnel|path|secondary|tertiary/.test(id)) m.setPaintProperty(id,'line-color',MAPCOL.road);
+      else if(/admin|boundary/.test(id)) m.setLayoutProperty(id,'visibility','none');
     }
     else if(l.type==='symbol'){
-      if(/poi|transit|airport|natural-point|water-point/.test(id)) map.setLayoutProperty(id,'visibility','none');
-      else { map.setPaintProperty(id,'text-color', /road/.test(id)?MAPCOL.minorLabel:MAPCOL.label); map.setPaintProperty(id,'text-halo-color',MAPCOL.halo); map.setPaintProperty(id,'text-halo-width',1.4); }
-      if(/settlement-subdivision|place-neighbo/.test(id)) map.setLayoutProperty(id,'visibility','none'); // replaced by Comuna neighborhood labels
+      if(/poi|transit|airport|natural-point|water-point/.test(id)) m.setLayoutProperty(id,'visibility','none');
+      else { m.setPaintProperty(id,'text-color', /road/.test(id)?MAPCOL.minorLabel:MAPCOL.label); m.setPaintProperty(id,'text-halo-color',MAPCOL.halo); m.setPaintProperty(id,'text-halo-width',1.4); }
+      if(/settlement-subdivision|place-neighbo/.test(id)) m.setLayoutProperty(id,'visibility','none'); // replaced by Comuna neighborhood labels
     }
   }catch(e){} });
   // Comuna's own neighborhood labels, in the uppercase, tracked style of the guide
   try{
-    map.addSource('comuna-hoods',{type:'geojson',data:{type:'FeatureCollection',features:HOODS.map(h=>({type:'Feature',properties:{name:h.name.toUpperCase()},geometry:{type:'Point',coordinates:[h.lng,h.lat]}}))}});
-    map.addLayer({id:'comuna-hood-labels',type:'symbol',source:'comuna-hoods',minzoom:11,layout:{'text-field':['get','name'],'text-font':['DIN Pro Bold','Arial Unicode MS Bold'],'text-size':['interpolate',['linear'],['zoom'],11,11,15,15],'text-letter-spacing':.25,'text-offset':[0,-2.2]},paint:{'text-color':MAPCOL.label,'text-opacity':.55,'text-halo-color':MAPCOL.halo,'text-halo-width':1.5}});
+    m.addSource('comuna-hoods',{type:'geojson',data:{type:'FeatureCollection',features:HOODS.map(h=>({type:'Feature',properties:{name:h.name.toUpperCase()},geometry:{type:'Point',coordinates:[h.lng,h.lat]}}))}});
+    m.addLayer({id:'comuna-hood-labels',type:'symbol',source:'comuna-hoods',minzoom:11,layout:{'text-field':['get','name'],'text-font':['DIN Pro Bold','Arial Unicode MS Bold'],'text-size':['interpolate',['linear'],['zoom'],11,11,15,15],'text-letter-spacing':.25,'text-offset':[0,-2.2]},paint:{'text-color':MAPCOL.label,'text-opacity':.55,'text-halo-color':MAPCOL.halo,'text-halo-width':1.5}});
   }catch(e){}
 }
 function setMapStatus(live){ const el=document.getElementById('mapStatus'); if(el) el.textContent = live ? 'Map: live Mapbox, styled to Brand Guide v2.' : 'Map: Paper preview. The live Mapbox map loads when this file runs on the team\'s own site (Mapbox tokens are locked to approved domains).'; }
@@ -1034,7 +1034,29 @@ function drawPaper(){
   let host=wrap.querySelector('.paper-map'); if(!host){ host=document.createElement('div'); host.className='paper-map'; wrap.appendChild(host); }
   enrich(); paintPaper(host,w,h,picks());
 }
-function drawMini(){ const el=document.getElementById('miniMap'); setTimeout(()=>{ enrich(); paintPaper(el,el.clientWidth,el.clientHeight,picks()); },20); }
+// sign-up map: a real Mapbox overview of LA in the brand style, with every event as a dot. Look-only (no pan/zoom).
+// Falls back to the drawn Paper map if Mapbox can't load.
+let mini=null, miniWait=0;
+function eventDots(){ return { type:'FeatureCollection', features:events.map(ev=>({ type:'Feature', properties:{ c:CATS[catKey(ev.category)].bg }, geometry:{ type:'Point', coordinates:[ev.lng,ev.lat] } })) }; }
+function drawMini(){
+  const el=document.getElementById('miniMap');
+  if(mini){ mini.resize(); const src=mini.getSource && mini.getSource('mini-events'); if(src) src.setData(eventDots()); miniYou(); return; }
+  if(!window.mapboxgl || !MAPBOX_TOKEN){ if(++miniWait<30 && MAPBOX_TOKEN){ setTimeout(drawMini,200); } else paintMini(el); if(miniWait===1) paintMini(el); return; }
+  try{
+    mapboxgl.accessToken=MAPBOX_TOKEN;
+    el.querySelector('.paper-map')?.remove(); el.innerHTML='';
+    mini=new mapboxgl.Map({ container:el, style:'mapbox://styles/mapbox/light-v11', center:[-118.36,34.04], zoom:8.9, interactive:false, attributionControl:false, logoPosition:'bottom-left', fadeDuration:0 });
+    mini.addControl(new mapboxgl.AttributionControl({compact:true}),'bottom-right');
+    mini.on('error',ev=>{ const er=ev&&ev.error; if(er && ([401,403].includes(er.status) || /401|403|Forbidden|Unauthorized/i.test(String(er.message)))){ try{ mini.remove(); }catch(e){} mini=null; paintMini(el); } });
+    mini.on('style.load',()=>{ styleMapbox(mini);
+      mini.addSource('mini-events',{ type:'geojson', data:eventDots() });
+      mini.addLayer({ id:'mini-events', type:'circle', source:'mini-events', paint:{ 'circle-radius':4.5, 'circle-color':['get','c'], 'circle-stroke-color':'#F3E7D1', 'circle-stroke-width':1.5 } });
+      miniYou(); });
+  }catch(e){ mini=null; paintMini(el); }
+}
+let miniYouMk=null;
+function miniYou(){ if(!mini || !S.loc) return; if(!miniYouMk){ const y=document.createElement('div'); y.innerHTML=omark(26); miniYouMk=new mapboxgl.Marker({element:y}).setLngLat([S.loc.lng,S.loc.lat]).addTo(mini); } else miniYouMk.setLngLat([S.loc.lng,S.loc.lat]); }
+function paintMini(el){ setTimeout(()=>{ if(mini) return; enrich(); paintPaper(el,el.clientWidth,el.clientHeight,picks()); },20); }
 window.addEventListener('resize',()=>{ if(current==='home') drawPaper(); });
 
 /* ---------- add event (coming soon) ---------- */
