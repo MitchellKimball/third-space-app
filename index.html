@@ -149,6 +149,10 @@ img{ max-width:100% }
 .moods{ display:flex; gap:8px; margin:12px 0 4px } .moods button{ flex:1; font-size:26px; padding:10px 0; border-radius:14px; background:var(--card); border:2px solid transparent } .moods button.on{ border-color:var(--green); background:#E4ECDF }
 .fbtext{ width:100%; min-height:96px; border:1.5px solid #DCCDAE; border-radius:14px; padding:12px; font:inherit; font-size:15px; background:var(--card); resize:vertical; margin-top:10px }
 .tagpick{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px } .tagpick button{ font-size:13px; font-weight:500; padding:7px 12px; border-radius:20px; border:1.5px solid var(--ink) } .tagpick button.on{ background:var(--ink); color:var(--paper) }
+.subform label{ display:block; font-size:13px; font-weight:700; margin-top:12px } .subform label small{ display:block; font-weight:400; color:var(--muted); margin-top:2px }
+.subform .row2 label{ margin-top:12px } .subform label.chk{ display:flex; align-items:center; gap:8px; margin-top:34px; font-weight:500 }
+.subform .addr{ position:relative } .sugg{ position:absolute; left:0; right:0; z-index:5; background:var(--card); border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,.15); overflow:hidden }
+.sugg button{ display:block; width:100%; text-align:left; padding:11px 14px; font-size:14px; border-bottom:1px solid var(--line) }
 .popt span{ flex:1 } .popt .ticon{ flex:none; width:16px; margin:0 } .popt span small{ display:block; font-size:12px; color:var(--muted); font-weight:400 }
 .psub{ font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:14px 0 2px } .popt b{ font-size:13px; color:var(--muted); font-weight:500 } .popt em{ font-style:normal; color:var(--green); font-weight:900 } .popt.on span{ font-weight:700; color:var(--green) } .popt:disabled{ opacity:.4 }
 .picks{ padding:6px 20px 110px; overflow-y:auto; flex:1 }
@@ -524,7 +528,7 @@ img{ max-width:100% }
       <button data-go="home" data-nav="home" aria-label="Map"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17s-5-4.6-5-8.5a5 5 0 0 1 10 0c0 3.9-5 8.5-5 8.5z"/><circle cx="12" cy="8.5" r="1.8"/><path d="M8 16.2c-2.4.4-4 1.2-4 2.1 0 1.5 3.6 2.7 8 2.7s8-1.2 8-2.7c0-.9-1.6-1.7-4-2.1"/></svg></button>
       <button data-go="plans" data-nav="plans" aria-label="Plans"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
       <button data-go="passport" data-nav="passport" aria-label="Passport"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M4.6 7.5h14.8M4.6 16.5h14.8"/></svg></button>
-      <button id="addSoon" aria-label="Add an event (coming soon)"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 8v8M8 12h8"/></svg></button>
+      <button id="addSoon" aria-label="Add an event"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 8v8M8 12h8"/></svg></button>
     </nav>
 
     <div class="overlay" id="overlay"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
@@ -1085,16 +1089,80 @@ function miniYou(){ if(!mini || !S.loc) return; if(!miniYouMk){ const y=document
 function paintMini(el){ setTimeout(()=>{ if(mini) return; enrich(); paintPaper(el,el.clientWidth,el.clientHeight,picks()); },20); }
 window.addEventListener('resize',()=>{ if(current==='home') drawPaper(); });
 
-/* ---------- add event (coming soon) ---------- */
-document.getElementById('addSoon').onclick=()=>{
-  sheet.innerHTML=`<div class="grab"></div>
-    <div class="cat">New feature coming soon</div>
-    <h2>Add your own events</h2>
-    <p class="desc">Know about something cool happening in the neighborhood? Soon you'll be able to add it to Comuna so your neighbors can find it too.</p>
-    <button class="btn primary" id="addSoonOk" style="margin-top:16px">Got it</button>`;
+/* ---------- add an event (community submissions) ---------- */
+// Signed-up users submit events with a link (Instagram / Partiful / website) for photos and details.
+// Saved to Supabase "event_submissions" as pending; you approve them in the Supabase dashboard,
+// then they appear on the map as "Community pick". Submitters get +25 points per approved event.
+const escH=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const okLink=u=>{ try{ const x=new URL(u); return /^https?:$/.test(x.protocol)? x.href : ''; }catch(e){ return ''; } };
+let subPlace=null, subTimer=null;
+function openSubmit(){
+  if(!S.signedUp){ toast('Finish signing up first, then you can add events.'); return; }
+  subPlace=null;
+  const cats=Object.keys(CATS).map(k=>`<option value="${k}">${CATS[k].label}</option>`).join('');
+  sheet.innerHTML=`<button class="x" id="sheetX" aria-label="Close">&times;</button><div class="grab"></div>
+    <div class="cat">Add an event</div><h2 style="font-size:30px">Know something good?</h2>
+    <p class="sub">Share it with the neighborhood. We review every event before it goes on the map.</p>
+    <form id="subForm" class="subform" novalidate>
+      <label>Link to the event *<small>Instagram post, Partiful, Eventbrite or website: where people can see photos and details</small>
+        <input class="field" name="link" type="url" inputmode="url" placeholder="https://" required></label>
+      <label>Event name *<input class="field" name="title" maxlength="90" required></label>
+      <label>Category *<select class="field" name="category" required><option value="">Choose one</option>${cats}</select></label>
+      <div class="row2"><label>Date *<input class="field" name="date" type="date" required></label><label>Start time<input class="field" name="time" type="time"></label></div>
+      <label>How often?<select class="field" name="recurrence"><option>One-time</option><option>Weekly</option><option>Monthly</option></select></label>
+      <label>Venue name *<input class="field" name="venue" maxlength="80" required></label>
+      <label class="addr">Address *<input class="field" name="address" autocomplete="off" placeholder="Start typing an address" required><div class="sugg" id="subSugg"></div></label>
+      <div class="row2"><label>Price<select class="field" name="price"><option>Free</option><option>Paid</option></select></label><label class="chk"><input type="checkbox" name="host"> I'm the host</label></div>
+      <label>Short description<textarea class="field fbtext" name="desc" maxlength="300" placeholder="What should people know?" style="min-height:70px;margin-top:8px"></textarea></label>
+      <button class="btn primary" type="submit" style="margin-top:14px">Submit for review</button>
+    </form>`;
   overlay.classList.add('on');
-  document.getElementById('addSoonOk').onclick=()=>overlay.classList.remove('on');
-};
+  document.getElementById('sheetX').onclick=()=>overlay.classList.remove('on');
+  const f=document.getElementById('subForm'), addr=f.address, sugg=document.getElementById('subSugg');
+  f.date.min=new Date().toISOString().slice(0,10);
+  addr.addEventListener('input',()=>{ subPlace=null; clearTimeout(subTimer); const q=addr.value.trim(); if(q.length<4){ sugg.innerHTML=''; return; }
+    subTimer=setTimeout(async()=>{ try{
+      const r=await fetch('https://api.mapbox.com/search/geocode/v6/forward?q='+encodeURIComponent(q)+'&autocomplete=true&proximity=-118.30,34.06&country=us&limit=5&access_token='+MAPBOX_TOKEN);
+      const fs=((await r.json()).features||[]);
+      sugg.innerHTML=fs.map((x,i)=>`<button type="button" data-i="${i}">${escH(x.properties.full_address||x.properties.name)}</button>`).join('');
+      sugg.onclick=e=>{ const b=e.target.closest('[data-i]'); if(!b) return; const x=fs[+b.dataset.i];
+        subPlace={ address:x.properties.full_address||x.properties.name, lng:x.geometry.coordinates[0], lat:x.geometry.coordinates[1] }; addr.value=subPlace.address; sugg.innerHTML=''; };
+    }catch(e){ sugg.innerHTML=''; } },250); });
+  f.onsubmit=async e=>{ e.preventDefault();
+    const v=Object.fromEntries(new FormData(f)); const link=okLink((v.link||'').trim());
+    if(!link) return toast('Add a link that starts with https://');
+    if(!v.title.trim()||!v.category||!v.date||!v.venue.trim()) return toast('Fill in the required fields (*)');
+    if(!subPlace) return toast('Pick the address from the suggestions so it lands on the map');
+    const dup=events.find(x=>String(x.title).trim().toLowerCase()===v.title.trim().toLowerCase());
+    if(dup && !confirm('Looks like "'+dup.title+'" is already on the map. Submit anyway?')) return;
+    const u=await dbUser(); if(!u) return toast('Couldn\'t connect. Try again in a moment.');
+    const { error } = await sb.from('event_submissions').insert({ user_id:u.id, link, title:v.title.trim(), category:v.category, event_date:v.date, start_time:v.time||null,
+      recurrence:v.recurrence, venue:v.venue.trim(), address:subPlace.address, lat:subPlace.lat, lng:subPlace.lng, price:v.price, description:(v.desc||'').trim()||null, is_host:!!v.host });
+    if(error) return toast(/5 events/.test(error.message)? 'You have 5 events waiting for review. Hang tight!' : 'Couldn\'t submit: '+error.message);
+    overlay.classList.remove('on'); toast('Thanks! We\'ll review it and it\'ll show up on the map soon.');
+  };
+}
+document.getElementById('addSoon').onclick=openSubmit;
+// approved community events join the map; your own approvals earn +25 points once each
+let communityEvents=[];
+async function loadSubmissions(){
+  if(!sb) return;
+  try{
+    const { data, error } = await sb.from('event_submissions').select('*').eq('status','approved'); if(error) throw error;
+    // user-submitted text is escaped before it reaches the page, and only http(s) links are kept
+    communityEvents=(data||[]).filter(r=>r.lat!=null && okLink(r.link)).map(r=>({ id:200000+r.id, eid:'SUB-'+r.id, community:true, title:escH(r.title), venue:escH(r.venue), address:escH(r.address),
+      lat:r.lat, lng:r.lng, category:CATS[r.category]? r.category : 'community', kind:/one/i.test(r.recurrence||'')? 'popup' : 'regular', area:'', host:r.is_host? escH(r.venue) : 'Shared by a neighbor',
+      desc:escH(r.description||''), source:okLink(r.link), price:r.price||'', rec:r.recurrence==='One-time'?'One-off':(r.recurrence||''), start:parseDay(r.event_date), t0:r.start_time? String(r.start_time).slice(0,5) : '', t1:'',
+      time:'', going:0, fromGroup:0, live:false, startsIn:'' }));
+    events=events.filter(x=>!x.community).concat(communityEvents);
+    const u=(await sb.auth.getSession()).data.session?.user;
+    if(u){ const mine=(data||[]).filter(r=>r.user_id===u.id).map(r=>r.id); S.subCredited=S.subCredited||[];
+      const fresh=mine.filter(id=>!S.subCredited.includes(id));
+      if(fresh.length){ S.subCredited.push(...fresh); S.points+=25*fresh.length; save(); dbProfile(); toast(fresh.length>1? `${fresh.length} of your events were approved: +${25*fresh.length} points!` : 'Your event was approved and is on the map: +25 points!'); } }
+    if(current==='home') renderHome();
+  }catch(e){ console.warn('Supabase submissions failed', e); }
+}
+
 
 /* ---------- event details: next date, badges, directions, calendar ---------- */
 function hm(v){ const m=String(v||'').trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp][Mm])?$/); if(!m) return null; let h=+m[1]; if(m[3]){ const pm=/p/i.test(m[3]); h=h%12+(pm?12:0); } return [h,+m[2]]; }
@@ -1119,7 +1187,7 @@ function nextWhen(ev){
   return [day,fmtTime(ev.t0)].filter(Boolean).join(' · ');
 }
 function badges(ev){
-  const b=[]; if(ev.kind && KINDS[ev.kind]) b.push(tierIcon(ev.kind,12)+KINDS[ev.kind].label); if(/free/i.test(ev.price)) b.push('Free'); else if(/donation|pay-what/i.test(ev.price)) b.push('Pay what you can'); else if(/paid/i.test(ev.price)) b.push('Paid');
+  const b=[]; if(ev.community) b.push('Community pick'); if(ev.kind && KINDS[ev.kind]) b.push(tierIcon(ev.kind,12)+KINDS[ev.kind].label); if(/free/i.test(ev.price)) b.push('Free'); else if(/donation|pay-what/i.test(ev.price)) b.push('Pay what you can'); else if(/paid/i.test(ev.price)) b.push('Paid');
   if(ev.age) b.push(ev.age); if(/indoor/i.test(ev.setting)) b.push('Indoor'); else if(/outdoor/i.test(ev.setting)) b.push('Outdoor'); else if(/both/i.test(ev.setting)) b.push('Indoor + outdoor');
   if(ev.rsvpReq) b.push('RSVP required'); return b;
 }
@@ -1156,7 +1224,7 @@ function openSheet(id){
     <div class="actions">
       <a class="act" href="${directionsUrl(ev)}" target="_blank" rel="noopener">Directions</a>
       <button class="act" id="calBtn" aria-label="Add to calendar">+ Calendar</button>
-      ${(ev.ticket||ev.source)?`<a class="act" href="${ev.ticket||ev.source}" target="_blank" rel="noopener">${ev.ticket?(/paid/i.test(ev.price)?'Get tickets':'RSVP link'):'Event page'}</a>`:''}
+      ${(ev.ticket||ev.source)?`<a class="act" href="${ev.ticket||ev.source}" target="_blank" rel="noopener noreferrer">${ev.community?'See photos & details':ev.ticket?(/paid/i.test(ev.price)?'Get tickets':'RSVP link'):'Event page'}</a>`:''}
     </div>
     <div class="host"><div class="avatar">${initials}</div><div><b>${ev.host||'Local host'}</b><div class="sub" style="font-size:12px">Hosting on Comuna</div></div></div>
     ${(ev.parking||ev.alcohol!==undefined)?`<div class="practical">${ev.parking?`Parking: ${ev.parking}<br>`:''}${ev.alcohol===true?'Drinks available, 21+ to drink':ev.alcohol===false?'Alcohol-free':''}</div>`:''}
@@ -1264,7 +1332,8 @@ const PATCHES=[ {t:'FIRST STAMP',s:'WELCOME',sc:'hills',ok:()=>Object.keys(S.pla
   {t:'THREE HOODS',s:'EXPLORER',sc:'lake',ok:()=>Object.keys(visitedHoods()).length>=3},
   {t:'REGULAR',s:'5 VISITS, 1 PLACE',sc:'hills',ok:()=>Object.values(S.places).some(p=>p.n>=5)},
   {t:'ALL 13 KINDS',s:'TRIED EVERYTHING',sc:'night',ok:()=>new Set(Object.values(S.places).map(p=>catKey(p.cat))).size>=13},
-  {t:'COAST TO LAKE',s:'SANTA MONICA',sc:'beach',ok:()=>!!visitedCities()['Santa Monica']} ];
+  {t:'COAST TO LAKE',s:'SANTA MONICA',sc:'beach',ok:()=>!!visitedCities()['Santa Monica']},
+  {t:'SCOUT',s:'3 EVENTS ADDED',sc:'lake',ok:()=>(S.subCredited||[]).length>=3} ];
 function renderPassport(){
   const places=S.places, H=visitedHoods();
   const nP=Object.keys(places).length, nH=Object.keys(H).length;
@@ -1475,7 +1544,7 @@ function loadSheet(){
     events=rows.map((r,i)=>({ id:(parseInt(String(r['event id']||'').replace(/\D/g,''))||0)? 100000+parseInt(String(r['event id']).replace(/\D/g,'')) : 100+i, eid:r['event id']||'', title:r['event name'], venue:r['venue name']||'', lat:r.lat, lng:r.lng, area:r['neighborhood']||'', time:whenText(r), live:false, startsIn:'', going:0, fromGroup:0, host:r['host / organizer']||'', desc:r['short description']||'', category:catMap(r['primary category']), kind:tierKey(r['tier']), parking:r['parking & transit']||'', alcohol:undefined,
       address:[r['street address'],r['city'],r['zip']].filter(Boolean).join(', '), price:r['free / paid']||'', age:r['age']||'', setting:r['indoor / outdoor']||'', rsvpReq:/^y/i.test(r['rsvp required?']||''),
       ticket:r['ticket / rsvp link']||'', source:r['source url']||'', rec:r['recurrence']||'', recDetail:r['recurrence detail']||'', start:parseDay(r['start date']), end:parseDay(r['end date']), t0:r['start time']||'', t1:r['end time']||'' }));
-    usingDemo=false; if(current==='home') renderHome(); loadGoing();
+    usingDemo=false; if(current==='home') renderHome(); loadGoing(); loadSubmissions();
   }).catch(()=>{});
 }
 
