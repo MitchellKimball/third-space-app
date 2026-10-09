@@ -477,7 +477,7 @@ img{ max-width:100% }
         <div class="page" id="passPage"></div>
         <div class="h2">Patches</div>
         <div class="patches" id="patchList"></div>
-        <div class="h2" id="lbTitle">Explorers this month</div>
+        <div class="h2" id="lbTitle">Top 5 explorers</div>
         <div class="lb" id="lbList"></div>
       </div>
     </section>
@@ -1331,7 +1331,7 @@ async function loadLeaderboard(){
   if(!sb){ el.innerHTML=empty; return; }
   try{
     const u=(await sb.auth.getSession()).data.session?.user;
-    const { data, error } = await sb.from('leaderboard_month').select('user_id,display_name,points').eq('neighborhood',S.nb||'').order('points',{ascending:false}).limit(10); if(error) throw error;
+    const { data, error } = await sb.from('leaderboard_month').select('user_id,display_name,points').eq('neighborhood',S.nb||'').order('points',{ascending:false}).limit(5); if(error) throw error;
     el.innerHTML=(data||[]).length? data.map((r,i)=>{ const you=u&&r.user_id===u.id;
       return `<div class="lbrow ${you?'me':''}"><div class="r">${i+1}</div><div>${escH(you?me:r.display_name||'Explorer')}${you?' (you)':''}</div><div>${(+r.points||0).toLocaleString()} pts</div></div>`; }).join('') : empty;
   }catch(e){ console.warn('Supabase leaderboard failed', e); el.innerHTML=empty; }
@@ -1408,7 +1408,7 @@ function renderPassport(){
   }
   document.getElementById('passPage').innerHTML=html;
   document.getElementById('patchList').innerHTML=PATCHES.map(p=>{ const ok=p.ok(); return `<div class="patch ${ok?'':'locked'}">${patchSVG(p.t,p.s,p.sc,92,110)}<div>${ok?'Earned':'Locked'}</div></div>`; }).join('');
-  document.getElementById('lbTitle').textContent=`${S.nb||'Neighborhood'} explorers this month`;
+  document.getElementById('lbTitle').textContent=`Top 5 explorers in ${S.nb||'your neighborhood'}`;
   loadLeaderboard();
 }
 document.getElementById('passTabs').addEventListener('click',e=>{ const b=e.target.closest('[data-tab]'); if(!b) return; passTab=b.dataset.tab; renderPassport(); });
