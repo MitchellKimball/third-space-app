@@ -443,12 +443,15 @@ img{ max-width:100% }
 
     <!-- PLANS -->
     <section class="screen" data-s="plans">
-      <div class="topbar"><div class="h1" style="color:var(--green)">Your plans</div></div>
+      <div class="topbar"><div class="h1" style="color:var(--green)">Plans</div></div>
       <div class="scroll">
         <div class="calhead"><div class="m" id="calMonth"></div><button id="calPrev" aria-label="Previous month">&lsaquo;</button><button id="calToday">Today</button><button id="calNext" aria-label="Next month">&rsaquo;</button></div>
         <div class="calgrid" id="calGrid"></div>
         <div class="dayhead" id="dayHead"></div>
+        <div class="h2">Your plans</div>
         <div id="planList"></div>
+        <div class="h2" id="alsoHead">Also happening</div>
+        <div id="alsoList"></div>
         <div class="h2">Invites from friends</div>
         <div id="inviteList"></div>
       </div>
@@ -469,7 +472,7 @@ img{ max-width:100% }
         <div class="page" id="passPage"></div>
         <div class="h2">Patches</div>
         <div class="patches" id="patchList"></div>
-        <div class="h2">Silver Lake explorers this month</div>
+        <div class="h2" id="lbTitle">Explorers this month</div>
         <div class="lb" id="lbList"></div>
       </div>
     </section>
@@ -534,7 +537,7 @@ img{ max-width:100% }
 
     <div class="overlay" id="overlay"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
     <div class="recmodal" id="recModal" role="dialog" aria-modal="true" aria-labelledby="recTitle"><div class="box">
-      <div class="k" id="recKicker">Picked for you this week</div>
+      <div class="k" id="recKicker">Picked for you today</div>
       <div class="h1" id="recTitle">Your week, nearby</div>
       <p class="sub" id="recSub"></p>
       <div id="recList"></div>
@@ -749,7 +752,7 @@ function go(id, push=true){
   screens.forEach(s=>s.classList.toggle('on', s.dataset.s===id));
   nav.classList.toggle('hide', ['onb1','onb2','onb3','onb4','host','alerts'].includes(id));
   nav.querySelectorAll('button').forEach(b=>{ const on=b.dataset.nav===id; b.classList.toggle('on',on); b.querySelector('svg').setAttribute('stroke', on?C.green:C.muted); });
-  if(id==='home'){ renderHome(); maybeWeeklyPicks(); setTimeout(()=>{ if(map) map.resize(); else drawPaper(); },30); }
+  if(id==='home'){ renderHome(); maybeDailyPicks(); setTimeout(()=>{ if(map) map.resize(); else drawPaper(); },30); }
   if(id==='plans') renderPlans();
   if(id==='passport') renderPassport();
   if(id==='profile') renderProfile();
@@ -803,30 +806,28 @@ suNext.onclick=()=>{
 function shortName(){ const p=(S.name||'').split(' ').filter(Boolean); return p.length? p[0]+(p[1]?` ${p[p.length-1][0].toUpperCase()}.`:'') : 'You'; }
 function renderNames(){ const n=shortName(); document.getElementById('passName').textContent=`${n} · Los Angeles`; document.getElementById('pfName').textContent=n; document.getElementById('pfAvatar').textContent=n[0]; document.getElementById('pfHood').textContent=`${S.nb} · exploring since ${new Date(S.joined||Date.now()).toLocaleString('en-US',{month:'long'})}`; }
 
-/* ---------- weekly picks: once a week, 5-8 events within 15 minutes, matched to your interests ---------- */
-const WEEK_MS=7*24*60*60*1000, MIN_RECS=5, MAX_RECS=8;
-function weeklyPicks(){
+/* ---------- daily Top 4: one Headliner, Staple, Hidden Gem and Pop-up near you, once a day ---------- */
+function dailyPicks(){
   enrich();
   const want=Object.keys(CATS).filter(k=>(S.interests||[]).includes(CATS[k].label));
-  const near=events.filter(ev=>ev.mi<=NEARBY_MILES && !S.checked.includes(ev.id)).sort((a,b)=>a.mi-b.mi);
-  const match=near.filter(ev=>want.includes(ev.category));
-  // too few matches: top up with the closest other events so there's always a real list
-  const extra=match.length<MIN_RECS ? near.filter(ev=>!match.includes(ev)).slice(0,MIN_RECS-match.length) : [];
-  return { match:match.slice(0,MAX_RECS), extra };
+  const pool=events.filter(ev=>!S.checked.includes(ev.id) && !S.rsvp.includes(ev.id) && ev.mi!=null);
+  // closest first, with a nudge toward what you're into; the day number rotates ties so picks change daily
+  const day=Math.floor(Date.now()/864e5);
+  const score=ev=>ev.mi*(want.includes(ev.category)?0.6:1)+((ev.id*7+day)%5)*0.05;
+  return ['cornerstone','regular','niche','popup'].map(k=>pool.filter(ev=>kindOf(ev)===k).sort((x,y)=>score(x)-score(y))[0]).filter(Boolean);
 }
-function maybeWeeklyPicks(){
+function maybeDailyPicks(){
   if(S.kitSeen===false) return;   // the starter kit goes first; it hands off to these picks when closed
-  if(!(S.interests||[]).length || Date.now()-(S.lastPicks||0)<WEEK_MS) return;
-  const {match,extra}=weeklyPicks(); if(!match.length && !extra.length) return;
-  S.lastPicks=Date.now(); save();
-  const row=(ev,why)=>`<button class="pick" data-rec="${ev.id}"><div class="n">${catDot(ev.category,18)}</div>
-    <div><div class="when">${ev.time}</div><div class="t">${ev.title}</div><div class="m">${ev.venue}</div><div class="why">${why}</div></div>
+  const today=new Date().toDateString(); if(S.lastPicksDay===today) return;
+  const picks=dailyPicks(); if(!picks.length) return;
+  S.lastPicksDay=today; save();
+  const row=ev=>`<button class="pick" data-rec="${ev.id}"><div class="n">${catDot(ev.category,18)}</div>
+    <div><div class="when">${KINDS[kindOf(ev)].label}</div><div class="t">${ev.title}</div><div class="m">${ev.venue}${ev.start?' · '+nextWhen(ev):ev.time?' · '+ev.time:''}</div></div>
     <div class="dist">${mins(ev.mi)}<small>min away</small></div></button>`;
   const first=(S.name||'').split(' ')[0];
-  document.getElementById('recTitle').textContent=first?`${first}, here's your week`:'Your week, nearby';
-  document.getElementById('recSub').textContent=`${match.length+extra.length} things within 15 minutes, picked from what you're into.`;
-  document.getElementById('recList').innerHTML=match.map(ev=>row(ev,`Because you like ${CATS[ev.category].label}`)).join('')
-    + (extra.length? `<div class="h2" style="font-size:15px;margin-top:16px">Also close by</div>`+extra.map(ev=>row(ev,CATS[ev.category].label)).join('') : '');
+  document.getElementById('recTitle').textContent=first?`${first}, your Top 4 today`:'Your Top 4 today';
+  document.getElementById('recSub').textContent='One of each, close to you. New picks every day.';
+  document.getElementById('recList').innerHTML=picks.map(row).join('');
   setTimeout(()=>document.getElementById('recModal').classList.add('on'),350);
 }
 /* ---------- neighborhood starter kit ---------- */
@@ -841,22 +842,23 @@ function kitSlides(){
      <p class="sub">Comuna finds the good stuff happening around you: shows, markets, run clubs, pop-ups, supper clubs. Here's what's out there right now.</p>
      <div class="kitstats"><div class="kitstat"><b>${drive20}</b><span>events within a 15–20 min drive</span></div><div class="kitstat"><b>${all}</b><span>events across LA right now</span></div></div>
      <p class="sub" style="font-size:13px">New events get added daily.</p>`,
-    `<div class="k">How it works</div><div class="h1" id="kitTitle">Find it. RSVP. Show up.</div>
+    `<div class="k">How it works</div><div class="h1" id="kitTitle">Find it. Save it. Show up.</div>
      <ol class="kitsteps">
       <li><div><b>Explore the map</b><span>Every event across LA is on the map. Tap a pin or swipe the cards, and zoom in to break up the clusters.</span></div></li>
-      <li><div><b>Tap "RSVP"</b><span>It lands in your Plans, so you won't forget. Invite friends from there.</span></div></li>
+      <li><div><b>Tap "Interested"</b><span>It lands in your Plans, so you won't forget. If the host needs an RSVP or ticket, we'll take you to their link. Invite friends from there.</span></div></li>
       <li><div><b>Check in when you get there</b><span>Tap "I'm here" at the event to collect the stamp.</span></div></li>
      </ol>`,
     `<div class="k">Your passport</div><div class="h1" id="kitTitle">Collect stamps, points and patches.</div>
      <div class="kitart">${stamp}</div>
-     <div class="kitpts"><span>RSVP to an event</span><b>+10</b></div>
+     <div class="kitpts"><span>Save an event you're interested in</span><b>+10</b></div>
      <div class="kitpts"><span>Check in when you show up</span><b>+50</b></div>
+     <div class="kitpts"><span>Add an event that gets approved</span><b>+25</b></div>
      <p class="sub" style="margin-top:12px">Every place you visit earns a stamp, and your first visit in each neighborhood earns its neighborhood stamp. Hit milestones (three neighborhoods, five visits to one spot) to unlock patches.</p>`,
     `<div class="k">A few more things</div><div class="h1" id="kitTitle">You're all set.</div>
      <ol class="kitsteps">
-      <li><div><b>Weekly picks</b><span>Once a week we'll pull together 5–8 things near you, matched to what you're into.</span></div></li>
-      <li><div><b>Climb the leaderboard</b><span>See how you stack up against other ${hood} explorers each month.</span></div></li>
-      <li><div><b>Know about something cool?</b><span>Soon you'll be able to add your own events with the + tab.</span></div></li>
+      <li><div><b>Your daily Top 4</b><span>Every day we pick four things near you: a Headliner, a Staple, a Hidden Gem and a Pop-up.</span></div></li>
+      <li><div><b>Climb the leaderboard</b><span>See how you stack up against other ${hood} explorers. The top five neighborhood leaders at the end of each month get gift cards to their favorite spots.</span></div></li>
+      <li><div><b>Know about something cool?</b><span>Add it with the + tab. Once we approve it, it goes on the map and you get +25 points.</span></div></li>
      </ol>`
   ];
 }
@@ -869,7 +871,7 @@ function renderKit(){
   kitModal.querySelector('.box').scrollTop=0;
 }
 function openKit(){ kitStep=0; renderKit(); kitModal.classList.add('on'); }
-function closeKit(){ kitModal.classList.remove('on'); S.kitSeen=true; save(); maybeWeeklyPicks(); }
+function closeKit(){ kitModal.classList.remove('on'); S.kitSeen=true; save(); maybeDailyPicks(); }
 document.getElementById('kitNext').onclick=()=>{ if(kitStep<kitSlides().length-1){ kitStep++; renderKit(); } else closeKit(); };
 document.getElementById('kitBack').onclick=()=>{ if(kitStep){ kitStep--; renderKit(); } };
 kitModal.addEventListener('click',e=>{ if(e.target===kitModal) closeKit(); });
@@ -906,7 +908,7 @@ function renderHome(){ setTimeout(syncHeadH,0);
   document.getElementById('picks').innerHTML = P.map((ev,i)=>{
     const done=S.checked.includes(ev.id), inn=S.rsvp.includes(ev.id);
     return `<button class="pick" data-ev="${ev.id}"><div class="n">${catDot(ev.category,18)}${done?'<span class="chk">&check;</span>':''}</div>
-      <div><div class="when">${ev.live?'\u{1F534} ':''}${ev.startsIn||(ev.start?nextWhen(ev):ev.time)}</div><div class="t">${ev.title}</div><div class="m">${ev.venue}${inn&&!done?' · RSVP\'d':''}</div></div>
+      <div><div class="when">${ev.live?'\u{1F534} ':''}${ev.startsIn||(ev.start?nextWhen(ev):ev.time)}</div><div class="t">${ev.title}</div><div class="m">${ev.venue}${inn&&!done?' · Saved':''}</div></div>
       <div class="dist">${mins(ev.mi)}<small>min away</small></div></button>`; }).join('')
     + `<div class="endnote">that's the list. go have fun.</div><div class="demo-tag">${usingDemo?'Demo events · connect the Google Sheet to go live':'Live events from the Comuna sheet'}</div>`;
   const first=P[0]; document.getElementById('mapNote').textContent = first ? (first.live? `${first.title.split(' ').slice(0,2).join(' ')}: ${first.startsIn}` : '') : '';
@@ -1110,8 +1112,8 @@ function openSubmit(){
       <label>Event name *<input class="field" name="title" maxlength="90" required></label>
       <label>Category *<select class="field" name="category" required><option value="">Choose one</option>${cats}</select></label>
       <div class="row2"><label>Date *<input class="field" name="date" type="date" required></label><label>Start time<input class="field" name="time" type="time"></label></div>
+      <label>End time <small style="display:inline">(optional)</small><input class="field" name="end" type="time"></label>
       <label>How often?<select class="field" name="recurrence"><option>One-time</option><option>Weekly</option><option>Monthly</option></select></label>
-      <label>Venue name *<input class="field" name="venue" maxlength="80" required></label>
       <label class="addr">Where is it? *<small>Search a venue, park or street address, then check the pin</small><input class="field" name="address" autocomplete="off" placeholder="e.g. Palisades Park, or 2939 Sunset Blvd" required><div class="sugg" id="subSugg"></div></label>
       <div class="pinwrap" id="subPinWrap" hidden><div id="subPinMap" class="pinmap"></div><small>Drag the pin to the exact spot if it's off.</small></div>
       <div class="row2"><label>Price<select class="field" name="price"><option>Free</option><option>Paid</option></select></label><label class="chk"><input type="checkbox" name="host"> I'm the host</label></div>
@@ -1129,18 +1131,18 @@ function openSubmit(){
       const fs=((await r.json()).features||[]);
       sugg.innerHTML=fs.map((x,i)=>`<button type="button" data-i="${i}"><b>${escH(x.text)}</b><small>${escH(x.place_name)}</small></button>`).join('');
       sugg.onclick=e=>{ const b=e.target.closest('[data-i]'); if(!b) return; const x=fs[+b.dataset.i];
-        subPlace={ address:x.place_name, lng:x.center[0], lat:x.center[1] }; addr.value=subPlace.address; sugg.innerHTML=''; showPinMap(); };
+        subPlace={ name:x.text, address:x.place_name, lng:x.center[0], lat:x.center[1] }; addr.value=subPlace.address; sugg.innerHTML=''; showPinMap(); };
     }catch(e){ sugg.innerHTML=''; } },250); });
   f.onsubmit=async e=>{ e.preventDefault();
     const v=Object.fromEntries(new FormData(f)); const link=okLink((v.link||'').trim());
     if(!link) return toast('Add a link that starts with https://');
-    if(!v.title.trim()||!v.category||!v.date||!v.venue.trim()) return toast('Fill in the required fields (*)');
+    if(!v.title.trim()||!v.category||!v.date) return toast('Fill in the required fields (*)');
     if(!subPlace) return toast('Pick a place from the suggestions so it lands on the map');
     const dup=events.find(x=>String(x.title).trim().toLowerCase()===v.title.trim().toLowerCase());
     if(dup && !confirm('Looks like "'+dup.title+'" is already on the map. Submit anyway?')) return;
     const u=await dbUser(); if(!u) return toast('Couldn\'t connect. Try again in a moment.');
-    const { error } = await sb.from('event_submissions').insert({ user_id:u.id, link, title:v.title.trim(), category:v.category, event_date:v.date, start_time:v.time||null,
-      recurrence:v.recurrence, venue:v.venue.trim(), address:subPlace.address, lat:subPlace.lat, lng:subPlace.lng, price:v.price, description:(v.desc||'').trim()||null, is_host:!!v.host });
+    const { error } = await sb.from('event_submissions').insert({ user_id:u.id, link, title:v.title.trim(), category:v.category, event_date:v.date, start_time:v.time||null, end_time:v.end||null,
+      recurrence:v.recurrence, venue:(subPlace.name||subPlace.address.split(',')[0]).slice(0,80), address:subPlace.address, lat:subPlace.lat, lng:subPlace.lng, price:v.price, description:(v.desc||'').trim()||null, is_host:!!v.host });
     if(error) return toast(/5 events/.test(error.message)? 'You have 5 events waiting for review. Hang tight!' : 'Couldn\'t submit: '+error.message);
     overlay.classList.remove('on'); toast('Thanks! We\'ll review it and it\'ll show up on the map soon.');
   };
@@ -1170,7 +1172,7 @@ async function loadSubmissions(){
     // user-submitted text is escaped before it reaches the page, and only http(s) links are kept
     communityEvents=(data||[]).filter(r=>r.lat!=null && okLink(r.link)).map(r=>({ id:200000+r.id, eid:'SUB-'+r.id, community:true, title:escH(r.title), venue:escH(r.venue), address:escH(r.address),
       lat:r.lat, lng:r.lng, category:CATS[r.category]? r.category : 'community', kind:/one/i.test(r.recurrence||'')? 'popup' : 'regular', area:'', host:r.is_host? escH(r.venue) : 'Shared by a neighbor',
-      desc:escH(r.description||''), source:okLink(r.link), price:r.price||'', rec:r.recurrence==='One-time'?'One-off':(r.recurrence||''), start:parseDay(r.event_date), t0:r.start_time? String(r.start_time).slice(0,5) : '', t1:'',
+      desc:escH(r.description||''), source:okLink(r.link), price:r.price||'', rec:r.recurrence==='One-time'?'One-off':(r.recurrence||''), start:parseDay(r.event_date), t0:r.start_time? String(r.start_time).slice(0,5) : '', t1:r.end_time? String(r.end_time).slice(0,5) : '',
       time:'', going:0, fromGroup:0, live:false, startsIn:'' }));
     events=events.filter(x=>!x.community).concat(communityEvents);
     const u=(await sb.auth.getSession()).data.session?.user;
@@ -1237,7 +1239,7 @@ function openSheet(id){
     <div class="sub">${ev.venue}</div>
     ${badges(ev).length?`<div class="badges">${badges(ev).map(x=>`<span>${x}</span>`).join('')}</div>`:''}
     <div class="facts"><div class="fact"><div class="k">${ev.start&&!/one-off/i.test(ev.rec||'')?'Next':'When'}</div><div class="v">${ev.start?nextWhen(ev):(ev.time||'Soon')}</div>${ev.start&&ev.recDetail&&!/one-off/i.test(ev.rec)?`<div class="more">${ev.recDetail}</div>`:''}</div><div class="fact"><div class="k">How far</div><div class="v">${mins(ev.mi)} min · ${ev.mi.toFixed(1)} mi</div></div></div>
-    ${ev.going?`<div class="goingrow">${faces?`<div class="faces">${faces}</div>`:''}${ev.going} going${ev.fromGroup?`, ${ev.fromGroup} you know`:''}</div>`:''}
+    ${ev.going?`<div class="goingrow">${faces?`<div class="faces">${faces}</div>`:''}${ev.going} interested${ev.fromGroup?`, ${ev.fromGroup} you know`:''}</div>`:''}
     ${ev.desc?`<p class="desc">${ev.desc}</p>`:''}
     <div class="actions">
       <a class="act" href="${directionsUrl(ev)}" target="_blank" rel="noopener">Directions</a>
@@ -1248,11 +1250,11 @@ function openSheet(id){
     ${(ev.parking||ev.alcohol!==undefined)?`<div class="practical">${ev.parking?`Parking: ${ev.parking}<br>`:''}${ev.alcohol===true?'Drinks available, 21+ to drink':ev.alcohol===false?'Alcohol-free':''}</div>`:''}
     ${done? `<button class="btn green" disabled>Stamped. See you next time.</button>`
       : inn? `<div class="row2"><button class="btn ghost" id="shareBtn">Invite friends</button><button class="btn primary" id="checkBtn">I'm here: check in</button></div>`
-      : `<div class="row2"><button class="btn ghost" id="shareBtn">Invite friends</button><button class="btn primary" id="rsvpBtn">RSVP</button></div>`}`;
+      : `<div class="row2"><button class="btn ghost" id="shareBtn">Invite friends</button><button class="btn primary" id="rsvpBtn">${needsRsvp(ev)?'RSVP':'Interested'}</button></div>`}`;
   overlay.classList.add('on');
   document.getElementById('sheetX').onclick=()=>overlay.classList.remove('on');
   document.getElementById('calBtn').onclick=()=>addToCalendar(ev);
-  const r=document.getElementById('rsvpBtn'); if(r) r.onclick=()=>{ S.rsvp.push(id); S.points+=10; save(); dbRsvp(ev); overlay.classList.remove('on'); renderHome(); showRsvp(events.find(e=>e.id===id)); };
+  const r=document.getElementById('rsvpBtn'); if(r) r.onclick=()=>{ if(needsRsvp(ev)) window.open(okRsvpLink(ev),'_blank','noopener'); S.rsvp.push(id); S.points+=10; save(); dbRsvp(ev); overlay.classList.remove('on'); renderHome(); showRsvp(events.find(e=>e.id===id)); };
   const c=document.getElementById('checkBtn'); if(c) c.onclick=()=>checkIn(ev);
   const sh=document.getElementById('shareBtn'); if(sh) sh.onclick=()=>shareEv(ev);
 }
@@ -1297,17 +1299,33 @@ function checkIn(ev){
   document.getElementById('closeStamp').onclick=()=>{ m.classList.remove('on'); renderHome(); setTimeout(()=>askHowWasIt(ev),300); };
 }
 
+// Most events are free and open: "Interested" saves them. RSVP only when the host needs one, and it opens their link.
+const okRsvpLink=ev=>{ const u=ev.ticket||(ev.rsvpReq?ev.source:''); return /^https?:/i.test(u||'')? u : ''; };
+function needsRsvp(ev){ return !!okRsvpLink(ev) && (ev.rsvpReq || !!ev.ticket); }
 function showRsvp(ev){
   if(!ev) return;
   const m=document.getElementById('stampModal');
   m.innerHTML=`<div class="stampbox">${rsvpStamp(ev)}</div>
-    <h3>You're on the list</h3>
-    <p>${ev.title}${ev.venue&&ev.venue!==ev.title?` at ${ev.venue}`:''}. +10 points, and it's in your Plans. Check in when you get there for the stamp and +50 more.</p>
+    <h3>${needsRsvp(ev)?'Saved. Finish your RSVP':'Saved to your plans'}</h3>
+    <p>${ev.title}${ev.venue&&ev.venue!==ev.title?` at ${ev.venue}`:''}. ${needsRsvp(ev)?'Complete the RSVP on the host\'s page so they hold your spot. ':''}+10 points, and it's in your Plans. Check in when you get there for the stamp and +50 more.</p>
     <div class="unlocks"><button class="btn ghost" id="rsvpInvite" style="border-color:var(--paper);color:var(--paper);padding:10px 18px">Invite friends</button></div>
     <button class="btn primary" id="closeStamp" style="max-width:260px">Nice</button>`;
   m.classList.add('on');
   document.getElementById('closeStamp').onclick=()=>m.classList.remove('on');
   document.getElementById('rsvpInvite').onclick=()=>{ m.classList.remove('on'); openSheet(ev.id); setTimeout(()=>document.getElementById('shareBtn')?.click(),50); };
+}
+
+/* ---------- neighborhood leaderboard (real points this month, from Supabase) ---------- */
+async function loadLeaderboard(){
+  const el=document.getElementById('lbList'), me=shortName();
+  const empty=`<div class="empty">No points in ${escH(S.nb||'your neighborhood')} yet this month. Save, check in or add an event to get on the board. Top five at month's end win gift cards to their favorite spots.</div>`;
+  if(!sb){ el.innerHTML=empty; return; }
+  try{
+    const u=(await sb.auth.getSession()).data.session?.user;
+    const { data, error } = await sb.from('leaderboard_month').select('user_id,display_name,points').eq('neighborhood',S.nb||'').order('points',{ascending:false}).limit(10); if(error) throw error;
+    el.innerHTML=(data||[]).length? data.map((r,i)=>{ const you=u&&r.user_id===u.id;
+      return `<div class="lbrow ${you?'me':''}"><div class="r">${i+1}</div><div>${escH(you?me:r.display_name||'Explorer')}${you?' (you)':''}</div><div>${(+r.points||0).toLocaleString()} pts</div></div>`; }).join('') : empty;
+  }catch(e){ console.warn('Supabase leaderboard failed', e); el.innerHTML=empty; }
 }
 
 /* ---------- plans ---------- */
@@ -1331,12 +1349,17 @@ function renderPlans(){
   }
   document.getElementById('calGrid').innerHTML=g;
   document.getElementById('dayHead').innerHTML=`${calSel.toLocaleString('en-US',{weekday:'long'})} <span>${calSel.toLocaleString('en-US',{month:'long'})} ${ordinal(calSel.getDate())}</span>`;
-  const list=(byDay[ymd(calSel)]||[]).slice().sort((a,b)=>S.rsvp.includes(b.id)-S.rsvp.includes(a.id));
-  document.getElementById('planList').innerHTML = list.length? list.map(ev=>{ const inn=S.rsvp.includes(ev.id), done=S.checked.includes(ev.id);
-    return `<div class="dayev"><button data-open="${ev.id}" style="display:flex;gap:12px;align-items:center;flex:1;min-width:0;text-align:left">${catDot(ev.category,16)}<div class="x">${inn?`<div class="tag">${done?'Stamped':"RSVP'd"}</div>`:''}<div class="t">${ev.title}</div><div class="u">${ev.venue} · ${ev.time.split('·').pop().trim()}</div><div class="u">${ev.going} going · ${mins(ev.mi)} min away</div></div></button>${inn?`<button data-share="${ev.id}" aria-label="Copy Partiful invite" title="Copy Partiful invite"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#26251F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v13"/></svg></button>`:''}</div>`; }).join('')
-    : `<div class="empty"><span class="hand">free ${+calSel===+t?'tonight':'that day'}?</span>Nothing on this day yet. RSVP to a pick and it lands here.</div>`;
-  const inv=[{id:8,from:'Ghazi',t:'Sun · Sunset Volleyball'},{id:1,from:'Maya',t:'Tue · Rooftop Jazz Session'}];
-  document.getElementById('inviteList').innerHTML=inv.map(i=>`<div class="planrow"><div class="d">${i.from} invited you</div><div class="t">${i.t}</div><div class="u">${PARTIFUL[i.id]}</div><div class="acts"><button data-open="${i.id}">See it</button></div></div>`).join('');
+  const dayEvs=byDay[ymd(calSel)]||[], isT=+calSel===+t;
+  const card=ev=>{ const inn=S.rsvp.includes(ev.id), done=S.checked.includes(ev.id);
+    return `<div class="dayev"><button data-open="${ev.id}" style="display:flex;gap:12px;align-items:center;flex:1;min-width:0;text-align:left">${catDot(ev.category,16)}<div class="x">${inn?`<div class="tag">${done?'Stamped':"Saved"}</div>`:''}<div class="t">${ev.title}</div><div class="u">${ev.venue} · ${ev.time.split('·').pop().trim()}</div><div class="u">${ev.going?ev.going+' interested · ':''}${mins(ev.mi)} min away</div></div></button>${inn?`<button data-share="${ev.id}" aria-label="Copy Partiful invite" title="Copy Partiful invite"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#26251F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v13"/></svg></button>`:''}</div>`; };
+  const mineL=dayEvs.filter(ev=>S.rsvp.includes(ev.id)), also=dayEvs.filter(ev=>!S.rsvp.includes(ev.id)).sort((a,b)=>(a.mi??99)-(b.mi??99));
+  document.getElementById('planList').innerHTML = mineL.length? mineL.map(card).join('')
+    : `<div class="empty"><span class="hand">free ${isT?'tonight':'that day'}?</span>Nothing saved for this day yet. Tap "Interested" on an event and it lands here.</div>`;
+  document.getElementById('alsoHead').textContent=`Also happening ${isT?'today':calSel.toLocaleString('en-US',{weekday:'long'})}`;
+  document.getElementById('alsoHead').hidden=!also.length;
+  document.getElementById('alsoList').innerHTML=also.slice(0,15).map(card).join('');
+  // real invites will come from friends on Comuna; nothing to show until then
+  document.getElementById('inviteList').innerHTML=`<div class="empty">No invites yet. When a friend invites you to something, it shows up here.</div>`;
 }
 document.querySelector('[data-s="plans"]').addEventListener('click',e=>{ const dy=e.target.closest('[data-day]'); if(dy){ calSel=new Date(calView.getFullYear(),calView.getMonth(),+dy.dataset.day); renderPlans(); return; } const o=e.target.closest('[data-open]'); if(o) openSheet(+o.dataset.open); const s=e.target.closest('[data-share]'); if(s) shareEv(events.find(x=>x.id===+s.dataset.share)); });
 
@@ -1376,9 +1399,8 @@ function renderPassport(){
   }
   document.getElementById('passPage').innerHTML=html;
   document.getElementById('patchList').innerHTML=PATCHES.map(p=>{ const ok=p.ok(); return `<div class="patch ${ok?'':'locked'}">${patchSVG(p.t,p.s,p.sc,92,110)}<div>${ok?'Earned':'Locked'}</div></div>`; }).join('');
-  const me=shortName();
-  const lb=[['Ana P.',2410],['Jordan M.',1980],[me,S.points],['Sam T.',1105],['Priya K.',960]].sort((a,b)=>b[1]-a[1]);
-  document.getElementById('lbList').innerHTML=lb.map((r,i)=>`<div class="lbrow ${r[0]===me?'me':''}"><div class="r">${i+1}</div><div>${r[0]}${r[0]===me?' (you)':''}</div><div>${r[1].toLocaleString()} pts</div></div>`).join('');
+  document.getElementById('lbTitle').textContent=`${S.nb||'Neighborhood'} explorers this month`;
+  loadLeaderboard();
 }
 document.getElementById('passTabs').addEventListener('click',e=>{ const b=e.target.closest('[data-tab]'); if(!b) return; passTab=b.dataset.tab; renderPassport(); });
 
