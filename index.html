@@ -430,7 +430,7 @@ img{ max-width:100% }
         <div class="wm" id="homeMark" style="font-size:28px"></div>
         <div style="display:flex;gap:8px;align-items:center">
           <button class="betapill" id="betaBtn" aria-label="Beta: send feedback">Beta · Feedback</button>
-          <button class="iconbtn" data-go="alerts" aria-label="Alerts"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#26251F" stroke-width="2" stroke-linecap="round"><path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4z"/><path d="M10 21h4"/></svg><span class="dot" id="alertDot">3</span></button>
+          <button class="iconbtn" data-go="alerts" aria-label="Alerts"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#26251F" stroke-width="2" stroke-linecap="round"><path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4z"/><path d="M10 21h4"/></svg><span class="dot" id="alertDot" style="display:none"></span></button>
         </div>
       </div>
       <div style="padding:2px 20px 0">
@@ -490,7 +490,7 @@ img{ max-width:100% }
         <div class="stats3"><div><b id="pfStamps">3</b>stamps</div><div><b id="pfVisits">18</b>check-ins</div><div><b id="pfStreak">4</b>week streak</div></div>
         <button class="linkrow" data-go="passport">Your passport <span>Stamps, patches, points</span></button>
         <button class="linkrow" data-go="plans">Your plans <span>This week</span></button>
-        <button class="linkrow" data-go="alerts">Alerts <span id="pfAlerts">3 new</span></button>
+        <button class="linkrow" data-go="alerts">Alerts <span id="pfAlerts">All caught up</span></button>
         <button class="linkrow" data-go="host" style="background:var(--green);color:var(--paper)">See it as a host <span style="color:#CFC3AB">Ten Speed Coffee</span></button>
         <button class="linkrow" id="dbCheck">Account sync <span id="dbStatusPf">Tap to check</span></button>
       </div>
@@ -1415,14 +1415,15 @@ document.getElementById('passTabs').addEventListener('click',e=>{ const b=e.targ
 
 
 /* ---------- profile / alerts ---------- */
-function renderProfile(){ document.getElementById('pfStamps').textContent=Object.keys(S.places).length+Object.keys(visitedHoods()).length+Object.keys(visitedCities()).length+1; document.getElementById('pfVisits').textContent=S.visits; document.getElementById('pfStreak').textContent=S.streak; document.getElementById('pfAlerts').textContent=S.alertsRead?'All caught up':'3 new'; }
-const ALERTS=[ {t:'Rooftop Jazz starts in 12 minutes',s:'3 friends are already there.',w:'Just now',ic:'music',ev:1}, {t:'Maya invited you',s:'Tue · Rooftop Jazz Session',w:'1 hr ago',ic:'invite',ev:1}, {t:'One more stop for the Explorer patch',s:'Try somewhere in Frogtown this week.',w:'Yesterday',ic:'stamp'}, {t:'Ten Speed Coffee approved your $10 credit',s:'It\'s in your passport.',w:'2 days ago',ic:'coffee'} ];
+function renderProfile(){ document.getElementById('pfStamps').textContent=Object.keys(S.places).length+Object.keys(visitedHoods()).length+Object.keys(visitedCities()).length+1; document.getElementById('pfVisits').textContent=S.visits; document.getElementById('pfStreak').textContent=S.streak; document.getElementById('pfAlerts').textContent=ALERTS.length&&!S.alertsRead?`${ALERTS.length} new`:'All caught up'; }
+// real alerts (invites, reminders, approvals) will come from Supabase; none yet
+const ALERTS=[];
 function renderAlerts(){
   const icon=k=>({music:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${C.red}" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,invite:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${C.blue}" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>`,stamp:`<svg width="22" height="22" viewBox="-28 -28 56 56">${glyph('star',C.sun)}</svg>`,coffee:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${C.green}" stroke-width="2"><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 10h2a2 2 0 0 1 0 4h-2"/></svg>`}[k]);
-  document.getElementById('alertList').innerHTML=ALERTS.map((a,i)=>`<button class="alert ${!S.alertsRead&&i<3?'unread':''}" ${a.ev?`data-alert-ev="${a.ev}"`:''}><div class="ic">${icon(a.ic)}</div><div><div class="t">${a.t}</div><div class="s">${a.s}</div><div class="w">${a.w}</div></div></button>`).join('');
+  document.getElementById('alertList').innerHTML=ALERTS.length? ALERTS.map((a,i)=>`<button class="alert ${!S.alertsRead&&i<3?'unread':''}" ${a.ev?`data-alert-ev="${a.ev}"`:''}><div class="ic">${icon(a.ic)}</div><div><div class="t">${a.t}</div><div class="s">${a.s}</div><div class="w">${a.w}</div></div></button>`).join('') : `<div class="empty"><span class="hand">all quiet</span>No alerts yet. Invites, reminders and event approvals will show up here.</div>`;
 }
 document.getElementById('alertList').addEventListener('click',e=>{ const a=e.target.closest('[data-alert-ev]'); if(a) openSheet(+a.dataset.alertEv); });
-function updateDot(){ const d=document.getElementById('alertDot'); d.style.display=S.alertsRead?'none':'grid'; }
+function updateDot(){ const d=document.getElementById('alertDot'); d.textContent=ALERTS.length; d.style.display=ALERTS.length&&!S.alertsRead?'grid':'none'; }
 
 /* ---------- host ---------- */
 let hostExtra=0;
