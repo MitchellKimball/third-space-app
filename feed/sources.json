@@ -1,0 +1,11 @@
+{
+  "_readme": "Sources the nightly feed pulls from. trusted:true → shows on the map right away; false → lands as 'pending' for review in Supabase. Add Eventbrite organizers by the number in their page URL (eventbrite.com/o/name-NUMBER). Add Luma calendars or any venue calendar by its .ics link.",
+  "area": { "name": "Santa Monica", "bbox": [-118.52, 33.99, -118.44, 34.06], "days_ahead": 45 },
+  "eventbrite_organizers": [
+    { "id": "60302119573", "name": "Zibby's Bookshop", "trusted": true }
+  ],
+  "localist": [
+    { "base": "https://santamonica.enterprise.localist.com", "name": "City of Santa Monica", "trusted": true }
+  ],
+  "ical": []
+}

@@ -1172,6 +1172,25 @@ function showPinMap(){
   } else { subMap.jumpTo({ center:ll, zoom:16 }); subMarker.setLngLat(ll); subMap.resize(); }
 }
 document.getElementById('addSoon').onclick=()=>{ if(subMap){ try{ subMap.remove(); }catch(e){} subMap=null; } openSubmit(); };
+// nightly feed (feed/fetch.mjs → Supabase feed_events): approved, upcoming events from Eventbrite organizers, city and venue calendars
+async function loadFeed(){
+  if(!sb) return;
+  try{
+    const { data, error } = await sb.from('feed_events').select('*').gte('start_at',new Date(Date.now()-6*36e5).toISOString()).order('start_at').limit(500); if(error) throw error;
+    const hhmm=d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+    const rows=(data||[]).filter(r=>okLink(r.link||'') || !r.link);
+    await mapLimit(rows.filter(r=>r.lat==null && r.address),4,async r=>{ const c=await geocode(r.address); if(c){ r.lng=c[0]; r.lat=c[1]; } });
+    const feed=rows.filter(r=>r.lat!=null).map(r=>{ const st=new Date(r.start_at), en=r.end_at? new Date(r.end_at) : null, day=new Date(st); day.setHours(0,0,0,0);
+      return { id:300000+r.id, eid:'FEED-'+r.id, feed:true, via:escH(r.source_name||''), title:escH(r.title), venue:escH(r.venue||''), address:escH(r.address||''), lat:r.lat, lng:r.lng,
+        category:CATS[r.category]? r.category : 'community', kind:'popup', area:'', host:escH(r.source_name||''), desc:escH(r.description||''), source:okLink(r.link||''), ticket:'',
+        price:r.price||'', rec:'One-off', start:day, end:day, t0:hhmm(st), t1:en? hhmm(en) : '', time:'', going:0, fromGroup:0, live:false, startsIn:'' }; });
+    // skip feed events the sheet already has (same title, same day)
+    const key=e=>String(e.title).toLowerCase().replace(/\W+/g,'')+'|'+(e.start? ymd(e.start) : '');
+    const have=new Set(events.filter(e=>!e.feed).map(key));
+    events=events.filter(x=>!x.feed).concat(feed.filter(e=>!have.has(key(e))));
+    if(current==='home') renderHome();
+  }catch(e){ console.warn('Supabase feed failed', e); }
+}
 // approved community events join the map; your own approvals earn +25 points once each
 let communityEvents=[];
 async function loadSubmissions(){
@@ -1216,7 +1235,7 @@ function nextWhen(ev){
   return [day,fmtTime(ev.t0)].filter(Boolean).join(' · ');
 }
 function badges(ev){
-  const b=[]; if(ev.community) b.push('Community pick'); if(ev.kind && KINDS[ev.kind]) b.push(tierIcon(ev.kind,12)+KINDS[ev.kind].label); if(/free/i.test(ev.price)) b.push('Free'); else if(/donation|pay-what/i.test(ev.price)) b.push('Pay what you can'); else if(/paid/i.test(ev.price)) b.push('Paid');
+  const b=[]; if(ev.community) b.push('Community pick'); if(ev.feed && ev.via) b.push('Via '+ev.via); if(ev.kind && KINDS[ev.kind]) b.push(tierIcon(ev.kind,12)+KINDS[ev.kind].label); if(/free/i.test(ev.price)) b.push('Free'); else if(/donation|pay-what/i.test(ev.price)) b.push('Pay what you can'); else if(/paid/i.test(ev.price)) b.push('Paid');
   if(ev.age) b.push(ev.age); if(/indoor/i.test(ev.setting)) b.push('Indoor'); else if(/outdoor/i.test(ev.setting)) b.push('Outdoor'); else if(/both/i.test(ev.setting)) b.push('Indoor + outdoor');
   if(ev.rsvpReq) b.push('RSVP required'); return b;
 }
@@ -1605,7 +1624,7 @@ function loadSheet(){
     events=rows.map((r,i)=>({ id:(parseInt(String(r['event id']||'').replace(/\D/g,''))||0)? 100000+parseInt(String(r['event id']).replace(/\D/g,'')) : 100+i, eid:r['event id']||'', title:r['event name'], venue:r['venue name']||'', lat:r.lat, lng:r.lng, area:r['neighborhood']||'', time:whenText(r), live:false, startsIn:'', going:0, fromGroup:0, host:r['host / organizer']||'', desc:r['short description']||'', category:catMap(r['primary category']), kind:tierKey(r['tier']), parking:r['parking & transit']||'', alcohol:undefined,
       address:[r['street address'],r['city'],r['zip']].filter(Boolean).join(', '), price:r['free / paid']||'', age:r['age']||'', setting:r['indoor / outdoor']||'', rsvpReq:/^y/i.test(r['rsvp required?']||''),
       ticket:r['ticket / rsvp link']||'', source:r['source url']||'', rec:r['recurrence']||'', recDetail:r['recurrence detail']||'', start:parseDay(r['start date']), end:parseDay(r['end date']), t0:r['start time']||'', t1:r['end time']||'' }));
-    usingDemo=false; if(current==='home') renderHome(); loadGoing(); loadSubmissions();
+    usingDemo=false; if(current==='home') renderHome(); loadGoing(); loadSubmissions(); loadFeed();
   }).catch(()=>{});
 }
 

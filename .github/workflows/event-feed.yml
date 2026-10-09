@@ -1,0 +1,24 @@
+name: Nightly event feed
+on:
+  schedule:
+    - cron: '7 10 * * *'   # ~3 AM Los Angeles
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Preview only (do not save to Supabase)'
+        type: boolean
+        default: true
+jobs:
+  feed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node feed/fetch.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          EVENTBRITE_TOKEN: ${{ secrets.EVENTBRITE_TOKEN }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '' }}
