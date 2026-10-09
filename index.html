@@ -152,7 +152,8 @@ img{ max-width:100% }
 .subform label{ display:block; font-size:13px; font-weight:700; margin-top:12px } .subform label small{ display:block; font-weight:400; color:var(--muted); margin-top:2px }
 .subform .row2 label{ margin-top:12px } .subform label.chk{ display:flex; align-items:center; gap:8px; margin-top:34px; font-weight:500 }
 .subform .addr{ position:relative } .sugg{ position:absolute; left:0; right:0; z-index:5; background:var(--card); border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,.15); overflow:hidden }
-.sugg button{ display:block; width:100%; text-align:left; padding:11px 14px; font-size:14px; border-bottom:1px solid var(--line) }
+.sugg button{ display:block; width:100%; text-align:left; padding:10px 14px; font-size:14px; border-bottom:1px solid var(--line) } .sugg button small{ display:block; color:var(--muted); font-size:12px; font-weight:400 }
+.pinwrap{ margin-top:8px } .pinwrap small{ display:block; font-size:12px; color:var(--muted); margin-top:4px } .pinmap{ height:190px; border-radius:14px; overflow:hidden; position:relative }
 .popt span{ flex:1 } .popt .ticon{ flex:none; width:16px; margin:0 } .popt span small{ display:block; font-size:12px; color:var(--muted); font-weight:400 }
 .psub{ font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:14px 0 2px } .popt b{ font-size:13px; color:var(--muted); font-weight:500 } .popt em{ font-style:normal; color:var(--green); font-weight:900 } .popt.on span{ font-weight:700; color:var(--green) } .popt:disabled{ opacity:.4 }
 .picks{ padding:6px 20px 110px; overflow-y:auto; flex:1 }
@@ -1111,7 +1112,8 @@ function openSubmit(){
       <div class="row2"><label>Date *<input class="field" name="date" type="date" required></label><label>Start time<input class="field" name="time" type="time"></label></div>
       <label>How often?<select class="field" name="recurrence"><option>One-time</option><option>Weekly</option><option>Monthly</option></select></label>
       <label>Venue name *<input class="field" name="venue" maxlength="80" required></label>
-      <label class="addr">Address *<input class="field" name="address" autocomplete="off" placeholder="Start typing an address" required><div class="sugg" id="subSugg"></div></label>
+      <label class="addr">Where is it? *<small>Search a venue, park or street address, then check the pin</small><input class="field" name="address" autocomplete="off" placeholder="e.g. Palisades Park, or 2939 Sunset Blvd" required><div class="sugg" id="subSugg"></div></label>
+      <div class="pinwrap" id="subPinWrap" hidden><div id="subPinMap" class="pinmap"></div><small>Drag the pin to the exact spot if it's off.</small></div>
       <div class="row2"><label>Price<select class="field" name="price"><option>Free</option><option>Paid</option></select></label><label class="chk"><input type="checkbox" name="host"> I'm the host</label></div>
       <label>Short description<textarea class="field fbtext" name="desc" maxlength="300" placeholder="What should people know?" style="min-height:70px;margin-top:8px"></textarea></label>
       <button class="btn primary" type="submit" style="margin-top:14px">Submit for review</button>
@@ -1122,17 +1124,18 @@ function openSubmit(){
   f.date.min=new Date().toISOString().slice(0,10);
   addr.addEventListener('input',()=>{ subPlace=null; clearTimeout(subTimer); const q=addr.value.trim(); if(q.length<4){ sugg.innerHTML=''; return; }
     subTimer=setTimeout(async()=>{ try{
-      const r=await fetch('https://api.mapbox.com/search/geocode/v6/forward?q='+encodeURIComponent(q)+'&autocomplete=true&proximity=-118.30,34.06&country=us&limit=5&access_token='+MAPBOX_TOKEN);
+      // geocoding v5 also matches places (parks, plazas, venues), not just street addresses
+      const r=await fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(q)+'.json?autocomplete=true&proximity=-118.30,34.06&bbox=-118.95,33.65,-117.65,34.40&country=us&types=poi,address,neighborhood,place&limit=6&access_token='+MAPBOX_TOKEN);
       const fs=((await r.json()).features||[]);
-      sugg.innerHTML=fs.map((x,i)=>`<button type="button" data-i="${i}">${escH(x.properties.full_address||x.properties.name)}</button>`).join('');
+      sugg.innerHTML=fs.map((x,i)=>`<button type="button" data-i="${i}"><b>${escH(x.text)}</b><small>${escH(x.place_name)}</small></button>`).join('');
       sugg.onclick=e=>{ const b=e.target.closest('[data-i]'); if(!b) return; const x=fs[+b.dataset.i];
-        subPlace={ address:x.properties.full_address||x.properties.name, lng:x.geometry.coordinates[0], lat:x.geometry.coordinates[1] }; addr.value=subPlace.address; sugg.innerHTML=''; };
+        subPlace={ address:x.place_name, lng:x.center[0], lat:x.center[1] }; addr.value=subPlace.address; sugg.innerHTML=''; showPinMap(); };
     }catch(e){ sugg.innerHTML=''; } },250); });
   f.onsubmit=async e=>{ e.preventDefault();
     const v=Object.fromEntries(new FormData(f)); const link=okLink((v.link||'').trim());
     if(!link) return toast('Add a link that starts with https://');
     if(!v.title.trim()||!v.category||!v.date||!v.venue.trim()) return toast('Fill in the required fields (*)');
-    if(!subPlace) return toast('Pick the address from the suggestions so it lands on the map');
+    if(!subPlace) return toast('Pick a place from the suggestions so it lands on the map');
     const dup=events.find(x=>String(x.title).trim().toLowerCase()===v.title.trim().toLowerCase());
     if(dup && !confirm('Looks like "'+dup.title+'" is already on the map. Submit anyway?')) return;
     const u=await dbUser(); if(!u) return toast('Couldn\'t connect. Try again in a moment.');
@@ -1142,7 +1145,22 @@ function openSubmit(){
     overlay.classList.remove('on'); toast('Thanks! We\'ll review it and it\'ll show up on the map soon.');
   };
 }
-document.getElementById('addSoon').onclick=openSubmit;
+// "check the pin": a small draggable map under the address so the submitter can nudge the pin to the exact spot
+let subMap=null, subMarker=null;
+function showPinMap(){
+  const wrap=document.getElementById('subPinWrap'); if(!wrap || !subPlace || !window.mapboxgl || !MAPBOX_TOKEN) return;
+  wrap.hidden=false; const ll=[subPlace.lng,subPlace.lat];
+  if(subMap && subMap.getContainer()!==document.getElementById('subPinMap')){ try{ subMap.remove(); }catch(e){} subMap=null; }
+  if(!subMap){
+    mapboxgl.accessToken=MAPBOX_TOKEN;
+    subMap=new mapboxgl.Map({ container:'subPinMap', style:'mapbox://styles/mapbox/light-v11', center:ll, zoom:16, attributionControl:false, dragRotate:false, pitchWithRotate:false });
+    subMap.addControl(new mapboxgl.AttributionControl({compact:true}),'bottom-right');
+    subMap.on('style.load',()=>styleMapbox(subMap));
+    subMarker=new mapboxgl.Marker({ color:C.red, draggable:true }).setLngLat(ll).addTo(subMap);
+    subMarker.on('dragend',()=>{ const p=subMarker.getLngLat(); subPlace.lng=p.lng; subPlace.lat=p.lat; });
+  } else { subMap.jumpTo({ center:ll, zoom:16 }); subMarker.setLngLat(ll); subMap.resize(); }
+}
+document.getElementById('addSoon').onclick=()=>{ if(subMap){ try{ subMap.remove(); }catch(e){} subMap=null; } openSubmit(); };
 // approved community events join the map; your own approvals earn +25 points once each
 let communityEvents=[];
 async function loadSubmissions(){
