@@ -810,7 +810,9 @@ function renderNames(){ const n=shortName(); document.getElementById('passName')
 function dailyPicks(){
   enrich();
   const want=Object.keys(CATS).filter(k=>(S.interests||[]).includes(CATS[k].label));
-  const pool=events.filter(ev=>!S.checked.includes(ev.id) && !S.rsvp.includes(ev.id) && ev.mi!=null);
+  // only things happening in the next 7 days (today included), so daily picks stay timely
+  const t0=today0(), soon=ev=>{ const d=ev.start? nextDate(ev) : evDate(ev); return !!d && d>=t0 && d-t0<7*864e5; };
+  const pool=events.filter(ev=>!S.checked.includes(ev.id) && !S.rsvp.includes(ev.id) && ev.mi!=null && soon(ev));
   // closest first, with a nudge toward what you're into; the day number rotates ties so picks change daily
   const day=Math.floor(Date.now()/864e5);
   const score=ev=>ev.mi*(want.includes(ev.category)?0.6:1)+((ev.id*7+day)%5)*0.05;
