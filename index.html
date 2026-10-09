@@ -121,6 +121,14 @@ img{ max-width:100% }
 .maplabel{ position:absolute; left:14px; bottom:10px; z-index:4; font-family:var(--hand); font-size:18px; color:var(--red); pointer-events:none }
 .pin{ width:24px; height:24px; border-radius:50%; border:2.5px solid var(--paper); box-shadow:0 3px 8px rgba(0,0,0,.28); display:grid; place-items:center; position:relative; cursor:pointer; transform:translate(-50%,-50%); overflow:visible }
 .pin svg{ display:block }
+/* tier = pin shape (category = colour): Headliner star, Staple circle, Hidden Gem diamond, Pop-up ringed circle */
+.pin.tier-cornerstone{ width:30px; height:30px; background:none !important; border:none; box-shadow:none; filter:drop-shadow(0 3px 4px rgba(0,0,0,.3)) }
+.pin.tier-niche{ width:24px; height:24px; background:none; border:none; box-shadow:none }
+.pin.tier-niche .dia{ position:absolute; inset:3px; background:var(--c); border:2.5px solid var(--paper); border-radius:4px; transform:rotate(45deg); box-shadow:0 3px 8px rgba(0,0,0,.28) }
+.pin.tier-popup::after{ content:""; position:absolute; inset:-8px; border-radius:50%; border:2.5px solid var(--c); opacity:.55; animation:popring 2.2s ease-out infinite }
+@keyframes popring{ 0%{ transform:scale(.8); opacity:.7 } 100%{ transform:scale(1.35); opacity:0 } }
+@media (prefers-reduced-motion:reduce){ .pin.tier-popup::after{ animation:none } }
+.ticon{ display:inline-grid; place-items:center; width:16px; height:16px; vertical-align:-3px; margin-right:2px } .ticon i{ display:block }
 .cluster{ border-radius:50%; background:var(--green); color:var(--paper); border:2.5px solid var(--sun); box-shadow:0 3px 8px rgba(0,0,0,.28); display:grid; place-items:center; font-family:var(--display); font-weight:800; font-size:15px; cursor:pointer }
 .pin .chk{ position:absolute; right:-8px; top:-8px; width:16px; height:16px; border-radius:50%; background:var(--green); color:var(--paper); font-size:11px; font-weight:700; display:grid; place-items:center; border:2px solid var(--paper) }
 .mapboxgl-marker .pin{ transform:none }
@@ -141,7 +149,8 @@ img{ max-width:100% }
 .moods{ display:flex; gap:8px; margin:12px 0 4px } .moods button{ flex:1; font-size:26px; padding:10px 0; border-radius:14px; background:var(--card); border:2px solid transparent } .moods button.on{ border-color:var(--green); background:#E4ECDF }
 .fbtext{ width:100%; min-height:96px; border:1.5px solid #DCCDAE; border-radius:14px; padding:12px; font:inherit; font-size:15px; background:var(--card); resize:vertical; margin-top:10px }
 .tagpick{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px } .tagpick button{ font-size:13px; font-weight:500; padding:7px 12px; border-radius:20px; border:1.5px solid var(--ink) } .tagpick button.on{ background:var(--ink); color:var(--paper) }
-.popt span{ flex:1 } .popt b{ font-size:13px; color:var(--muted); font-weight:500 } .popt em{ font-style:normal; color:var(--green); font-weight:900 } .popt.on span{ font-weight:700; color:var(--green) } .popt:disabled{ opacity:.4 }
+.popt span{ flex:1 } .popt .ticon{ flex:none; width:16px; margin:0 } .popt span small{ display:block; font-size:12px; color:var(--muted); font-weight:400 }
+.psub{ font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:14px 0 2px } .popt b{ font-size:13px; color:var(--muted); font-weight:500 } .popt em{ font-style:normal; color:var(--green); font-weight:900 } .popt.on span{ font-weight:700; color:var(--green) } .popt:disabled{ opacity:.4 }
 .picks{ padding:6px 20px 110px; overflow-y:auto; flex:1 }
 .pick{ display:grid; grid-template-columns:44px 1fr auto; gap:12px; align-items:center; background:var(--card); border-radius:16px; padding:12px 14px; margin-top:10px; width:100%; text-align:left }
 .pick .n{ width:44px; height:44px; position:relative; display:grid; place-items:center }
@@ -190,7 +199,7 @@ img{ max-width:100% }
 .fact .k{ font-size:11px; color:var(--muted) }
 .fact .v{ font-weight:700; font-size:14px; margin-top:2px }
 .fact .more{ font-size:11.5px; color:var(--muted); margin-top:4px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden }
-.badges{ display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 0 } .badges span{ font-size:12px; font-weight:700; padding:4px 10px; border-radius:20px; background:var(--card); color:var(--green); border:1px solid #DCCDAE }
+.badges{ display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 0 } .badges > span{ display:inline-flex; align-items:center; gap:3px; font-size:12px; font-weight:700; padding:4px 10px; border-radius:20px; background:var(--card); color:var(--green); border:1px solid #DCCDAE }
 .actions{ display:flex; gap:8px; margin:0 0 14px; flex-wrap:wrap } .act{ flex:1; min-width:30%; text-align:center; font-size:13px; font-weight:700; padding:10px 8px; border-radius:12px; border:1.5px solid var(--green); color:var(--green); background:transparent; text-decoration:none }
 .desc{ font-size:14.5px; line-height:1.5; margin:4px 0 12px }
 .host{ display:flex; align-items:center; gap:10px; margin:6px 0 14px; font-size:13.5px }
@@ -594,26 +603,29 @@ const CAT_ALIAS = { art:'music', games:'sports' };
 const catKey=k=> CATS[k]? k : (CAT_ALIAS[k]||'community');
 function catDot(k,d){ return `<span aria-hidden="true" style="display:block;flex:none;width:${d}px;height:${d}px;border-radius:50%;background:${CATS[catKey(k)].bg}"></span>`; }
 /* ---------- place types: each gets its own passport page ---------- */
+// Event tiers. Internal keys stay the same so existing saved passports keep working; only names and meaning changed.
 const KINDS = {
-  cornerstone:{ label:'Cornerstone', blurb:'the anchors: parks, plazas, libraries' },
-  regular:    { label:'Regular',     blurb:'everyday spots you keep coming back to' },
-  niche:      { label:'Niche',       blurb:'specialty spots with a scene of their own' },
-  popup:      { label:'Pop-up',      blurb:'here for a moment, then gone' }
+  cornerstone:{ label:'Headliner',  plural:'Headliners',  blurb:'the big ones: festivals, street takeovers, huge crowds' },
+  regular:    { label:'Staple',     plural:'Staples',     blurb:'always on: weekly run clubs, markets, trivia' },
+  niche:      { label:'Hidden Gem', plural:'Hidden Gems', blurb:'small, specialty, worth finding' },
+  popup:      { label:'Pop-up',     plural:'Pop-ups',     blurb:'here once, don\'t miss it' }
 };
+// sheet Tier column: new names or the old ones (Cornerstone / Regular / Niche / Pop-Up)
+function tierKey(t){ t=String(t||''); return /headlin|corner/i.test(t)?'cornerstone' : /hidden|gem|niche/i.test(t)?'niche' : /pop/i.test(t)?'popup' : /staple|regular/i.test(t)?'regular' : ''; }
 // Sheet column "place_type" sets this; otherwise guess from the category.
-function kindOf(p){ if(KINDS[p.kind]) return p.kind; return {outdoors:'cornerstone',community:'cornerstone',markets:'popup',immersive:'popup',workshops:'niche',wellness:'niche',film:'niche'}[catKey(p.cat||p.category)]||'regular'; }
+function kindOf(p){ if(KINDS[p.kind]) return p.kind; return {immersive:'popup',workshops:'niche',film:'niche'}[catKey(p.cat||p.category)]||'regular'; }
 
 /* ---------- demo events (used when the Sheet can't be reached) ---------- */
 const DEMO_EVENTS = [
   {id:1, kind:"popup", title:"Rooftop Jazz Session", venue:"The Oviatt Penthouse", lat:34.0478, lng:-118.2563, time:"Tue · 8:00 PM", live:true, startsIn:"starts in 12 min", going:12, fromGroup:3, host:"Maya R.", desc:"Small-group table, live trio, one round included.", category:"music", parking:"Street parking after 8pm", alcohol:true},
   {id:2, kind:"niche", title:"Sunday Ceramics Pop-up", venue:"Otherwild Studio", lat:34.0928, lng:-118.2515, time:"Sun · 2:00 PM", startsIn:"6 spots left", going:6, fromGroup:2, host:"Devon L.", desc:"Hand-build a small bowl, glaze included. No experience needed.", category:"workshops", parking:"Free garage behind the studio", alcohol:false},
-  {id:3, kind:"cornerstone", title:"Griffith Park Sunrise Hike", venue:"Observatory Trailhead", lat:34.1184, lng:-118.3004, time:"Sat · 6:30 AM", startsIn:"9 going", going:9, fromGroup:1, host:"Priya K.", desc:"Easy 3-mile loop, coffee after at the trailhead. Bring layers.", category:"outdoors", parking:"Lot parking at sunrise", alcohol:false},
+  {id:3, kind:"regular", title:"Griffith Park Sunrise Hike", venue:"Observatory Trailhead", lat:34.1184, lng:-118.3004, time:"Sat · 6:30 AM", startsIn:"9 going", going:9, fromGroup:1, host:"Priya K.", desc:"Easy 3-mile loop, coffee after at the trailhead. Bring layers.", category:"outdoors", parking:"Lot parking at sunrise", alcohol:false},
   {id:4, kind:"regular", title:"Silver Lake Supper Club", venue:"Ten Speed Coffee", lat:34.0869, lng:-118.2702, time:"Thu · 7:00 PM", startsIn:"7 going", going:7, fromGroup:4, host:"Jordan M.", desc:"A rotating dinner series at a different neighborhood spot each week.", category:"food", parking:"Metered street parking nearby", alcohol:true},
   {id:5, kind:"cornerstone", title:"Tuesday Farmers Market", venue:"Sunset Triangle Plaza", lat:34.0834, lng:-118.2742, time:"Tue · 2:00 PM", startsIn:"on now", going:23, fromGroup:1, host:"Silver Lake Farmers Market", desc:"Stone fruit, tamales and neighbors. Grab dinner fixings on the way home.", category:"markets", parking:"Street parking on Griffith Park Blvd", alcohol:false},
   {id:6, kind:"regular", title:"Wednesday Comedy", venue:"Bar Bandini", lat:34.0779, lng:-118.2626, time:"Wed · 8:00 PM", startsIn:"14 going", going:14, fromGroup:2, host:"Bar Bandini", desc:"A weekly stand-up show. Cheap drinks, small room, good laughs.", category:"comedy", parking:"Street parking on Sunset", alcohol:true},
   {id:7, kind:"popup", title:"Friday Night Market", venue:"Logan St.", lat:34.0768, lng:-118.2598, time:"Fri · 3:00 PM", startsIn:"live DJ at 6", going:31, fromGroup:3, host:"Echo Park Farmers Market", desc:"Produce, food trucks and a DJ as the sun goes down.", category:"markets", parking:"Walk if you can, it gets busy", alcohol:false},
-  {id:8, kind:"cornerstone", title:"Sunset Volleyball", venue:"Will Rogers State Beach", lat:34.0367, lng:-118.5309, time:"Wed · 6:00 PM", startsIn:"8 going", going:8, fromGroup:2, host:"Ghazi A.", desc:"Casual co-ed games, all levels. Tacos after.", category:"sports", parking:"Free lot near the beach entrance", alcohol:false},
-  {id:9, kind:"cornerstone", title:"Lake Cleanup & Coffee", venue:"Echo Park Lake", lat:34.0726, lng:-118.2606, time:"Sat · 9:00 AM", startsIn:"11 going", going:11, fromGroup:1, host:"Neighbors of Echo Park", desc:"An hour of picking up around the lake, then coffee on the lawn. Gloves provided.", category:"community", parking:"Street parking on Park Ave", alcohol:false},
+  {id:8, kind:"regular", title:"Sunset Volleyball", venue:"Will Rogers State Beach", lat:34.0367, lng:-118.5309, time:"Wed · 6:00 PM", startsIn:"8 going", going:8, fromGroup:2, host:"Ghazi A.", desc:"Casual co-ed games, all levels. Tacos after.", category:"sports", parking:"Free lot near the beach entrance", alcohol:false},
+  {id:9, kind:"regular", title:"Lake Cleanup & Coffee", venue:"Echo Park Lake", lat:34.0726, lng:-118.2606, time:"Sat · 9:00 AM", startsIn:"11 going", going:11, fromGroup:1, host:"Neighbors of Echo Park", desc:"An hour of picking up around the lake, then coffee on the lawn. Gloves provided.", category:"community", parking:"Street parking on Park Ave", alcohol:false},
   {id:10, kind:"regular", title:"Board Game Night", venue:"Stories Books & Cafe", lat:34.0777, lng:-118.2605, time:"Thu · 7:30 PM", startsIn:"4 spots left", going:8, fromGroup:0, host:"Stories", desc:"Bring a game or borrow one. Tables of four, strangers welcome.", category:"sports", parking:"Street parking on Sunset", alcohol:false}
 ];
 
@@ -627,8 +639,8 @@ const PARTIFUL = { 4:"https://partiful.com/e/example-3", 1:"https://partiful.com
 const START = { places:{
     'Ten Speed Coffee':      {kind:'regular', n:12, cat:'food',      lat:34.0869, lng:-118.2702},
     'Sunset Triangle Plaza': {kind:'cornerstone', n:4,  cat:'markets',   lat:34.0834, lng:-118.2742},
-    'Edendale Library':      {kind:'cornerstone', n:1,  cat:'community', lat:34.0860, lng:-118.2640},
-    'Echo Park Lake':        {kind:'cornerstone', n:2,  cat:'outdoors',  lat:34.0726, lng:-118.2606},
+    'Edendale Library':      {kind:'regular', n:1,  cat:'community', lat:34.0860, lng:-118.2640},
+    'Echo Park Lake':        {kind:'regular', n:2,  cat:'outdoors',  lat:34.0726, lng:-118.2606},
     'Vista Theatre':         {kind:'niche', n:1,  cat:'film',     lat:34.0976, lng:-118.2871}
   }, points:1240, streak:4, visits:18, rsvp:[4], checked:[], redeemed:[], alertsRead:false, nb:'Silver Lake', loc:null, name:'Mitchell Kimball', interests:[], joined:'2026-01-15' };
 let S;
@@ -865,7 +877,7 @@ recModal.addEventListener('click',e=>{ if(e.target===recModal){ recModal.classLi
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') recModal.classList.remove('on'); });
 
 /* ---------- home ---------- */
-let filter='All', when='any';
+let filter='All', when='any', tier='any';
 // time filter: next occurrence falls today / within 7 days / within 30 days (rolling windows)
 const WHEN=[['any','Anytime'],['tonight','Tonight'],['week','This week'],['month','This month']];
 function inWindow(ev){
@@ -877,15 +889,15 @@ function inWindow(ev){
 function enrich(){ const o=origin(); events.forEach(ev=>{ ev.mi=miles(o,ev); ev.hood=hoodOf(ev).name; }); }
 function picks(){
   enrich();
-  let list=events.filter(ev=> (filter==='All' || ev.category===filter) && inWindow(ev)).sort((a,b)=>a.mi-b.mi);
+  let list=events.filter(ev=> (filter==='All' || ev.category===filter) && (tier==='any' || kindOf(ev)===tier) && inWindow(ev)).sort((a,b)=>a.mi-b.mi);
   return list;                                    // all of LA, closest first
 }
 function inView(ev){ return true; }   // the map always frames all of LA
 function mins(mi){ return Math.max(2, Math.round(mi*3.2+2)); }
 function renderHome(){ setTimeout(syncHeadH,0);
   const cats=['All',...Object.keys(CATS).filter(k=>events.some(e=>e.category===k))];
-  const wl=WHEN.find(w=>w[0]===when)[1], cl=filter==='All'?'Everything':CATS[filter].label;
-  document.getElementById('chips').innerHTML=`<button class="fbtn ${when!=='any'?'set':''}" data-pick="when"><small>When</small>${wl}<i>▾</i></button><button class="fbtn ${filter!=='All'?'set':''}" data-pick="type"><small>Type</small>${cl}<i>▾</i></button>`;
+  const wl=WHEN.find(w=>w[0]===when)[1], cl=[tier!=='any'?KINDS[tier].plural:'', filter!=='All'?CATS[filter].short:''].filter(Boolean).join(' · ')||'Everything';
+  document.getElementById('chips').innerHTML=`<button class="fbtn ${when!=='any'?'set':''}" data-pick="when"><small>When</small>${wl}<i>▾</i></button><button class="fbtn ${filter!=='All'||tier!=='any'?'set':''}" data-pick="type"><small>Type</small>${cl}<i>▾</i></button>`;
   const P=picks();
   document.getElementById('picks').innerHTML = P.map((ev,i)=>{
     const done=S.checked.includes(ev.id), inn=S.rsvp.includes(ev.id);
@@ -898,14 +910,21 @@ function renderHome(){ setTimeout(syncHeadH,0);
 }
 document.getElementById('chips').addEventListener('click',e=>{ const b=e.target.closest('[data-pick]'); if(b) openPicker(b.dataset.pick); });
 // filter picker: a short list in the bottom sheet, with how many events each choice shows
-function countWith(w,c){ const ow=when, of=filter; when=w; filter=c; const n=events.filter(ev=>(filter==='All'||ev.category===filter)&&inWindow(ev)).length; when=ow; filter=of; return n; }
+function countWith(w,c,t=tier){ const ow=when; when=w; const n=events.filter(ev=>(c==='All'||ev.category===c)&&(t==='any'||kindOf(ev)===t)&&inWindow(ev)).length; when=ow; return n; }
 function openPicker(kind){
-  const opts= kind==='when' ? WHEN.map(([k,l])=>[k,l,countWith(k,filter),k===when])
-    : ['All',...Object.keys(CATS).filter(k=>events.some(e=>e.category===k))].map(k=>[k,k==='All'?'Everything':CATS[k].label,countWith(when,k),k===filter]);
-  sheet.innerHTML=`<div class="grab"></div><div class="cat">${kind==='when'?'When':'Type of event'}</div>
-    <div class="picklist">${opts.map(([k,l,n,on])=>`<button class="popt ${on?'on':''}" data-opt="${k}" ${n||k==='any'||k==='All'?'':'disabled'}>${kind==='type'&&k!=='All'?catDot(k,12):''}<span>${l}</span><b>${n}</b>${on?'<em>✓</em>':''}</button>`).join('')}</div>`;
+  const row=(attr,k,icon,l,n,on,always)=>`<button class="popt ${on?'on':''}" ${attr}="${k}" ${n||always?'':'disabled'}>${icon}<span>${l}</span><b>${n}</b>${on?'<em>✓</em>':''}</button>`;
+  let body;
+  if(kind==='when') body=WHEN.map(([k,l])=>row('data-opt',k,'',l,countWith(k,filter),k===when,k==='any')).join('');
+  else body=`<div class="psub">Kind of event</div>`
+    + row('data-tier','any','<span class="ticon"></span>','Any kind',countWith(when,filter,'any'),tier==='any',true)
+    + Object.keys(KINDS).map(k=>row('data-tier',k,tierIcon(k,14),`${KINDS[k].plural}<small>${KINDS[k].blurb}</small>`,countWith(when,filter,k),tier===k)).join('')
+    + `<div class="psub">Category</div>`
+    + ['All',...Object.keys(CATS).filter(k=>events.some(e=>e.category===k))].map(k=>row('data-opt',k,k==='All'?'<span class="ticon"></span>':catDot(k,12),k==='All'?'Everything':CATS[k].label,countWith(when,k),k===filter,k==='All')).join('');
+  sheet.innerHTML=`<div class="grab"></div><div class="cat">${kind==='when'?'When':'Type of event'}</div><div class="picklist">${body}</div>`;
   overlay.classList.add('on');
-  sheet.querySelector('.picklist').onclick=e=>{ const o=e.target.closest('[data-opt]'); if(!o||o.disabled) return; if(kind==='when') when=o.dataset.opt; else filter=o.dataset.opt; overlay.classList.remove('on'); renderHome(); };
+  sheet.querySelector('.picklist').onclick=e=>{ const o=e.target.closest('[data-opt],[data-tier]'); if(!o||o.disabled) return;
+    if(o.dataset.tier) tier=o.dataset.tier; else if(kind==='when') when=o.dataset.opt; else filter=o.dataset.opt;
+    overlay.classList.remove('on'); renderHome(); };
 }
 document.getElementById('picks').addEventListener('click',e=>{ const p=e.target.closest('[data-ev]'); if(p) openSheet(+p.dataset.ev); });
 document.getElementById('tMap').onclick=()=>{ document.getElementById('homeScreen').classList.remove('home-list'); tMap.classList.add('on'); tList.classList.remove('on'); setTimeout(()=>{ map?map.resize():drawPaper(); },20); };
@@ -914,7 +933,15 @@ const tMap=document.getElementById('tMap'), tList=document.getElementById('tList
 
 /* ---------- map: Mapbox if reachable, Paper map otherwise ---------- */
 let map=null, markers=[], paperDrawn=false;
-function pinEl(ev,i){ const el=document.createElement('div'); const done=S.checked.includes(ev.id); el.className='pin'+(ev.live&&!done?' live':''); el.style.background=CATS[catKey(ev.category)].bg; el.innerHTML=(done?'<span class="chk">&check;</span>':''); el.setAttribute('role','button'); el.setAttribute('aria-label',ev.title); el.tabIndex=0; el.onclick=e=>{ e.stopPropagation(); openSheet(ev.id); }; el.onkeydown=e=>{ if(e.key==='Enter') openSheet(ev.id); }; return el; }
+function starSVG(d,c,stroke='#F3E7D1'){ let p=''; for(let i=0;i<16;i++){ const r=i%2?d*.27:d*.47, a=Math.PI*i/8-Math.PI/2; p+=(i?'L':'M')+(r*Math.cos(a)).toFixed(1)+' '+(r*Math.sin(a)).toFixed(1); }
+  return `<svg width="${d}" height="${d}" viewBox="${-d/2} ${-d/2} ${d} ${d}" aria-hidden="true" style="display:block;overflow:visible"><path d="${p}Z" fill="${c}" stroke="${stroke}" stroke-width="2.4" stroke-linejoin="round"/></svg>`; }
+// small tier glyph for tabs, badges and the legend
+function tierIcon(k,size=14,c=C.green){ const s=size;
+  if(k==='cornerstone') return `<span class="ticon">${starSVG(s+4,c,'none')}</span>`;
+  if(k==='niche') return `<span class="ticon"><i style="width:${s*.62}px;height:${s*.62}px;background:${c};transform:rotate(45deg);border-radius:2px"></i></span>`;
+  if(k==='popup') return `<span class="ticon"><i style="width:${s*.5}px;height:${s*.5}px;background:${c};border-radius:50%;box-shadow:0 0 0 2px var(--paper),0 0 0 3.5px ${c}"></i></span>`;
+  return `<span class="ticon"><i style="width:${s*.62}px;height:${s*.62}px;background:${c};border-radius:50%"></i></span>`; }
+function pinEl(ev,i){ const el=document.createElement('div'); const done=S.checked.includes(ev.id); const k=kindOf(ev); el.className='pin tier-'+k+(ev.live&&!done?' live':''); el.style.setProperty('--c',CATS[catKey(ev.category)].bg); if(k==='cornerstone') el.innerHTML=starSVG(30,CATS[catKey(ev.category)].bg); else if(k==='niche') el.innerHTML='<i class="dia"></i>'; else el.style.background='var(--c)'; el.innerHTML+=(done?'<span class="chk">&check;</span>':''); el.setAttribute('role','button'); el.setAttribute('aria-label',ev.title+', '+KINDS[k].label); el.tabIndex=0; el.onclick=e=>{ e.stopPropagation(); openSheet(ev.id); }; el.onkeydown=e=>{ if(e.key==='Enter') openSheet(ev.id); }; return el; }
 /* pin clustering: pins closer than ~40px on screen merge into a numbered bubble; tap it to zoom in.
    Recomputed after every pan/zoom, so bubbles split apart as you zoom. At street level (zoom 15+) nothing
    clusters; events sharing an address fan out in a small ring so each one can be tapped. */
@@ -1076,7 +1103,14 @@ function hm(v){ const m=String(v||'').trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})
 function nextDate(ev){
   const d0=ev.start; if(!d0) return null; const today=new Date(); today.setHours(0,0,0,0);
   const rec=(ev.rec||'').toLowerCase(), step=/biweekly/.test(rec)?14 : /weekly/.test(rec)?7 : /daily/.test(rec)?1 : 0;
-  if(d0>=today || !step) return /seasonal/.test(rec) && d0<today && (!ev.end||ev.end>=today)? today : d0;
+  if(d0>=today) return d0;
+  if(/seasonal/.test(rec)) return (!ev.end||ev.end>=today)? today : null;
+  if(/monthly/.test(rec)){   // same "nth weekday" each month (e.g. first Friday), counted from the start date
+    const nth=Math.ceil(d0.getDate()/7), wd=d0.getDay();
+    for(let k=1;k<=13;k++){ const m=new Date(d0.getFullYear(),d0.getMonth()+k,1); m.setDate(1+((wd-m.getDay()+7)%7)+(nth-1)*7);
+      if(m.getMonth()!==(d0.getMonth()+k)%12) continue; if(m>=today) return (ev.end && m>ev.end)? null : m; }
+    return null; }
+  if(!step) return null;
   const n=new Date(d0); while(n<today) n.setDate(n.getDate()+step); return (ev.end && n>ev.end)? null : n;
 }
 function nextWhen(ev){
@@ -1086,7 +1120,7 @@ function nextWhen(ev){
   return [day,fmtTime(ev.t0)].filter(Boolean).join(' · ');
 }
 function badges(ev){
-  const b=[]; if(/free/i.test(ev.price)) b.push('Free'); else if(/donation|pay-what/i.test(ev.price)) b.push('Pay what you can'); else if(/paid/i.test(ev.price)) b.push('Paid');
+  const b=[]; if(ev.kind && KINDS[ev.kind]) b.push(tierIcon(ev.kind,12)+KINDS[ev.kind].label); if(/free/i.test(ev.price)) b.push('Free'); else if(/donation|pay-what/i.test(ev.price)) b.push('Pay what you can'); else if(/paid/i.test(ev.price)) b.push('Paid');
   if(ev.age) b.push(ev.age); if(/indoor/i.test(ev.setting)) b.push('Indoor'); else if(/outdoor/i.test(ev.setting)) b.push('Outdoor'); else if(/both/i.test(ev.setting)) b.push('Indoor + outdoor');
   if(ev.rsvpReq) b.push('RSVP required'); return b;
 }
@@ -1240,16 +1274,16 @@ function renderPassport(){
   document.getElementById('psStreak').textContent=S.streak+' wk'; document.getElementById('psVisits').textContent=S.visits; document.getElementById('psPts').textContent=S.points.toLocaleString();
   document.getElementById('passSeal').innerHTML=omark(130,'#F3E7D1','#F3E7D1');
   const byKind=k=>Object.entries(places).filter(([,p])=>kindOf(p)===k);
-  const tabs=[...Object.keys(KINDS).map(k=>[k,KINDS[k].label,byKind(k).length]),['hoods','Neighborhoods',nH]];
+  const tabs=[...Object.keys(KINDS).map(k=>[k,`${tierIcon(k,13)} ${KINDS[k].plural}`,byKind(k).length]),['hoods','Neighborhoods',nH]];
   document.getElementById('passTabs').innerHTML=tabs.map(t=>`<button role="tab" aria-selected="${t[0]===passTab}" class="${t[0]===passTab?'on':''}" data-tab="${t[0]}">${t[1]} ${t[2]}</button>`).join('');
   const rots=[-7,5,-3,8,-5,4,-9,6,-4,7];
   let html='';
   if(KINDS[passTab]){
     const list=byKind(passTab).sort((a,b)=>b[1].n-a[1].n);
-    html=`<div class="ph"><b>${KINDS[passTab].label}</b><span>${KINDS[passTab].blurb}</span></div><div class="pagegrid">`+
+    html=`<div class="ph"><b>${KINDS[passTab].plural}</b><span>${KINDS[passTab].blurb}</span></div><div class="pagegrid">`+
       list.map(([name,p],i)=>`<div class="slot">${placeStamp(name,hoodOf(p).name,p.cat,p.n,rots[i%rots.length])}</div>`).join('')+
-      `<div class="slot"><div class="ghost-rect">${list.length?'next':'your first'} ${KINDS[passTab].label.toLowerCase()} spot?</div></div>`.repeat(list.length%2?1:2)+
-      `</div><div class="pagenote">${list.length} ${KINDS[passTab].label.toLowerCase()} spot${list.length===1?'':'s'} stamped</div>`;
+      `<div class="slot"><div class="ghost-rect">${list.length?'next':'your first'} ${KINDS[passTab].label.toLowerCase()}?</div></div>`.repeat(list.length%2?1:2)+
+      `</div><div class="pagenote">${list.length} ${(list.length===1?KINDS[passTab].label:KINDS[passTab].plural).toLowerCase()} stamped</div>`;
   } else if(passTab==='hoods'){
     html=`<div class="ph"><b>Neighborhoods</b><span>earned with your first place in each</span></div><div class="pagegrid">`+
       HOODS.map((h,i)=> H[h.name]? `<div class="slot">${STAMP_IMG[h.name] ? hoodStamp(h.name,128,rots[i%rots.length])+`<div class="pagenote" style="margin-top:4px">${H[h.name]} visit${H[h.name]>1?'s':''}</div>` : stampSVG(h.name.toUpperCase(),`${H[h.name]} VISIT${H[h.name]>1?'S':''} · COMUNA`,h.glyph,h.color,132,rots[i%rots.length])}</div>` : `<div class="slot"><div class="ghost-stamp">${h.name}?</div></div>`).join('')+`</div>`;
@@ -1439,7 +1473,7 @@ function loadSheet(){
     const catMap=c=>{ c=c||''; if(CATS[c.trim().toLowerCase()]) return c.trim().toLowerCase();
       const hit=Object.keys(CATS).find(k=>CATS[k].label.toLowerCase()===c.trim().toLowerCase()); if(hit) return hit;
       return /comedy|improv|theat|perform|drag/i.test(c)?'comedy':/film|movie|cinema|screening|media|podcast/i.test(c)?'film':/immersive|experien|installation/i.test(c)?'immersive':/night|club|dj|dance party|bar/i.test(c)?'nightlife':/music|concert|jazz|art|gallery|museum/i.test(c)?'music':/dinner|food|drink|supper|coffee|wine|beer/i.test(c)?'food':/fitness|wellness|yoga|run|health|medit/i.test(c)?'wellness':/workshop|class|craft|making|learn|lecture|talk/i.test(c)?'workshops':/hike|outdoor|beach|park|nature|garden/i.test(c)?'outdoors':/sport|game|trivia|volley|pickle|soccer|basketball/i.test(c)?'sports':/meetup|social|mixer|networking|speed/i.test(c)?'social':/market|shop|vintage|flea/i.test(c)?'markets':'community'; };
-    events=rows.map((r,i)=>({ id:(parseInt(String(r['event id']||'').replace(/\D/g,''))||0)? 100000+parseInt(String(r['event id']).replace(/\D/g,'')) : 100+i, eid:r['event id']||'', title:r['event name'], venue:r['venue name']||'', lat:r.lat, lng:r.lng, area:r['neighborhood']||'', time:whenText(r), live:false, startsIn:'', going:0, fromGroup:0, host:r['host / organizer']||'', desc:r['short description']||'', category:catMap(r['primary category']), kind:(/corner/i.test(r['tier'])?'cornerstone':/niche/i.test(r['tier'])?'niche':/pop/i.test(r['tier'])?'popup':/regular/i.test(r['tier'])?'regular':''), parking:r['parking & transit']||'', alcohol:undefined,
+    events=rows.map((r,i)=>({ id:(parseInt(String(r['event id']||'').replace(/\D/g,''))||0)? 100000+parseInt(String(r['event id']).replace(/\D/g,'')) : 100+i, eid:r['event id']||'', title:r['event name'], venue:r['venue name']||'', lat:r.lat, lng:r.lng, area:r['neighborhood']||'', time:whenText(r), live:false, startsIn:'', going:0, fromGroup:0, host:r['host / organizer']||'', desc:r['short description']||'', category:catMap(r['primary category']), kind:tierKey(r['tier']), parking:r['parking & transit']||'', alcohol:undefined,
       address:[r['street address'],r['city'],r['zip']].filter(Boolean).join(', '), price:r['free / paid']||'', age:r['age']||'', setting:r['indoor / outdoor']||'', rsvpReq:/^y/i.test(r['rsvp required?']||''),
       ticket:r['ticket / rsvp link']||'', source:r['source url']||'', rec:r['recurrence']||'', recDetail:r['recurrence detail']||'', start:parseDay(r['start date']), end:parseDay(r['end date']), t0:r['start time']||'', t1:r['end time']||'' }));
     usingDemo=false; if(current==='home') renderHome(); loadGoing();
