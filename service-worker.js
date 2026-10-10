@@ -3,7 +3,7 @@
 // offline data strategy, just enough for a demo/beta build to qualify
 // as an installable PWA on iOS and Android.
 
-const CACHE_NAME = "third-space-demo-v29";
+const CACHE_NAME = "third-space-demo-v33";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -24,6 +24,13 @@ const APP_SHELL = [
   "./stamps/santa-monica-light.png",
   "./stamps/silver-lake-light.png",
   "./stamps/west-hollywood-light.png",
+  "./patches/first-stamp.webp",
+  "./patches/three-hoods.webp",
+  "./patches/regular.webp",
+  "./patches/tried-everything.webp",
+  "./patches/coast-to-lake.webp",
+  "./patches/scout.webp",
+  "./patches/pennant.webp",
 ];
 
 self.addEventListener("install", (event) => {

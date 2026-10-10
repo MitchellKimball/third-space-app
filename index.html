@@ -144,8 +144,8 @@ img{ max-width:100% }
 .chips::-webkit-scrollbar{ display:none }
 .chip{ flex:none; border:1.5px solid var(--ink); border-radius:30px; padding:6px 13px; font-size:13px; font-weight:500 }
 .chip.on{ background:var(--ink); color:var(--paper) }
-.fbtn{ flex:1; display:flex; align-items:baseline; gap:6px; min-width:0; border:1.5px solid var(--ink); border-radius:14px; padding:8px 12px; font-size:14px; font-weight:700; background:var(--card); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
-.fbtn small{ font-size:11px; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:.05em } .fbtn i{ margin-left:auto; font-style:normal; font-size:11px; color:var(--muted) }
+.fbtn{ flex:1; display:flex; align-items:baseline; gap:6px; min-width:0; border:1.3px solid var(--ink); border-radius:12px; padding:5px 10px; font-size:13px; font-weight:700; background:var(--card); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.fbtn small{ font-size:10px; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:.05em } .fbtn i{ margin-left:auto; font-style:normal; font-size:11px; color:var(--muted) }
 .fbtn.set{ background:var(--green); border-color:var(--green); color:var(--paper) } .fbtn.set small, .fbtn.set i{ color:#CFE0D3 }
 .picklist{ display:flex; flex-direction:column; margin-top:8px } .popt{ display:flex; align-items:center; gap:10px; padding:13px 4px; border-bottom:1px dashed #DCCDAE; font-size:15px; text-align:left }
 .betapill{ font-size:11.5px; font-weight:700; letter-spacing:.02em; color:var(--green); border:1.5px solid var(--green); border-radius:20px; padding:5px 10px; background:var(--card); white-space:nowrap }
@@ -185,6 +185,14 @@ img{ max-width:100% }
 #homeScreen:not(.home-list) .picks.dragging{ scroll-snap-type:none; cursor:grabbing }
 #homeTitle{ white-space:nowrap; font-size:30px }
 #homeScreen:not(.home-list) .picks::-webkit-scrollbar{ display:none }
+/* map view: slim one-line cards so more of the map shows */
+.pick .m2{ display:none }
+#homeScreen:not(.home-list) .pick{ grid-template-columns:22px 1fr; gap:10px; padding:9px 14px; border-radius:14px }
+#homeScreen:not(.home-list) .pick .n{ width:22px; height:22px }
+#homeScreen:not(.home-list) .pick .dist, #homeScreen:not(.home-list) .pick .when, #homeScreen:not(.home-list) .pick .m{ display:none }
+#homeScreen:not(.home-list) .pick .t{ -webkit-line-clamp:1; font-size:14.5px; margin:0 }
+#homeScreen:not(.home-list) .pick .m2{ display:block; font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px }
+#homeScreen:not(.home-list) .pick .m2 b{ color:var(--red); font-weight:700 }
 #homeScreen:not(.home-list) .pick{ flex:0 0 84%; margin:0; scroll-snap-align:center; box-shadow:0 4px 14px rgba(0,0,0,.18); pointer-events:auto }
 #homeScreen:not(.home-list) .endnote, #homeScreen:not(.home-list) .demo-tag{ display:none }
 /* list mode: keep the map/list toggle reachable (it lives inside .mapwrap) instead of hiding the whole wrapper */
@@ -304,8 +312,9 @@ img{ max-width:100% }
 .ghost-stamp{ width:122px; height:122px; border-radius:50%; border:2px dashed #CDBF9F; display:grid; place-items:center; font-family:var(--hand); font-size:19px; color:#A89C82; line-height:1; padding:12px }
 .patches{ display:flex; gap:10px; overflow-x:auto; padding:4px 0 2px; scrollbar-width:none }
 .patches::-webkit-scrollbar{ display:none }
-.patch{ flex:none; text-align:center; width:96px; font-size:11px; color:var(--muted) }
-.patch.locked svg{ filter:grayscale(1); opacity:.35 }
+.patch{ flex:none; text-align:center; width:128px; font-size:11px; color:var(--muted) }
+.patch img{ display:block; width:128px; height:138px; object-fit:contain; margin:0 auto 4px; filter:drop-shadow(0 2px 2px rgba(0,0,0,.25)) }
+.patch.locked svg, .patch.locked img{ filter:grayscale(1); opacity:.35 }
 .lb{ background:var(--card); border-radius:18px; padding:4px 14px }
 .lbrow{ display:grid; grid-template-columns:28px 1fr auto; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px }
 .lbrow:last-child{ border-bottom:0 }
@@ -468,7 +477,7 @@ img{ max-width:100% }
 
     <!-- PASSPORT -->
     <section class="screen" data-s="passport">
-      <div class="topbar"><div class="h1" style="color:var(--green)">Passport</div><button class="pill" data-go="profile">Profile</button></div>
+      <div class="topbar"><div style="display:flex;align-items:center;gap:10px"><div class="h1" style="color:var(--green)">Passport</div><img src="patches/pennant.webp" alt="Comuna Events pennant" style="width:96px;transform:rotate(-8deg) translateY(-2px);filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))"></div><button class="pill" data-go="profile">Profile</button></div>
       <div class="scroll">
         <div class="passcover">
           <div class="k" id="passName">Mitchell K. · Los Angeles</div>
@@ -622,9 +631,9 @@ function catDot(k,d){ return `<span aria-hidden="true" style="display:block;flex
 /* ---------- place types: each gets its own passport page ---------- */
 // Event tiers. Internal keys stay the same so existing saved passports keep working; only names and meaning changed.
 const KINDS = {
-  cornerstone:{ label:'Headliner',  plural:'Headliners',  blurb:'big events worth a trip: festivals, concerts, street takeovers' },
-  regular:    { label:'Staple',     plural:'Staples',     blurb:'happens every week or month: run clubs, markets, trivia' },
-  niche:      { label:'Hidden Gem', plural:'Hidden Gems', blurb:'small and local, easy to miss: readings, workshops, tiny shows' },
+  cornerstone:{ label:'Headliner',  plural:'Headliners',  blurb:'big events worth a trip' },
+  regular:    { label:'Staple',     plural:'Staples',     blurb:'happening every week or month' },
+  niche:      { label:'Hidden Gem', plural:'Hidden Gems', blurb:'small and local, easy to miss' },
   popup:      { label:'Pop-up',     plural:'Pop-ups',     blurb:'one time only, don\'t miss it' }
 };
 // sheet Tier column: new names or the old ones (Cornerstone / Regular / Niche / Pop-Up)
@@ -784,9 +793,11 @@ let tt; function toast(msg){ const t=document.getElementById('toast'); t.textCon
 /* ---------- onboarding ---------- */
 function buildOnb(){
   const f=document.getElementById('stampfield');
-  f.innerHTML=`<div style="left:6px;top:10px">${hoodStamp('Santa Monica',150,-10,true)}</div>
-  <div style="right:4px;top:40px">${hoodStamp('Silver Lake',136,9,true)}</div>
-  <div style="left:96px;top:150px">${hoodStamp('West Hollywood',138,4,true)}</div>`;
+  // a mix of what you collect: neighborhood stamps, a patch and the Comuna pennant
+  f.innerHTML=`<div style="left:4px;top:4px">${hoodStamp('Santa Monica',140,-10,true)}</div>
+  <img src="patches/pennant.webp" alt="" style="right:-4px;top:14px;width:178px;transform:rotate(9deg);filter:drop-shadow(0 3px 3px rgba(0,0,0,.3))">
+  <img src="patches/scout.webp" alt="" style="left:30px;top:150px;width:112px;transform:rotate(-8deg);filter:drop-shadow(0 3px 3px rgba(0,0,0,.3))">
+  <div style="right:14px;top:142px">${hoodStamp('Silver Lake',134,7,true)}</div>`;
 }
 const locNext=document.getElementById('locNext');
 function setHood(name,loc){ const h=hoodByName(name); S.nb=h.name; S.loc=loc||{lat:h.lat,lng:h.lng}; save(); rebuildMap(); locNext.disabled=false; drawMini(); }
@@ -925,7 +936,7 @@ function renderHome(){ try{ updateDot(); }catch(e){} setTimeout(syncHeadH,0);
   document.getElementById('picks').innerHTML = P.map((ev,i)=>{
     const done=S.checked.includes(ev.id), inn=S.rsvp.includes(ev.id);
     return `<button class="pick" data-ev="${ev.id}"><div class="n">${catDot(ev.category,18)}${done?'<span class="chk">&check;</span>':''}</div>
-      <div><div class="when">${ev.live?'\u{1F534} ':''}${ev.startsIn||(ev.start?nextWhen(ev):ev.time)}</div><div class="t">${ev.title}${vCheck(ev,14)}</div><div class="m">${ev.venue}${inn&&!done?' · Saved':''}</div></div>
+      <div><div class="when">${ev.live?'\u{1F534} ':''}${ev.startsIn||(ev.start?nextWhen(ev):ev.time)}</div><div class="t">${ev.title}${vCheck(ev,14)}</div><div class="m">${ev.venue}${inn&&!done?' · Saved':''}</div><div class="m2">${ev.live?'\u{1F534} ':''}<b>${ev.startsIn||(ev.start?nextWhen(ev):ev.time)}</b> · ${ev.venue}${inn&&!done?' · Saved':''}</div></div>
       <div class="dist">${mins(ev.mi)}<small>min away</small></div></button>`; }).join('')
     + `<div class="endnote">that's the list. go have fun.</div><div class="demo-tag">${usingDemo?'Demo events · connect the Google Sheet to go live':'Live events from the Comuna sheet'}</div>`;
   const first=P[0]; document.getElementById('mapNote').textContent = first ? (first.live? `${first.title.split(' ').slice(0,2).join(' ')}: ${first.startsIn}` : '') : '';
@@ -1449,12 +1460,17 @@ document.getElementById('calToday').onclick=()=>{ calSel=today0(); calView=new D
 
 /* ---------- passport: a page per place type, plus neighborhoods ---------- */
 let passTab='cornerstone';
-const PATCHES=[ {t:'FIRST STAMP',s:'WELCOME',sc:'hills',ok:()=>Object.keys(S.places).length>=1},
-  {t:'THREE HOODS',s:'EXPLORER',sc:'lake',ok:()=>Object.keys(visitedHoods()).length>=3},
-  {t:'REGULAR',s:'5 VISITS, 1 PLACE',sc:'hills',ok:()=>Object.values(S.places).some(p=>p.n>=5)},
-  {t:'ALL 13 KINDS',s:'TRIED EVERYTHING',sc:'night',ok:()=>new Set(Object.values(S.places).map(p=>catKey(p.cat))).size>=13},
-  {t:'COAST TO LAKE',s:'SANTA MONICA',sc:'beach',ok:()=>!!visitedCities()['Santa Monica']},
-  {t:'SCOUT',s:'3 EVENTS ADDED',sc:'lake',ok:()=>(S.subCredited||[]).length>=3} ];
+const PATCHES=[ {img:'patches/first-stamp.webp',t:'FIRST STAMP',s:'WELCOME',sc:'hills',ok:()=>Object.keys(S.places).length>=1},
+  {img:'patches/three-hoods.webp',t:'THREE HOODS',s:'EXPLORER',sc:'lake',ok:()=>Object.keys(visitedHoods()).length>=3},
+  {img:'patches/regular.webp',t:'REGULAR',s:'5 VISITS, 1 PLACE',sc:'hills',ok:()=>Object.values(S.places).some(p=>p.n>=5)},
+  {img:'patches/tried-everything.webp',t:'ALL 13 KINDS',s:'TRIED EVERYTHING',sc:'night',ok:()=>new Set(Object.values(S.places).map(p=>catKey(p.cat))).size>=13},
+  {img:'patches/coast-to-lake.webp',t:'COAST TO LAKE',s:'SANTA MONICA',sc:'beach',ok:()=>!!visitedCities()['Santa Monica']},
+  {img:'patches/scout.webp',t:'SCOUT',s:'3 EVENTS ADDED',sc:'lake',ok:()=>(S.subCredited||[]).length>=3} ];
+// locked patches stay a surprise: a stitched "?" instead of the real design
+function mysteryPatch(){
+  const d='M14 26 Q14 12 28 12 L68 12 Q82 12 82 26 L82 62 Q82 86 48 98 Q14 86 14 62 Z';
+  return `<svg width="128" height="138" viewBox="0 0 96 104" role="img" aria-label="Locked patch" style="display:block;margin:0 auto 4px"><path d="${d}" fill="#EADCC0"/><path d="${d}" fill="none" stroke="#CDBF9F" stroke-width="7"/><path d="${d}" fill="none" stroke="#A89C82" stroke-width="1.6" stroke-dasharray="3 3" transform="translate(48 55) scale(.86) translate(-48 -55)"/><text x="48" y="72" text-anchor="middle" font-family="Big Shoulders Display" font-weight="900" font-size="46" fill="#A89C82">?</text></svg>`;
+}
 function renderPassport(){
   const places=S.places, H=visitedHoods();
   const nP=Object.keys(places).length, nH=Object.keys(H).length;
@@ -1478,7 +1494,7 @@ function renderPassport(){
       HOODS.map((h,i)=> H[h.name]? `<div class="slot">${STAMP_IMG[h.name] ? hoodStamp(h.name,128,rots[i%rots.length])+`<div class="pagenote" style="margin-top:4px">${H[h.name]} visit${H[h.name]>1?'s':''}</div>` : stampSVG(h.name.toUpperCase(),`${H[h.name]} VISIT${H[h.name]>1?'S':''} · COMUNA`,h.glyph,h.color,132,rots[i%rots.length])}</div>` : `<div class="slot"><div class="ghost-stamp">${h.name}?</div></div>`).join('')+`</div>`;
   }
   document.getElementById('passPage').innerHTML=html;
-  document.getElementById('patchList').innerHTML=PATCHES.map(p=>{ const ok=p.ok(); return `<div class="patch ${ok?'':'locked'}">${patchSVG(p.t,p.s,p.sc,92,110)}<div>${ok?'Earned':'Locked'}</div></div>`; }).join('');
+  document.getElementById('patchList').innerHTML=PATCHES.map(p=>{ const ok=p.ok(); return `<div class="patch ${ok?'':'locked'}">${!ok? mysteryPatch() : p.img?`<img src="${p.img}" alt="${p.t} patch" width="128" height="138" loading="lazy">`:patchSVG(p.t,p.s,p.sc,92,110)}<div>${ok?'Earned':'Not yet'}</div></div>`; }).join('');
   document.getElementById('lbTitle').textContent=`Top 5 explorers in ${S.nb||'your neighborhood'}`;
   loadLeaderboard();
 }
