@@ -305,7 +305,8 @@ img{ max-width:100% }
 .patches{ display:flex; gap:10px; overflow-x:auto; padding:4px 0 2px; scrollbar-width:none }
 .patches::-webkit-scrollbar{ display:none }
 .patch{ flex:none; text-align:center; width:96px; font-size:11px; color:var(--muted) }
-.patch.locked svg{ filter:grayscale(1); opacity:.35 }
+.patch img{ display:block; width:96px; height:104px; object-fit:contain; margin:0 auto 4px; filter:drop-shadow(0 2px 2px rgba(0,0,0,.25)) }
+.patch.locked svg, .patch.locked img{ filter:grayscale(1); opacity:.35 }
 .lb{ background:var(--card); border-radius:18px; padding:4px 14px }
 .lbrow{ display:grid; grid-template-columns:28px 1fr auto; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px }
 .lbrow:last-child{ border-bottom:0 }
@@ -1449,12 +1450,12 @@ document.getElementById('calToday').onclick=()=>{ calSel=today0(); calView=new D
 
 /* ---------- passport: a page per place type, plus neighborhoods ---------- */
 let passTab='cornerstone';
-const PATCHES=[ {t:'FIRST STAMP',s:'WELCOME',sc:'hills',ok:()=>Object.keys(S.places).length>=1},
-  {t:'THREE HOODS',s:'EXPLORER',sc:'lake',ok:()=>Object.keys(visitedHoods()).length>=3},
-  {t:'REGULAR',s:'5 VISITS, 1 PLACE',sc:'hills',ok:()=>Object.values(S.places).some(p=>p.n>=5)},
-  {t:'ALL 13 KINDS',s:'TRIED EVERYTHING',sc:'night',ok:()=>new Set(Object.values(S.places).map(p=>catKey(p.cat))).size>=13},
-  {t:'COAST TO LAKE',s:'SANTA MONICA',sc:'beach',ok:()=>!!visitedCities()['Santa Monica']},
-  {t:'SCOUT',s:'3 EVENTS ADDED',sc:'lake',ok:()=>(S.subCredited||[]).length>=3} ];
+const PATCHES=[ {img:'patches/first-stamp.webp',t:'FIRST STAMP',s:'WELCOME',sc:'hills',ok:()=>Object.keys(S.places).length>=1},
+  {img:'patches/three-hoods.webp',t:'THREE HOODS',s:'EXPLORER',sc:'lake',ok:()=>Object.keys(visitedHoods()).length>=3},
+  {img:'patches/regular.webp',t:'REGULAR',s:'5 VISITS, 1 PLACE',sc:'hills',ok:()=>Object.values(S.places).some(p=>p.n>=5)},
+  {img:'patches/tried-everything.webp',t:'ALL 13 KINDS',s:'TRIED EVERYTHING',sc:'night',ok:()=>new Set(Object.values(S.places).map(p=>catKey(p.cat))).size>=13},
+  {img:'patches/coast-to-lake.webp',t:'COAST TO LAKE',s:'SANTA MONICA',sc:'beach',ok:()=>!!visitedCities()['Santa Monica']},
+  {img:'patches/scout.webp',t:'SCOUT',s:'3 EVENTS ADDED',sc:'lake',ok:()=>(S.subCredited||[]).length>=3} ];
 function renderPassport(){
   const places=S.places, H=visitedHoods();
   const nP=Object.keys(places).length, nH=Object.keys(H).length;
@@ -1478,7 +1479,7 @@ function renderPassport(){
       HOODS.map((h,i)=> H[h.name]? `<div class="slot">${STAMP_IMG[h.name] ? hoodStamp(h.name,128,rots[i%rots.length])+`<div class="pagenote" style="margin-top:4px">${H[h.name]} visit${H[h.name]>1?'s':''}</div>` : stampSVG(h.name.toUpperCase(),`${H[h.name]} VISIT${H[h.name]>1?'S':''} · COMUNA`,h.glyph,h.color,132,rots[i%rots.length])}</div>` : `<div class="slot"><div class="ghost-stamp">${h.name}?</div></div>`).join('')+`</div>`;
   }
   document.getElementById('passPage').innerHTML=html;
-  document.getElementById('patchList').innerHTML=PATCHES.map(p=>{ const ok=p.ok(); return `<div class="patch ${ok?'':'locked'}">${patchSVG(p.t,p.s,p.sc,92,110)}<div>${ok?'Earned':'Locked'}</div></div>`; }).join('');
+  document.getElementById('patchList').innerHTML=PATCHES.map(p=>{ const ok=p.ok(); return `<div class="patch ${ok?'':'locked'}">${p.img?`<img src="${p.img}" alt="${p.t} patch" width="96" height="104" loading="lazy">`:patchSVG(p.t,p.s,p.sc,92,110)}<div>${ok?'Earned':'Locked'}</div></div>`; }).join('');
   document.getElementById('lbTitle').textContent=`Top 5 explorers in ${S.nb||'your neighborhood'}`;
   loadLeaderboard();
 }
