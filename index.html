@@ -1324,7 +1324,7 @@ function checkIn(ev){
 
 // Most events are free and open: "Interested" saves them. RSVP only when the host needs one, and it opens their link.
 // links to roundup articles, listicles and search pages: shown as "Read about it", never as the event page or RSVP
-const ROUNDUP=/welikela|timeout\.com|smdp\.com|hoodline|yelp\.com|wikipedia|eventbrite\.\w+\/d\/|laist\.com|secretlosangeles|atly\.com|nightlifehiker|localemagazine|fodors|opentable|westsidelosangeles|trivianearme|dolosangeles\.com\/(p|venues)\/|allevents|outxout\.com\/guides|tiktok|mommypoppins|venicepaparazzi|lamag\.com|lonelyplanet|211la|discoverlosangeles|eventsincalifornia|eventticketscenter|foodjournalmagazine|pubtrivianight|free2funla|westsidetoday|beverlypress|pasadenanow|sfvlocal|ianirarousso|clmp\.org|songkick|bandsintown|foxla\.com|pickleheads|nohoartsdistrict\.com\/noho-news|theinfatuation|patch\.com/i;
+const ROUNDUP=/welikela|timeout\.com|smdp\.com|hoodline|yelp\.com|wikipedia|eventbrite\.\w+\/d\/|laist\.com|secretlosangeles|atly\.com|nightlifehiker|localemagazine|fodors|opentable|westsidelosangeles|trivianearme|dolosangeles\.com\/(p|venues)\/|allevents|outxout\.com\/guides|tiktok|mommypoppins|venicepaparazzi|lamag\.com|lonelyplanet|211la|discoverlosangeles|eventsincalifornia|eventticketscenter|foodjournalmagazine|pubtrivianight|free2funla|westsidetoday|beverlypress|pasadenanow|sfvlocal|ianirarousso|clmp\.org|songkick|bandsintown|foxla\.com|pickleheads|nohoartsdistrict\.com\/noho-news|theinfatuation|patch\.com|ma\.to\//i;
 const isRoundup=u=>ROUNDUP.test(u||'');
 const okRsvpLink=ev=>{ const u=ev.ticket||(ev.rsvpReq?ev.source:''); return /^https?:/i.test(u||'') && !isRoundup(u)? u : ''; };
 function needsRsvp(ev){ return !!okRsvpLink(ev) && (ev.rsvpReq || !!ev.ticket); }
