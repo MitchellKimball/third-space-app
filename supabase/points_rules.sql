@@ -1,26 +1,46 @@
--- Comuna: points rules so the leaderboard can't be gamed with submissions.
--- Run once in Supabase > SQL Editor (replaces the leaderboard_month view).
---  * Only your first 3 approved event submissions each week earn points.
---  * Duplicates: mark them status = 'duplicate' (not 'approved') in event_submissions, so they earn nothing.
---  * Check-ins only count when the app confirmed you were there (distance_m within 600 m).
---  * Gift cards: only people with 3+ confirmed check-ins this month qualify (see the gift_card_eligible column).
+-- Comuna: points rules (run once in Supabase > SQL Editor; safe to re-run).
+--  Interested +10, RSVP +25: only your first 5 saves each day earn points.
+--  Verified check-in +100: only when the app confirmed you were there (within 600 m).
+--  Approved event you added +25: only your first 3 each week.
+--  Turnout bonus on events you added: +5 per person Interested, +25 per verified check-in (max 500 per event).
+--  Duplicates: set status = 'duplicate' (or 'rejected') instead of 'approved'; they earn nothing.
+--  Gift cards: 3+ verified check-ins this month (gift_card_eligible column).
 
--- how far (meters) the phone was from the event when checking in; filled in by the app
 alter table checkins add column if not exists distance_m int;
+alter table rsvps    add column if not exists kind text default 'interested';
 
 create or replace view leaderboard_month as
-with subs as (
-  select user_id,
+with m as (select date_trunc('month', now()) as start),
+saves as (
+  select user_id, kind,
+         row_number() over (partition by user_id, (created_at at time zone 'America/Los_Angeles')::date order by created_at) as n
+  from rsvps, m where created_at >= m.start
+),
+good_checkins as (
+  select * from checkins, m where created_at >= m.start and distance_m <= 600
+),
+subs as (
+  select id, user_id,
          row_number() over (partition by user_id, date_trunc('week', created_at) order by created_at) as n
-  from event_submissions
-  where status = 'approved' and created_at >= date_trunc('month', now())
+  from event_submissions, m
+  where status = 'approved' and created_at >= m.start
+),
+turnout as (   -- other people's activity on events you added (app event ids look like SUB-123)
+  select s.user_id,
+         least(500,
+           5  * (select count(*) from rsvps r, m where r.event_id = 'SUB-' || s.id and r.user_id <> s.user_id and r.created_at >= m.start)
+         + 25 * (select count(*) from good_checkins c where c.event_id = 'SUB-' || s.id and c.user_id <> s.user_id)
+         ) as p
+  from event_submissions s where s.status = 'approved'
 ),
 pts as (
-  select user_id, 10 as p, 0 as ci from rsvps    where created_at >= date_trunc('month', now())
+  select user_id, case when kind = 'rsvp' then 25 else 10 end as p, 0 as ci from saves where n <= 5
   union all
-  select user_id, 50, 1            from checkins where created_at >= date_trunc('month', now()) and distance_m <= 600
+  select user_id, 100, 1 from good_checkins
   union all
-  select user_id, 25, 0            from subs     where n <= 3
+  select user_id, 25, 0  from subs where n <= 3
+  union all
+  select user_id, p, 0   from turnout where p > 0
 )
 select pr.id as user_id,
        split_part(coalesce(pr.name,'Explorer'),' ',1)

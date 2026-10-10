@@ -861,15 +861,17 @@ function kitSlides(){
      </ol>`,
     `<div class="k">Your passport</div><div class="h1" id="kitTitle">Collect stamps, points and patches.</div>
      <div class="kitart">${stamp}</div>
-     <div class="kitpts"><span>Save an event you're interested in</span><b>+10</b></div>
-     <div class="kitpts"><span>Check in when you're there (confirmed by location)</span><b>+50</b></div>
-     <div class="kitpts"><span>Add an event that gets approved (up to 3 a week)</span><b>+25</b></div>
+     <div class="kitpts"><span>Mark an event Interested (5 a day)</span><b>+10</b></div>
+     <div class="kitpts"><span>RSVP or get tickets through the host</span><b>+25</b></div>
+     <div class="kitpts"><span>Check in when you're there (confirmed by location)</span><b>+100</b></div>
+     <div class="kitpts"><span>Add an event that gets approved (3 a week)</span><b>+25</b></div>
+     <div class="kitpts"><span>For each person who checks in to an event you added</span><b>+25</b></div>
      <p class="sub" style="margin-top:12px">Every place you visit earns a stamp, and your first visit in each neighborhood earns its neighborhood stamp. Hit milestones (three neighborhoods, five visits to one spot) to unlock patches.</p>`,
     `<div class="k">A few more things</div><div class="h1" id="kitTitle">You're all set.</div>
      <ol class="kitsteps">
       <li><div><b>Your daily Top 4</b><span>Every day we pick four things near you: a Headliner, a Staple, a Hidden Gem and a Pop-up.</span></div></li>
       <li><div><b>Climb the leaderboard</b><span>See how you stack up against other ${hood} explorers. The top five neighborhood leaders at the end of each month get gift cards to their favorite spots (you need at least 3 check-ins that month to qualify).</span></div></li>
-      <li><div><b>Know about something cool?</b><span>Add it with the + tab. Once we approve it, it goes on the map and you get +25 points (up to 3 events a week). Events already on the map can't be added again.</span></div></li>
+      <li><div><b>Know about something cool?</b><span>Add it with the + tab. Once we approve it, it goes on the map and you get +25 points (up to 3 events a week), plus +5 for everyone who marks it Interested and +25 for everyone who checks in. Events already on the map can't be added again.</span></div></li>
      </ol>`
   ];
 }
@@ -1277,7 +1279,7 @@ function openSheet(id){
   sheet.querySelectorAll('a.act').forEach(a=>a.addEventListener('click',()=>track(ev,a.textContent==='Directions'?'directions':'link')));
   document.getElementById('sheetX').onclick=()=>overlay.classList.remove('on');
   document.getElementById('calBtn').onclick=()=>{ track(ev,'calendar'); addToCalendar(ev); };
-  const r=document.getElementById('rsvpBtn'); if(r) r.onclick=()=>{ track(ev,needsRsvp(ev)?'rsvp':'interested'); if(needsRsvp(ev)) window.open(okRsvpLink(ev),'_blank','noopener'); S.rsvp.push(id); S.points+=10; save(); dbRsvp(ev); overlay.classList.remove('on'); renderHome(); showRsvp(events.find(e=>e.id===id)); };
+  const r=document.getElementById('rsvpBtn'); if(r) r.onclick=()=>{ track(ev,needsRsvp(ev)?'rsvp':'interested'); if(needsRsvp(ev)) window.open(okRsvpLink(ev),'_blank','noopener'); S.rsvp.push(id); const pts=savePts(ev); S.points+=pts; save(); dbRsvp(ev); overlay.classList.remove('on'); renderHome(); showRsvp(events.find(e=>e.id===id),pts); };
   const c=document.getElementById('checkBtn'); if(c) c.onclick=async()=>{ c.disabled=true; const lab=c.textContent; c.textContent='Checking your location…';
     const v=await verifyHere(ev); if(!v.ok){ c.disabled=false; c.textContent=lab; toast(v.msg); return; } checkIn(ev,v.dist); };
   const sh=document.getElementById('shareBtn'); if(sh) sh.onclick=()=>{ track(ev,'invite'); shareEv(ev); };
@@ -1331,18 +1333,22 @@ function verifyHere(ev){
     {enableHighAccuracy:true,timeout:15000,maximumAge:60000});
   });
 }
+/* points: Interested +10, RSVP +25 (5 saves a day earn points), verified check-in +100, approved event +25 (3 a week) plus a turnout bonus */
+const PTS={ interested:10, rsvp:25, checkin:100, submit:25, turnoutInt:5, turnoutCheckin:25, turnoutMax:500 }, SAVES_PER_DAY=5;
+function savePts(ev){ const d=new Date().toDateString(); if(!S.saveDay||S.saveDay.d!==d) S.saveDay={d,n:0};
+  S.saveDay.n++; return S.saveDay.n<=SAVES_PER_DAY? (needsRsvp(ev)?PTS.rsvp:PTS.interested) : 0; }
 function checkIn(ev,dist){
   const hood=hoodByName(ev.hood), city=cityOf(hood);
   const hadHood=!!visitedHoods()[hood.name], hadCity=!!visitedCities()[city], hadCat=Object.values(S.places).some(p=>catKey(p.cat)===ev.category);
   const pl=S.places[ev.venue] || (S.places[ev.venue]={n:0,cat:ev.category,kind:kindOf(ev),lat:ev.lat,lng:ev.lng});
   const firstPlace=pl.n===0; pl.n++;
-  track(ev,'checkin'); S.checked.push(ev.id); S.visits++; S.points+=50; save(); dbCheckin(ev,dist);
+  track(ev,'checkin'); S.checked.push(ev.id); S.visits++; S.points+=PTS.checkin; save(); dbCheckin(ev,dist);
   overlay.classList.remove('on');
   const un=[]; if(!hadHood) un.push(`New neighborhood: ${hood.name}`); if(!hadCity) un.push(`New city: ${city}`); if(!hadCat) un.push(`First ${CATS[catKey(ev.category)].short.toLowerCase()} stamp`); if(pl.n===5) un.push(`You're a regular here`);
   const m=document.getElementById('stampModal');
   m.innerHTML=`<div class="stampbox">${placeStamp(ev.venue,hood.name,ev.category,pl.n,0,240,160,'#F3E7D1')}</div>
     <h3>${firstPlace?`Stamped: ${ev.venue}`:`Back at ${ev.venue}`}</h3>
-    <p>${ev.title}. +50 points, and ${ev.venue} knows you came.</p>
+    <p>${ev.title}. +${PTS.checkin} points, and ${ev.venue} knows you came.</p>
     ${un.length?`<div class="unlocks">${un.map(u=>`<span>${u}</span>`).join('')}</div>`:''}
     <button class="btn primary" id="closeStamp" style="max-width:260px">Nice</button>`;
   m.classList.add('on');
@@ -1355,12 +1361,12 @@ const ROUNDUP=/welikela|timeout\.com|smdp\.com|hoodline|yelp\.com|wikipedia|even
 const isRoundup=u=>ROUNDUP.test(u||'');
 const okRsvpLink=ev=>{ const u=ev.ticket||(ev.rsvpReq?ev.source:''); return /^https?:/i.test(u||'') && !isRoundup(u)? u : ''; };
 function needsRsvp(ev){ return !!okRsvpLink(ev) && (ev.rsvpReq || !!ev.ticket); }
-function showRsvp(ev){
+function showRsvp(ev,pts=0){
   if(!ev) return;
   const m=document.getElementById('stampModal');
   m.innerHTML=`<div class="stampbox">${rsvpStamp(ev)}</div>
     <h3>${needsRsvp(ev)?'Saved. Finish your RSVP':'Saved to your plans'}</h3>
-    <p>${ev.title}${ev.venue&&ev.venue!==ev.title?` at ${ev.venue}`:''}. ${needsRsvp(ev)?'Complete the RSVP on the host\'s page so they hold your spot. ':''}+10 points, and it's in your Plans. Check in when you get there for the stamp and +50 more.</p>
+    <p>${ev.title}${ev.venue&&ev.venue!==ev.title?` at ${ev.venue}`:''}. ${needsRsvp(ev)?'Complete the RSVP on the host\'s page so they hold your spot. ':''}${pts?`+${pts} points, and it's`:'It\'s'} in your Plans${pts?'':' (you\'ve hit today\'s 5 saves for points)'}. Check in when you get there for the stamp and +${PTS.checkin} more.</p>
     <div class="unlocks"><button class="btn ghost" id="rsvpCal" style="border-color:var(--paper);color:var(--paper);padding:10px 18px">Remind me (+ Calendar)</button><button class="btn ghost" id="rsvpInvite" style="border-color:var(--paper);color:var(--paper);padding:10px 18px">Invite friends</button></div>
     <button class="btn primary" id="closeStamp" style="max-width:260px">Nice</button>`;
   m.classList.add('on');
@@ -1531,7 +1537,7 @@ async function dbProfile(){
 const eidOf = ev => ev.eid || String(ev.id);
 async function dbRsvp(ev){
   if(!ev) return; const u=await dbUser(); if(!u) return;
-  const { error } = await sb.from('rsvps').upsert({ user_id:u.id, event_id:eidOf(ev), event_title:ev.title });
+  const { error } = await sb.from('rsvps').upsert({ user_id:u.id, event_id:eidOf(ev), event_title:ev.title, kind:needsRsvp(ev)?'rsvp':'interested' });
   if(error){ console.warn('Supabase RSVP save failed', error); dbStatus('RSVP save failed: '+error.message,true); }
   dbProfile(); loadGoing();
 }
