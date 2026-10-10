@@ -2,7 +2,11 @@
 -- Run once in Supabase > SQL Editor (replaces the leaderboard_month view).
 --  * Only your first 3 approved event submissions each week earn points.
 --  * Duplicates: mark them status = 'duplicate' (not 'approved') in event_submissions, so they earn nothing.
---  * Gift cards: only people with 3+ check-ins this month qualify (see the gift_card_eligible column).
+--  * Check-ins only count when the app confirmed you were there (distance_m within 600 m).
+--  * Gift cards: only people with 3+ confirmed check-ins this month qualify (see the gift_card_eligible column).
+
+-- how far (meters) the phone was from the event when checking in; filled in by the app
+alter table checkins add column if not exists distance_m int;
 
 create or replace view leaderboard_month as
 with subs as (
@@ -14,7 +18,7 @@ with subs as (
 pts as (
   select user_id, 10 as p, 0 as ci from rsvps    where created_at >= date_trunc('month', now())
   union all
-  select user_id, 50, 1            from checkins where created_at >= date_trunc('month', now())
+  select user_id, 50, 1            from checkins where created_at >= date_trunc('month', now()) and distance_m <= 600
   union all
   select user_id, 25, 0            from subs     where n <= 3
 )

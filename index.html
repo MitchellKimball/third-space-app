@@ -862,7 +862,7 @@ function kitSlides(){
     `<div class="k">Your passport</div><div class="h1" id="kitTitle">Collect stamps, points and patches.</div>
      <div class="kitart">${stamp}</div>
      <div class="kitpts"><span>Save an event you're interested in</span><b>+10</b></div>
-     <div class="kitpts"><span>Check in when you show up</span><b>+50</b></div>
+     <div class="kitpts"><span>Check in when you're there (confirmed by location)</span><b>+50</b></div>
      <div class="kitpts"><span>Add an event that gets approved (up to 3 a week)</span><b>+25</b></div>
      <p class="sub" style="margin-top:12px">Every place you visit earns a stamp, and your first visit in each neighborhood earns its neighborhood stamp. Hit milestones (three neighborhoods, five visits to one spot) to unlock patches.</p>`,
     `<div class="k">A few more things</div><div class="h1" id="kitTitle">You're all set.</div>
@@ -1278,7 +1278,8 @@ function openSheet(id){
   document.getElementById('sheetX').onclick=()=>overlay.classList.remove('on');
   document.getElementById('calBtn').onclick=()=>{ track(ev,'calendar'); addToCalendar(ev); };
   const r=document.getElementById('rsvpBtn'); if(r) r.onclick=()=>{ track(ev,needsRsvp(ev)?'rsvp':'interested'); if(needsRsvp(ev)) window.open(okRsvpLink(ev),'_blank','noopener'); S.rsvp.push(id); S.points+=10; save(); dbRsvp(ev); overlay.classList.remove('on'); renderHome(); showRsvp(events.find(e=>e.id===id)); };
-  const c=document.getElementById('checkBtn'); if(c) c.onclick=()=>checkIn(ev);
+  const c=document.getElementById('checkBtn'); if(c) c.onclick=async()=>{ c.disabled=true; const lab=c.textContent; c.textContent='Checking your location…';
+    const v=await verifyHere(ev); if(!v.ok){ c.disabled=false; c.textContent=lab; toast(v.msg); return; } checkIn(ev,v.dist); };
   const sh=document.getElementById('shareBtn'); if(sh) sh.onclick=()=>{ track(ev,'invite'); shareEv(ev); };
 }
 overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.classList.remove('on'); });
@@ -1304,12 +1305,38 @@ function shareEv(ev){
   if(navigator.clipboard) navigator.clipboard.writeText(text).then(()=>toast('Invite copied'),()=>toast('Invite ready to share'));
   else toast('Invite ready to share');
 }
-function checkIn(ev){
+/* check-ins only count when you're actually there: within ~400 m of the event, around its time */
+const CHECKIN_M=400;
+function metersBetween(a,b){ const R=6371000, r=x=>x*Math.PI/180, dLat=r(b.lat-a.lat), dLng=r(b.lng-a.lng);
+  const h=Math.sin(dLat/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+function happeningNow(ev){
+  const d=nextDate(ev), now=new Date(); if(!d) return false;
+  const day=new Date(now); day.setHours(0,0,0,0); if(d.getTime()!==day.getTime()) return false;
+  const a=hm(ev.t0); if(!a) return true;                       // no start time listed: any time that day
+  const start=new Date(day); start.setHours(a[0],a[1]);
+  let end; const b=hm(ev.t1); if(b){ end=new Date(day); end.setHours(b[0],b[1]); if(end<=start) end.setDate(end.getDate()+1); } else end=new Date(start.getTime()+5*36e5);
+  return now>=start.getTime()-60*6e4 && now<=end.getTime()+60*6e4; // from an hour before until an hour after
+}
+function verifyHere(ev){
+  return new Promise(res=>{
+    if(!happeningNow(ev)) return res({ok:false,msg:'Check-in opens an hour before the event starts, on the day it happens.'});
+    if(ev.lat==null||ev.lng==null) return res({ok:false,msg:'We can\'t find this event on the map, so check-in isn\'t available.'});
+    if(!navigator.geolocation) return res({ok:false,msg:'Your browser can\'t share location, so we can\'t check you in.'});
+    navigator.geolocation.getCurrentPosition(p=>{
+      const dist=Math.round(metersBetween({lat:p.coords.latitude,lng:p.coords.longitude},{lat:ev.lat,lng:ev.lng}));
+      const slack=Math.min(p.coords.accuracy||0,200);                // allow for fuzzy GPS, up to 200 m
+      if(dist-slack<=CHECKIN_M) res({ok:true,dist});
+      else res({ok:false,msg:`Looks like you're about ${(dist/1609).toFixed(1)} mi away. Check in once you're at ${ev.venue}.`});
+    },()=>res({ok:false,msg:'Turn on location for Comuna to check in. It\'s only used to confirm you\'re there.'}),
+    {enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+  });
+}
+function checkIn(ev,dist){
   const hood=hoodByName(ev.hood), city=cityOf(hood);
   const hadHood=!!visitedHoods()[hood.name], hadCity=!!visitedCities()[city], hadCat=Object.values(S.places).some(p=>catKey(p.cat)===ev.category);
   const pl=S.places[ev.venue] || (S.places[ev.venue]={n:0,cat:ev.category,kind:kindOf(ev),lat:ev.lat,lng:ev.lng});
   const firstPlace=pl.n===0; pl.n++;
-  track(ev,'checkin'); S.checked.push(ev.id); S.visits++; S.points+=50; save(); dbCheckin(ev);
+  track(ev,'checkin'); S.checked.push(ev.id); S.visits++; S.points+=50; save(); dbCheckin(ev,dist);
   overlay.classList.remove('on');
   const un=[]; if(!hadHood) un.push(`New neighborhood: ${hood.name}`); if(!hadCity) un.push(`New city: ${city}`); if(!hadCat) un.push(`First ${CATS[catKey(ev.category)].short.toLowerCase()} stamp`); if(pl.n===5) un.push(`You're a regular here`);
   const m=document.getElementById('stampModal');
@@ -1522,10 +1549,10 @@ async function flushTrack(){
   if(error) console.warn('Supabase tracking save failed', error);
 }
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') flushTrack(); });
-async function dbCheckin(ev){
+async function dbCheckin(ev,dist){
   const u=await dbUser(); if(!u) return;
   const { error } = await sb.from('checkins').insert({ user_id:u.id, event_id:eidOf(ev), event_title:ev.title, venue:ev.venue||null,
-    neighborhood:ev.area||ev.hood||null, category:ev.category||null });
+    neighborhood:ev.area||ev.hood||null, category:ev.category||null, distance_m:dist??null });
   if(error){ console.warn('Supabase check-in save failed', error); dbStatus('check-in save failed: '+error.message,true); }
   dbProfile();
 }
