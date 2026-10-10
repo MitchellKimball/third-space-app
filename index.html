@@ -233,6 +233,7 @@ img{ max-width:100% }
 .kitsteps{ margin:12px 0 0; padding:0; list-style:none; counter-reset:k } .kitsteps li{ counter-increment:k; display:grid; grid-template-columns:34px 1fr; gap:10px; padding:10px 0; border-bottom:1px dashed #DCCDAE; font-size:14px }
 .kitsteps li:last-child{ border:0 } .kitsteps li::before{ content:counter(k); width:30px; height:30px; border-radius:50%; background:var(--sun); color:var(--green); font-family:var(--display); font-weight:900; font-size:17px; display:grid; place-items:center }
 .kitsteps b{ display:block; color:var(--ink) } .kitsteps span{ color:var(--muted); font-size:13px }
+.kitpts .kk{ font-family:inherit; font-size:inherit; color:inherit; font-weight:700 } .kitpts.sub2{ margin-left:18px; padding:8px 14px; font-size:13px } .kitpts.sub2 b{ font-size:17px }
 .kitpts{ display:flex; justify-content:space-between; align-items:center; background:var(--card); border-radius:14px; padding:12px 14px; margin-top:8px; font-size:14px } .kitpts b{ font-family:var(--display); font-weight:900; font-size:22px; color:var(--red) }
 .kitart{ display:flex; justify-content:center; align-items:center; gap:4px; margin:10px 0 2px }
 .stampmodal{ position:absolute; inset:0; z-index:60; display:none; align-items:center; justify-content:center; background:rgba(36,77,58,.94); color:var(--paper); flex-direction:column; text-align:center; padding:30px }
@@ -472,7 +473,7 @@ img{ max-width:100% }
           <div class="k" id="passName">Mitchell K. · Los Angeles</div>
           <div class="big" id="passCount">3 of 8 neighborhoods</div>
           <div class="bar"><i id="passBar" style="width:37%"></i></div>
-          <div class="passstats"><div><b id="psStreak">4 wk</b>streak</div><div><b id="psVisits">18</b>check-ins</div><div><b id="psPts">1,240</b>points</div></div>
+          <div class="passstats"><div><b id="psStreak">4 wk</b>streak</div><div><b id="psVisits">18</b>check-ins</div><div><b id="psPts">1,240</b><span id="psPtsLab">points</span></div></div>
           <div id="passSeal" style="position:absolute;right:-18px;top:-18px;opacity:.25"></div>
         </div>
         <div class="tabs" id="passTabs" role="tablist"></div>
@@ -538,8 +539,8 @@ img{ max-width:100% }
     <nav class="nav" id="nav">
       <button data-go="home" data-nav="home" aria-label="Map"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17s-5-4.6-5-8.5a5 5 0 0 1 10 0c0 3.9-5 8.5-5 8.5z"/><circle cx="12" cy="8.5" r="1.8"/><path d="M8 16.2c-2.4.4-4 1.2-4 2.1 0 1.5 3.6 2.7 8 2.7s8-1.2 8-2.7c0-.9-1.6-1.7-4-2.1"/></svg></button>
       <button data-go="plans" data-nav="plans" aria-label="Plans"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
-      <button data-go="passport" data-nav="passport" aria-label="Passport"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M4.6 7.5h14.8M4.6 16.5h14.8"/></svg></button>
       <button id="addSoon" aria-label="Add an event"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 8v8M8 12h8"/></svg></button>
+      <button data-go="passport" data-nav="passport" aria-label="Passport"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B675A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M4.6 7.5h14.8M4.6 16.5h14.8"/></svg></button>
     </nav>
 
     <div class="overlay" id="overlay"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
@@ -861,15 +862,18 @@ function kitSlides(){
      </ol>`,
     `<div class="k">Your passport</div><div class="h1" id="kitTitle">Collect stamps, points and patches.</div>
      <div class="kitart">${stamp}</div>
-     <div class="kitpts"><span>Save an event you're interested in</span><b>+10</b></div>
-     <div class="kitpts"><span>Check in when you're there (confirmed by location)</span><b>+50</b></div>
-     <div class="kitpts"><span>Add an event that gets approved (up to 3 a week)</span><b>+25</b></div>
+     <div class="kitpts"><span><b class="kk">Save it.</b> Tap Interested or RSVP</span><b>+10</b></div>
+     <div class="kitpts"><span><b class="kk">Go.</b> Check in when you're there</span><b>+100</b></div>
+     <div class="kitpts sub2"><span>First time at that place</span><b>+50</b></div>
+     <div class="kitpts sub2"><span>You saved it before you went</span><b>+25</b></div>
+     <div class="kitpts sub2"><span>Rate it after</span><b>+10</b></div>
+     <div class="kitpts"><span><b class="kk">Share it.</b> Add an event we approve, plus +25 for each person who goes</span><b>+25</b></div>
      <p class="sub" style="margin-top:12px">Every place you visit earns a stamp, and your first visit in each neighborhood earns its neighborhood stamp. Hit milestones (three neighborhoods, five visits to one spot) to unlock patches.</p>`,
     `<div class="k">A few more things</div><div class="h1" id="kitTitle">You're all set.</div>
      <ol class="kitsteps">
       <li><div><b>Your daily Top 4</b><span>Every day we pick four things near you: a Headliner, a Staple, a Hidden Gem and a Pop-up.</span></div></li>
       <li><div><b>Climb the leaderboard</b><span>See how you stack up against other ${hood} explorers. The top five neighborhood leaders at the end of each month get gift cards to their favorite spots (you need at least 3 check-ins that month to qualify).</span></div></li>
-      <li><div><b>Know about something cool?</b><span>Add it with the + tab. Once we approve it, it goes on the map and you get +25 points (up to 3 events a week). Events already on the map can't be added again.</span></div></li>
+      <li><div><b>Know about something cool?</b><span>Add it with the + tab. Once we approve it, it goes on the map and you get +25 points (up to 3 events a week), plus +25 for everyone who checks in. Events already on the map can't be added again.</span></div></li>
      </ol>`
   ];
 }
@@ -1277,7 +1281,7 @@ function openSheet(id){
   sheet.querySelectorAll('a.act').forEach(a=>a.addEventListener('click',()=>track(ev,a.textContent==='Directions'?'directions':'link')));
   document.getElementById('sheetX').onclick=()=>overlay.classList.remove('on');
   document.getElementById('calBtn').onclick=()=>{ track(ev,'calendar'); addToCalendar(ev); };
-  const r=document.getElementById('rsvpBtn'); if(r) r.onclick=()=>{ track(ev,needsRsvp(ev)?'rsvp':'interested'); if(needsRsvp(ev)) window.open(okRsvpLink(ev),'_blank','noopener'); S.rsvp.push(id); S.points+=10; save(); dbRsvp(ev); overlay.classList.remove('on'); renderHome(); showRsvp(events.find(e=>e.id===id)); };
+  const r=document.getElementById('rsvpBtn'); if(r) r.onclick=()=>{ track(ev,needsRsvp(ev)?'rsvp':'interested'); if(needsRsvp(ev)) window.open(okRsvpLink(ev),'_blank','noopener'); S.rsvp.push(id); const pts=savePts(ev); S.points+=pts; save(); dbRsvp(ev); overlay.classList.remove('on'); renderHome(); showRsvp(events.find(e=>e.id===id),pts); };
   const c=document.getElementById('checkBtn'); if(c) c.onclick=async()=>{ c.disabled=true; const lab=c.textContent; c.textContent='Checking your location…';
     const v=await verifyHere(ev); if(!v.ok){ c.disabled=false; c.textContent=lab; toast(v.msg); return; } checkIn(ev,v.dist); };
   const sh=document.getElementById('shareBtn'); if(sh) sh.onclick=()=>{ track(ev,'invite'); shareEv(ev); };
@@ -1331,18 +1335,25 @@ function verifyHere(ev){
     {enableHighAccuracy:true,timeout:15000,maximumAge:60000});
   });
 }
+/* points. Save +10 (5 a day). Go +100, plus +50 first time at a place, +25 if you saved it first, +10 for rating it.
+   Share an event +25 (3 a week), plus +25 for each person who goes (max 500 per event). The leaderboard in Supabase uses the same rules. */
+const PTS={ save:10, checkin:100, firstPlace:50, savedFirst:25, rate:10, submit:25, turnout:25 }, SAVES_PER_DAY=5;
+function savePts(ev){ const d=new Date().toDateString(); if(!S.saveDay||S.saveDay.d!==d) S.saveDay={d,n:0};
+  S.saveDay.n++; return S.saveDay.n<=SAVES_PER_DAY? PTS.save : 0; }
 function checkIn(ev,dist){
   const hood=hoodByName(ev.hood), city=cityOf(hood);
   const hadHood=!!visitedHoods()[hood.name], hadCity=!!visitedCities()[city], hadCat=Object.values(S.places).some(p=>catKey(p.cat)===ev.category);
   const pl=S.places[ev.venue] || (S.places[ev.venue]={n:0,cat:ev.category,kind:kindOf(ev),lat:ev.lat,lng:ev.lng});
   const firstPlace=pl.n===0; pl.n++;
-  track(ev,'checkin'); S.checked.push(ev.id); S.visits++; S.points+=50; save(); dbCheckin(ev,dist);
+  const earned=[[PTS.checkin,'checked in']]; if(firstPlace) earned.push([PTS.firstPlace,'first time here']); if(S.rsvp.includes(ev.id)) earned.push([PTS.savedFirst,'you said you\'d go']);
+  const total=earned.reduce((a,x)=>a+x[0],0);
+  track(ev,'checkin'); S.checked.push(ev.id); S.visits++; S.points+=total; save(); dbCheckin(ev,dist);
   overlay.classList.remove('on');
   const un=[]; if(!hadHood) un.push(`New neighborhood: ${hood.name}`); if(!hadCity) un.push(`New city: ${city}`); if(!hadCat) un.push(`First ${CATS[catKey(ev.category)].short.toLowerCase()} stamp`); if(pl.n===5) un.push(`You're a regular here`);
   const m=document.getElementById('stampModal');
   m.innerHTML=`<div class="stampbox">${placeStamp(ev.venue,hood.name,ev.category,pl.n,0,240,160,'#F3E7D1')}</div>
     <h3>${firstPlace?`Stamped: ${ev.venue}`:`Back at ${ev.venue}`}</h3>
-    <p>${ev.title}. +50 points, and ${ev.venue} knows you came.</p>
+    <p>${ev.title}. <b>+${total} points</b> (${earned.map(x=>`+${x[0]} ${x[1]}`).join(', ')}), and ${ev.venue} knows you came.</p>
     ${un.length?`<div class="unlocks">${un.map(u=>`<span>${u}</span>`).join('')}</div>`:''}
     <button class="btn primary" id="closeStamp" style="max-width:260px">Nice</button>`;
   m.classList.add('on');
@@ -1355,12 +1366,12 @@ const ROUNDUP=/welikela|timeout\.com|smdp\.com|hoodline|yelp\.com|wikipedia|even
 const isRoundup=u=>ROUNDUP.test(u||'');
 const okRsvpLink=ev=>{ const u=ev.ticket||(ev.rsvpReq?ev.source:''); return /^https?:/i.test(u||'') && !isRoundup(u)? u : ''; };
 function needsRsvp(ev){ return !!okRsvpLink(ev) && (ev.rsvpReq || !!ev.ticket); }
-function showRsvp(ev){
+function showRsvp(ev,pts=0){
   if(!ev) return;
   const m=document.getElementById('stampModal');
   m.innerHTML=`<div class="stampbox">${rsvpStamp(ev)}</div>
     <h3>${needsRsvp(ev)?'Saved. Finish your RSVP':'Saved to your plans'}</h3>
-    <p>${ev.title}${ev.venue&&ev.venue!==ev.title?` at ${ev.venue}`:''}. ${needsRsvp(ev)?'Complete the RSVP on the host\'s page so they hold your spot. ':''}+10 points, and it's in your Plans. Check in when you get there for the stamp and +50 more.</p>
+    <p>${ev.title}${ev.venue&&ev.venue!==ev.title?` at ${ev.venue}`:''}. ${needsRsvp(ev)?'Complete the RSVP on the host\'s page so they hold your spot. ':''}${pts?`+${pts} points, and it's`:'It\'s'} in your Plans${pts?'':' (you\'ve hit today\'s 5 saves for points)'}. Check in when you get there for the stamp and +${PTS.checkin+PTS.savedFirst} more.</p>
     <div class="unlocks"><button class="btn ghost" id="rsvpCal" style="border-color:var(--paper);color:var(--paper);padding:10px 18px">Remind me (+ Calendar)</button><button class="btn ghost" id="rsvpInvite" style="border-color:var(--paper);color:var(--paper);padding:10px 18px">Invite friends</button></div>
     <button class="btn primary" id="closeStamp" style="max-width:260px">Nice</button>`;
   m.classList.add('on');
@@ -1369,6 +1380,17 @@ function showRsvp(ev){
   document.getElementById('rsvpInvite').onclick=()=>{ m.classList.remove('on'); openSheet(ev.id); setTimeout(()=>document.getElementById('shareBtn')?.click(),50); };
 }
 
+// your points this month, from the same Supabase view as the leaderboard (so both always match)
+let myPtsAt=0;
+async function loadMyPoints(){
+  if(!sb || Date.now()-myPtsAt<60000) return; myPtsAt=Date.now();
+  try{ const u=(await sb.auth.getSession()).data.session?.user; if(!u) return;
+    const { data, error } = await sb.from('leaderboard_month').select('points').eq('user_id',u.id).maybeSingle(); if(error) throw error;
+    const n=data?.points||0; if(S.monthPts!==n){ S.monthPts=n; save(); }
+    const el=document.getElementById('psPts'); if(el) el.textContent=n.toLocaleString();
+    const lab=document.getElementById('psPtsLab'); if(lab) lab.textContent='points this month';
+  }catch(e){ console.warn('Supabase my points failed', e); }
+}
 /* ---------- neighborhood leaderboard (real points this month, from Supabase) ---------- */
 async function loadLeaderboard(){
   const el=document.getElementById('lbList'), me=shortName();
@@ -1434,7 +1456,7 @@ function renderPassport(){
   const nP=Object.keys(places).length, nH=Object.keys(H).length;
   document.getElementById('passCount').textContent=`${nP} places, ${nH} neighborhoods`;
   document.getElementById('passBar').style.width=Math.min(100,nH/HOODS.length*100)+'%';
-  document.getElementById('psStreak').textContent=S.streak+' wk'; document.getElementById('psVisits').textContent=S.visits; document.getElementById('psPts').textContent=S.points.toLocaleString();
+  document.getElementById('psStreak').textContent=S.streak+' wk'; document.getElementById('psVisits').textContent=S.visits; document.getElementById('psPts').textContent=(S.monthPts??S.points).toLocaleString(); loadMyPoints();
   document.getElementById('passSeal').innerHTML=omark(130,'#F3E7D1','#F3E7D1');
   const byKind=k=>Object.entries(places).filter(([,p])=>kindOf(p)===k);
   const tabs=[...Object.keys(KINDS).map(k=>[k,`${tierIcon(k,13)} ${KINDS[k].plural}`,byKind(k).length]),['hoods','Neighborhoods',nH]];
@@ -1531,7 +1553,7 @@ async function dbProfile(){
 const eidOf = ev => ev.eid || String(ev.id);
 async function dbRsvp(ev){
   if(!ev) return; const u=await dbUser(); if(!u) return;
-  const { error } = await sb.from('rsvps').upsert({ user_id:u.id, event_id:eidOf(ev), event_title:ev.title });
+  const { error } = await sb.from('rsvps').upsert({ user_id:u.id, event_id:eidOf(ev), event_title:ev.title, kind:needsRsvp(ev)?'rsvp':'interested' });
   if(error){ console.warn('Supabase RSVP save failed', error); dbStatus('RSVP save failed: '+error.message,true); }
   dbProfile(); loadGoing();
 }
@@ -1609,7 +1631,8 @@ function askHowWasIt(ev){
   document.getElementById('fbVote').onclick=e=>{ const b=e.target.closest('[data-v]'); if(!b) return; vote=b.dataset.v; [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b)); };
   document.getElementById('fbTags').onclick=e=>{ const b=e.target.closest('[data-t]'); if(!b) return; tags.has(b.dataset.t)? tags.delete(b.dataset.t) : tags.add(b.dataset.t); b.classList.toggle('on'); };
   document.getElementById('fbSend').onclick=async()=>{ const msg=document.getElementById('fbText').value.trim(); if(!vote && !tags.size && !msg){ close(); return; }
-    close(); await sendFeedback({kind:'event', mood:vote||null, tags:[...tags], message:msg||null, event_id:eidOf(ev), event_title:ev.title}); toast('Thanks! That helps us pick good events.'); };
+    close(); await sendFeedback({kind:'event', mood:vote||null, tags:[...tags], message:msg||null, event_id:eidOf(ev), event_title:ev.title});
+    S.rated=S.rated||[]; if(!S.rated.includes(ev.id)){ S.rated.push(ev.id); S.points+=PTS.rate; save(); toast(`Thanks! +${PTS.rate} points. That helps us pick good events.`); } else toast('Thanks! That helps us pick good events.'); };
 }
 
 /* ---------- live data (Google Sheet) ---------- */
