@@ -785,9 +785,11 @@ let tt; function toast(msg){ const t=document.getElementById('toast'); t.textCon
 /* ---------- onboarding ---------- */
 function buildOnb(){
   const f=document.getElementById('stampfield');
-  f.innerHTML=`<div style="left:6px;top:10px">${hoodStamp('Santa Monica',150,-10,true)}</div>
-  <div style="right:4px;top:40px">${hoodStamp('Silver Lake',136,9,true)}</div>
-  <div style="left:96px;top:150px">${hoodStamp('West Hollywood',138,4,true)}</div>`;
+  // a mix of what you collect: neighborhood stamps, a patch and the Comuna pennant
+  f.innerHTML=`<div style="left:4px;top:4px">${hoodStamp('Santa Monica',140,-10,true)}</div>
+  <img src="patches/pennant.webp" alt="" style="right:-4px;top:14px;width:178px;transform:rotate(9deg);filter:drop-shadow(0 3px 3px rgba(0,0,0,.3))">
+  <img src="patches/scout.webp" alt="" style="left:30px;top:150px;width:112px;transform:rotate(-8deg);filter:drop-shadow(0 3px 3px rgba(0,0,0,.3))">
+  <div style="right:14px;top:142px">${hoodStamp('Silver Lake',134,7,true)}</div>`;
 }
 const locNext=document.getElementById('locNext');
 function setHood(name,loc){ const h=hoodByName(name); S.nb=h.name; S.loc=loc||{lat:h.lat,lng:h.lng}; save(); rebuildMap(); locNext.disabled=false; drawMini(); }
@@ -1456,6 +1458,11 @@ const PATCHES=[ {img:'patches/first-stamp.webp',t:'FIRST STAMP',s:'WELCOME',sc:'
   {img:'patches/tried-everything.webp',t:'ALL 13 KINDS',s:'TRIED EVERYTHING',sc:'night',ok:()=>new Set(Object.values(S.places).map(p=>catKey(p.cat))).size>=13},
   {img:'patches/coast-to-lake.webp',t:'COAST TO LAKE',s:'SANTA MONICA',sc:'beach',ok:()=>!!visitedCities()['Santa Monica']},
   {img:'patches/scout.webp',t:'SCOUT',s:'3 EVENTS ADDED',sc:'lake',ok:()=>(S.subCredited||[]).length>=3} ];
+// locked patches stay a surprise: a stitched "?" instead of the real design
+function mysteryPatch(){
+  const d='M14 26 Q14 12 28 12 L68 12 Q82 12 82 26 L82 62 Q82 86 48 98 Q14 86 14 62 Z';
+  return `<svg width="96" height="104" viewBox="0 0 96 104" role="img" aria-label="Locked patch"><path d="${d}" fill="#EADCC0"/><path d="${d}" fill="none" stroke="#CDBF9F" stroke-width="7"/><path d="${d}" fill="none" stroke="#A89C82" stroke-width="1.6" stroke-dasharray="3 3" transform="translate(48 55) scale(.86) translate(-48 -55)"/><text x="48" y="72" text-anchor="middle" font-family="Big Shoulders Display" font-weight="900" font-size="46" fill="#A89C82">?</text></svg>`;
+}
 function renderPassport(){
   const places=S.places, H=visitedHoods();
   const nP=Object.keys(places).length, nH=Object.keys(H).length;
@@ -1479,7 +1486,7 @@ function renderPassport(){
       HOODS.map((h,i)=> H[h.name]? `<div class="slot">${STAMP_IMG[h.name] ? hoodStamp(h.name,128,rots[i%rots.length])+`<div class="pagenote" style="margin-top:4px">${H[h.name]} visit${H[h.name]>1?'s':''}</div>` : stampSVG(h.name.toUpperCase(),`${H[h.name]} VISIT${H[h.name]>1?'S':''} · COMUNA`,h.glyph,h.color,132,rots[i%rots.length])}</div>` : `<div class="slot"><div class="ghost-stamp">${h.name}?</div></div>`).join('')+`</div>`;
   }
   document.getElementById('passPage').innerHTML=html;
-  document.getElementById('patchList').innerHTML=PATCHES.map(p=>{ const ok=p.ok(); return `<div class="patch ${ok?'':'locked'}">${p.img?`<img src="${p.img}" alt="${p.t} patch" width="96" height="104" loading="lazy">`:patchSVG(p.t,p.s,p.sc,92,110)}<div>${ok?'Earned':'Locked'}</div></div>`; }).join('');
+  document.getElementById('patchList').innerHTML=PATCHES.map(p=>{ const ok=p.ok(); return `<div class="patch ${ok?'':'locked'}">${!ok? mysteryPatch() : p.img?`<img src="${p.img}" alt="${p.t} patch" width="96" height="104" loading="lazy">`:patchSVG(p.t,p.s,p.sc,92,110)}<div>${ok?'Earned':'Not yet'}</div></div>`; }).join('');
   document.getElementById('lbTitle').textContent=`Top 5 explorers in ${S.nb||'your neighborhood'}`;
   loadLeaderboard();
 }
