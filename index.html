@@ -110,6 +110,8 @@ img{ max-width:100% }
 .flabel{ font-size:13px; font-weight:700; color:var(--muted); margin-top:16px; display:block }
 .interests{ display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 20px }
 .interests button{ border:1.5px solid var(--ink); border-radius:30px; padding:9px 14px; font-size:14px; font-weight:500 }
+.tierline{ display:flex; gap:7px; align-items:center; font-size:12.5px; margin:6px 0 2px; opacity:.85 }
+.interests button small{ display:block; font-size:11.5px; font-weight:400; opacity:.75; margin-top:2px }
 .interests button[aria-pressed="true"]{ background:var(--green); border-color:var(--green); color:var(--paper) }
 
 /* ---------- home ---------- */
@@ -596,19 +598,19 @@ const HOODS = [
 /* ---------- categories: each gets a colored dot ---------- */
 // Brand Guide v2 core colors (Signal Red, Ink, Comuna Green, Map Blue, Sun) plus deeper and lighter tints of them, one per category.
 const CATS = {
-  music:     { label:'Music & Arts',             short:'Music & Arts', bg:'#4B66A8' },
-  food:      { label:'Food & Drink',             short:'Food',         bg:'#C9533D' },
-  wellness:  { label:'Health & Wellness',        short:'Wellness',     bg:'#244D3A' },
-  workshops: { label:'Workshops & Learning',     short:'Workshops',    bg:'#D6A638' },
-  social:    { label:'Social & Meetups',         short:'Social',       bg:'#E08A6E' },
-  outdoors:  { label:'Outdoors & Nature',        short:'Outdoors',     bg:'#6E9A7F' },
-  markets:   { label:'Markets & Shopping',       short:'Markets',      bg:'#A67C1E' },
-  comedy:    { label:'Comedy & Performance',     short:'Comedy',       bg:'#8E3A2B' },
-  film:      { label:'Film & Media',             short:'Film',         bg:'#2D3E6B' },
-  immersive: { label:'Immersive & Experiential', short:'Immersive',    bg:'#8FA6D6' },
-  nightlife: { label:'Nightlife',                short:'Nightlife',    bg:'#26251F' },
-  community: { label:'Community & Civic',        short:'Community',    bg:'#6B675A' },
-  sports:    { label:'Sports & Games',           short:'Sports',       bg:'#E3B94F' }
+  music:     { label:'Music & Arts',             short:'Music & Arts', bg:'#4B66A8', ex:'concerts, gallery nights, art walks' },
+  food:      { label:'Food & Drink',             short:'Food',         bg:'#C9533D', ex:'food festivals, tastings, night markets' },
+  wellness:  { label:'Health & Wellness',        short:'Wellness',     bg:'#244D3A', ex:'free yoga, sound baths, meditation' },
+  workshops: { label:'Workshops & Learning',     short:'Workshops',    bg:'#D6A638', ex:'classes, talks, author readings' },
+  social:    { label:'Social & Meetups',         short:'Social',       bg:'#E08A6E', ex:'run clubs, language exchanges, meetups' },
+  outdoors:  { label:'Outdoors & Nature',        short:'Outdoors',     bg:'#6E9A7F', ex:'hikes, beach cleanups, star parties' },
+  markets:   { label:'Markets & Shopping',       short:'Markets',      bg:'#A67C1E', ex:'farmers markets, flea markets, makers fairs' },
+  comedy:    { label:'Comedy & Performance',     short:'Comedy',       bg:'#8E3A2B', ex:'stand-up, improv, theater' },
+  film:      { label:'Film & Media',             short:'Film',         bg:'#2D3E6B', ex:'outdoor movies, screenings with Q&As' },
+  immersive: { label:'Immersive & Experiential', short:'Immersive',    bg:'#8FA6D6', ex:'light shows, interactive art, one-of-a-kind experiences' },
+  nightlife: { label:'Nightlife',                short:'Nightlife',    bg:'#26251F', ex:'DJ nights, live bands, drag shows' },
+  community: { label:'Community & Civic',        short:'Community',    bg:'#6B675A', ex:'neighborhood festivals, parades, cleanups' },
+  sports:    { label:'Sports & Games',           short:'Sports',       bg:'#E3B94F', ex:'trivia, game nights, pickleball, big games' }
 };
 // older saved check-ins used these category names
 const CAT_ALIAS = { art:'music', games:'sports' };
@@ -617,10 +619,10 @@ function catDot(k,d){ return `<span aria-hidden="true" style="display:block;flex
 /* ---------- place types: each gets its own passport page ---------- */
 // Event tiers. Internal keys stay the same so existing saved passports keep working; only names and meaning changed.
 const KINDS = {
-  cornerstone:{ label:'Headliner',  plural:'Headliners',  blurb:'the big ones: festivals, street takeovers, huge crowds' },
-  regular:    { label:'Staple',     plural:'Staples',     blurb:'always on: weekly run clubs, markets, trivia' },
-  niche:      { label:'Hidden Gem', plural:'Hidden Gems', blurb:'small, specialty, worth finding' },
-  popup:      { label:'Pop-up',     plural:'Pop-ups',     blurb:'here once, don\'t miss it' }
+  cornerstone:{ label:'Headliner',  plural:'Headliners',  blurb:'big events worth a trip: festivals, concerts, street takeovers' },
+  regular:    { label:'Staple',     plural:'Staples',     blurb:'happens every week or month: run clubs, markets, trivia' },
+  niche:      { label:'Hidden Gem', plural:'Hidden Gems', blurb:'small and local, easy to miss: readings, workshops, tiny shows' },
+  popup:      { label:'Pop-up',     plural:'Pop-ups',     blurb:'one time only, don\'t miss it' }
 };
 // sheet Tier column: new names or the old ones (Cornerstone / Regular / Niche / Pop-Up)
 function tierKey(t){ t=String(t||''); return /headlin|corner/i.test(t)?'cornerstone' : /hidden|gem|niche/i.test(t)?'niche' : /pop/i.test(t)?'popup' : /staple|regular/i.test(t)?'regular' : ''; }
@@ -793,9 +795,9 @@ document.getElementById('allowLoc').addEventListener('click',()=>{
 });
 
 /* sign-up: interests */
-const INTERESTS=Object.values(CATS).map(c=>c.label);
+const INTERESTS=Object.values(CATS).map(c=>c.label), INT_EX=Object.fromEntries(Object.values(CATS).map(c=>[c.label,c.ex]));
 const intNext=document.getElementById('intNext');
-function renderInterests(){ const mine=S.interests||[]; document.getElementById('interestList').innerHTML=INTERESTS.map(t=>`<button aria-pressed="${mine.includes(t)}" data-int="${t}">${t}</button>`).join(''); intNext.disabled=!mine.length; intNext.textContent=mine.length?`Continue with ${mine.length}`:'Pick at least one'; }
+function renderInterests(){ const mine=S.interests||[]; document.getElementById('interestList').innerHTML=INTERESTS.map(t=>`<button aria-pressed="${mine.includes(t)}" data-int="${t}">${t}<small>${INT_EX[t]}</small></button>`).join(''); intNext.disabled=!mine.length; intNext.textContent=mine.length?`Continue with ${mine.length}`:'Pick at least one'; }
 document.getElementById('interestList').addEventListener('click',e=>{ const b=e.target.closest('[data-int]'); if(!b) return; const t=b.dataset.int, m=S.interests=S.interests||[]; m.includes(t)? m.splice(m.indexOf(t),1) : m.push(t); save(); renderInterests(); });
 intNext.onclick=()=>go('onb4');
 
@@ -861,13 +863,13 @@ function kitSlides(){
      <div class="kitart">${stamp}</div>
      <div class="kitpts"><span>Save an event you're interested in</span><b>+10</b></div>
      <div class="kitpts"><span>Check in when you show up</span><b>+50</b></div>
-     <div class="kitpts"><span>Add an event that gets approved</span><b>+25</b></div>
+     <div class="kitpts"><span>Add an event that gets approved (up to 3 a week)</span><b>+25</b></div>
      <p class="sub" style="margin-top:12px">Every place you visit earns a stamp, and your first visit in each neighborhood earns its neighborhood stamp. Hit milestones (three neighborhoods, five visits to one spot) to unlock patches.</p>`,
     `<div class="k">A few more things</div><div class="h1" id="kitTitle">You're all set.</div>
      <ol class="kitsteps">
       <li><div><b>Your daily Top 4</b><span>Every day we pick four things near you: a Headliner, a Staple, a Hidden Gem and a Pop-up.</span></div></li>
-      <li><div><b>Climb the leaderboard</b><span>See how you stack up against other ${hood} explorers. The top five neighborhood leaders at the end of each month get gift cards to their favorite spots.</span></div></li>
-      <li><div><b>Know about something cool?</b><span>Add it with the + tab. Once we approve it, it goes on the map and you get +25 points.</span></div></li>
+      <li><div><b>Climb the leaderboard</b><span>See how you stack up against other ${hood} explorers. The top five neighborhood leaders at the end of each month get gift cards to their favorite spots (you need at least 3 check-ins that month to qualify).</span></div></li>
+      <li><div><b>Know about something cool?</b><span>Add it with the + tab. Once we approve it, it goes on the map and you get +25 points (up to 3 events a week). Events already on the map can't be added again.</span></div></li>
      </ol>`
   ];
 }
@@ -1129,8 +1131,7 @@ function openSubmit(){
       <label>Short description<textarea class="field fbtext" name="desc" maxlength="300" placeholder="What should people know?" style="min-height:70px;margin-top:8px"></textarea></label>
       <button class="btn primary" type="submit" style="margin-top:14px">Submit for review</button>
     </form>`;
-  overlay.classList.add('on'); track(ev,'view');
-  sheet.querySelectorAll('a.act').forEach(a=>a.addEventListener('click',()=>track(ev,a.textContent==='Directions'?'directions':'link')));
+  overlay.classList.add('on');
   document.getElementById('sheetX').onclick=()=>overlay.classList.remove('on');
   const f=document.getElementById('subForm'), addr=f.address, sugg=document.getElementById('subSugg');
   f.date.min=new Date().toISOString().slice(0,10);
@@ -1148,8 +1149,10 @@ function openSubmit(){
     if(!link) return toast('Add a link that starts with https://');
     if(!v.title.trim()||!v.category||!v.date) return toast('Fill in the required fields (*)');
     if(!subPlace) return toast('Pick a place from the suggestions so it lands on the map');
-    const dup=events.find(x=>String(x.title).trim().toLowerCase()===v.title.trim().toLowerCase());
-    if(dup && !confirm('Looks like "'+dup.title+'" is already on the map. Submit anyway?')) return;
+    const norm=t=>String(t||'').toLowerCase().replace(/&amp;/g,'&').replace(/[^a-z0-9 ]/g,' ').replace(/\b(the|at|a|an|and|of|in)\b/g,' ').replace(/\s+/g,' ').trim();
+    const nt=norm(v.title), day=parseDay(v.date), sameDay=x=>day&&x.start&&x.start.toDateString()===day.toDateString();
+    const dup=events.find(x=>{ const t=norm(x.title); return t && (t===nt || (sameDay(x) && (t.includes(nt)||nt.includes(t)))); });
+    if(dup) return toast('"'+dup.title.replace(/&amp;/g,'&')+'" is already on the map, so it can\'t be added again. Thanks for looking out!');
     const u=await dbUser(); if(!u) return toast('Couldn\'t connect. Try again in a moment.');
     const { error } = await sb.from('event_submissions').insert({ user_id:u.id, link, title:v.title.trim(), category:v.category, event_date:v.date, start_time:v.time||null, end_time:v.end||null,
       recurrence:v.recurrence, venue:(subPlace.name||subPlace.address.split(',')[0]).slice(0,80), address:subPlace.address, lat:subPlace.lat, lng:subPlace.lng, price:v.price, description:(v.desc||'').trim()||null, is_host:!!v.host });
@@ -1187,8 +1190,14 @@ async function loadSubmissions(){
     events=events.filter(x=>!x.community).concat(communityEvents);
     const u=(await sb.auth.getSession()).data.session?.user;
     if(u){ const mine=(data||[]).filter(r=>r.user_id===u.id).map(r=>r.id); S.subCredited=S.subCredited||[];
-      const fresh=mine.filter(id=>!S.subCredited.includes(id));
-      if(fresh.length){ S.subCredited.push(...fresh); S.points+=25*fresh.length; save(); dbProfile(); toast(fresh.length>1? `${fresh.length} of your events were approved: +${25*fresh.length} points!` : 'Your event was approved and is on the map: +25 points!'); } }
+      // only your first 3 approved events each week earn points (matches the leaderboard in Supabase)
+      const wk=d=>{ const x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-((x.getDay()+6)%7)); return x.getTime(); };
+      const mineRows=(data||[]).filter(r=>r.user_id===u.id).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)), perWk={}, earns=new Set();
+      mineRows.forEach(r=>{ const w=wk(r.created_at); perWk[w]=(perWk[w]||0)+1; if(perWk[w]<=3) earns.add(r.id); });
+      const newly=mine.filter(id=>!S.subCredited.includes(id)); S.subCredited.push(...newly);
+      const fresh=newly.filter(id=>earns.has(id));
+      if(newly.length && !fresh.length){ save(); toast('Your event was approved and is on the map. Thanks! (Points max out at 3 events a week.)'); }
+      if(fresh.length){ S.points+=25*fresh.length; save(); dbProfile(); toast(fresh.length>1? `${fresh.length} of your events were approved: +${25*fresh.length} points!` : 'Your event was approved and is on the map: +25 points!'); } }
     if(current==='home') renderHome();
   }catch(e){ console.warn('Supabase submissions failed', e); }
 }
@@ -1247,6 +1256,7 @@ function openSheet(id){
     <div class="cat" style="display:flex;align-items:center;gap:8px">${catDot(ev.category,12)}${CATS[catKey(ev.category)].label} · ${ev.area||ev.hood}</div>
     <h2>${ev.title}</h2>
     <div class="sub">${ev.venue}</div>
+    <div class="tierline">${tierIcon(kindOf(ev),14)}<span><b>${KINDS[kindOf(ev)].label}:</b> ${KINDS[kindOf(ev)].blurb}</span></div>
     ${badges(ev).length?`<div class="badges">${badges(ev).map(x=>`<span>${x}</span>`).join('')}</div>`:''}
     <div class="facts"><div class="fact"><div class="k">${ev.start&&!/one-off/i.test(ev.rec||'')?'Next':'When'}</div><div class="v">${ev.start?nextWhen(ev):(ev.time||'Soon')}</div>${ev.start&&ev.recDetail&&!/one-off/i.test(ev.rec)?`<div class="more">${ev.recDetail}</div>`:''}</div><div class="fact"><div class="k">How far</div><div class="v">${mins(ev.mi)} min · ${ev.mi.toFixed(1)} mi</div></div></div>
     ${ev.going?`<div class="goingrow">${faces?`<div class="faces">${faces}</div>`:''}${ev.going} interested${ev.fromGroup?`, ${ev.fromGroup} you know`:''}</div>`:''}
@@ -1254,14 +1264,17 @@ function openSheet(id){
     <div class="actions">
       <a class="act" href="${directionsUrl(ev)}" target="_blank" rel="noopener">Directions</a>
       <button class="act" id="calBtn" aria-label="Add to calendar">+ Calendar</button>
-      ${(ev.ticket||ev.source)?`<a class="act" href="${ev.ticket||ev.source}" target="_blank" rel="noopener noreferrer">${ev.community?'See photos & details':ev.ticket?(/paid/i.test(ev.price)?'Get tickets':'RSVP link'):'Event page'}</a>`:''}
+      ${(()=>{ const u=(ev.ticket&&!isRoundup(ev.ticket))?ev.ticket:(ev.source&&!isRoundup(ev.source))?ev.source:(ev.ticket||ev.source); if(!u) return '';
+        const lab=ev.community?'See photos & details':isRoundup(u)?'Read about it':u===ev.ticket?(/paid/i.test(ev.price)?'Get tickets':'RSVP link'):'Event page';
+        return `<a class="act" href="${u}" target="_blank" rel="noopener noreferrer">${lab}</a>`; })()}
     </div>
     <div class="host"><div class="avatar">${initials}</div><div><b>${ev.host||'Local host'}</b><div class="sub" style="font-size:12px">Hosting on Comuna</div></div></div>
     ${(ev.parking||ev.alcohol!==undefined)?`<div class="practical">${ev.parking?`Parking: ${ev.parking}<br>`:''}${ev.alcohol===true?'Drinks available, 21+ to drink':ev.alcohol===false?'Alcohol-free':''}</div>`:''}
     ${done? `<button class="btn green" disabled>Stamped. See you next time.</button>`
       : inn? `<div class="row2"><button class="btn ghost" id="shareBtn">Invite friends</button><button class="btn primary" id="checkBtn">I'm here: check in</button></div>`
       : `<div class="row2"><button class="btn ghost" id="shareBtn">Invite friends</button><button class="btn primary" id="rsvpBtn">${needsRsvp(ev)?'RSVP':'Interested'}</button></div>`}`;
-  overlay.classList.add('on');
+  overlay.classList.add('on'); track(ev,'view');
+  sheet.querySelectorAll('a.act').forEach(a=>a.addEventListener('click',()=>track(ev,a.textContent==='Directions'?'directions':'link')));
   document.getElementById('sheetX').onclick=()=>overlay.classList.remove('on');
   document.getElementById('calBtn').onclick=()=>{ track(ev,'calendar'); addToCalendar(ev); };
   const r=document.getElementById('rsvpBtn'); if(r) r.onclick=()=>{ track(ev,needsRsvp(ev)?'rsvp':'interested'); if(needsRsvp(ev)) window.open(okRsvpLink(ev),'_blank','noopener'); S.rsvp.push(id); S.points+=10; save(); dbRsvp(ev); overlay.classList.remove('on'); renderHome(); showRsvp(events.find(e=>e.id===id)); };
@@ -1310,7 +1323,10 @@ function checkIn(ev){
 }
 
 // Most events are free and open: "Interested" saves them. RSVP only when the host needs one, and it opens their link.
-const okRsvpLink=ev=>{ const u=ev.ticket||(ev.rsvpReq?ev.source:''); return /^https?:/i.test(u||'')? u : ''; };
+// links to roundup articles, listicles and search pages: shown as "Read about it", never as the event page or RSVP
+const ROUNDUP=/welikela|timeout\.com|smdp\.com|hoodline|yelp\.com|wikipedia|eventbrite\.\w+\/d\/|laist\.com|secretlosangeles|atly\.com|nightlifehiker|localemagazine|fodors|opentable|westsidelosangeles|trivianearme|dolosangeles\.com\/(p|venues)\/|allevents|outxout\.com\/guides|tiktok|mommypoppins|venicepaparazzi|lamag\.com|lonelyplanet|211la|discoverlosangeles|eventsincalifornia|eventticketscenter|foodjournalmagazine|pubtrivianight|free2funla|westsidetoday|beverlypress|pasadenanow|sfvlocal|ianirarousso|clmp\.org|songkick|bandsintown|foxla\.com|pickleheads|nohoartsdistrict\.com\/noho-news|theinfatuation|patch\.com/i;
+const isRoundup=u=>ROUNDUP.test(u||'');
+const okRsvpLink=ev=>{ const u=ev.ticket||(ev.rsvpReq?ev.source:''); return /^https?:/i.test(u||'') && !isRoundup(u)? u : ''; };
 function needsRsvp(ev){ return !!okRsvpLink(ev) && (ev.rsvpReq || !!ev.ticket); }
 function showRsvp(ev){
   if(!ev) return;
@@ -1329,7 +1345,7 @@ function showRsvp(ev){
 /* ---------- neighborhood leaderboard (real points this month, from Supabase) ---------- */
 async function loadLeaderboard(){
   const el=document.getElementById('lbList'), me=shortName();
-  const empty=`<div class="empty">No points in ${escH(S.nb||'your neighborhood')} yet this month. Save, check in or add an event to get on the board. Top five at month's end win gift cards to their favorite spots.</div>`;
+  const empty=`<div class="empty">No points in ${escH(S.nb||'your neighborhood')} yet this month. Save, check in or add an event to get on the board. Top five at month's end (with at least 3 check-ins) win gift cards to their favorite spots.</div>`;
   if(!sb){ el.innerHTML=empty; return; }
   try{
     const u=(await sb.auth.getSession()).data.session?.user;
