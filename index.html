@@ -1129,7 +1129,8 @@ function openSubmit(){
       <label>Short description<textarea class="field fbtext" name="desc" maxlength="300" placeholder="What should people know?" style="min-height:70px;margin-top:8px"></textarea></label>
       <button class="btn primary" type="submit" style="margin-top:14px">Submit for review</button>
     </form>`;
-  overlay.classList.add('on');
+  overlay.classList.add('on'); track(ev,'view');
+  sheet.querySelectorAll('a.act').forEach(a=>a.addEventListener('click',()=>track(ev,a.textContent==='Directions'?'directions':'link')));
   document.getElementById('sheetX').onclick=()=>overlay.classList.remove('on');
   const f=document.getElementById('subForm'), addr=f.address, sugg=document.getElementById('subSugg');
   f.date.min=new Date().toISOString().slice(0,10);
@@ -1262,10 +1263,10 @@ function openSheet(id){
       : `<div class="row2"><button class="btn ghost" id="shareBtn">Invite friends</button><button class="btn primary" id="rsvpBtn">${needsRsvp(ev)?'RSVP':'Interested'}</button></div>`}`;
   overlay.classList.add('on');
   document.getElementById('sheetX').onclick=()=>overlay.classList.remove('on');
-  document.getElementById('calBtn').onclick=()=>addToCalendar(ev);
-  const r=document.getElementById('rsvpBtn'); if(r) r.onclick=()=>{ if(needsRsvp(ev)) window.open(okRsvpLink(ev),'_blank','noopener'); S.rsvp.push(id); S.points+=10; save(); dbRsvp(ev); overlay.classList.remove('on'); renderHome(); showRsvp(events.find(e=>e.id===id)); };
+  document.getElementById('calBtn').onclick=()=>{ track(ev,'calendar'); addToCalendar(ev); };
+  const r=document.getElementById('rsvpBtn'); if(r) r.onclick=()=>{ track(ev,needsRsvp(ev)?'rsvp':'interested'); if(needsRsvp(ev)) window.open(okRsvpLink(ev),'_blank','noopener'); S.rsvp.push(id); S.points+=10; save(); dbRsvp(ev); overlay.classList.remove('on'); renderHome(); showRsvp(events.find(e=>e.id===id)); };
   const c=document.getElementById('checkBtn'); if(c) c.onclick=()=>checkIn(ev);
-  const sh=document.getElementById('shareBtn'); if(sh) sh.onclick=()=>shareEv(ev);
+  const sh=document.getElementById('shareBtn'); if(sh) sh.onclick=()=>{ track(ev,'invite'); shareEv(ev); };
 }
 overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.classList.remove('on'); });
 
@@ -1295,7 +1296,7 @@ function checkIn(ev){
   const hadHood=!!visitedHoods()[hood.name], hadCity=!!visitedCities()[city], hadCat=Object.values(S.places).some(p=>catKey(p.cat)===ev.category);
   const pl=S.places[ev.venue] || (S.places[ev.venue]={n:0,cat:ev.category,kind:kindOf(ev),lat:ev.lat,lng:ev.lng});
   const firstPlace=pl.n===0; pl.n++;
-  S.checked.push(ev.id); S.visits++; S.points+=50; save(); dbCheckin(ev);
+  track(ev,'checkin'); S.checked.push(ev.id); S.visits++; S.points+=50; save(); dbCheckin(ev);
   overlay.classList.remove('on');
   const un=[]; if(!hadHood) un.push(`New neighborhood: ${hood.name}`); if(!hadCity) un.push(`New city: ${city}`); if(!hadCat) un.push(`First ${CATS[catKey(ev.category)].short.toLowerCase()} stamp`); if(pl.n===5) un.push(`You're a regular here`);
   const m=document.getElementById('stampModal');
@@ -1491,6 +1492,20 @@ async function dbRsvp(ev){
   if(error){ console.warn('Supabase RSVP save failed', error); dbStatus('RSVP save failed: '+error.message,true); }
   dbProfile(); loadGoing();
 }
+// what people look at and tap, per event, for host stats. Batched, sent quietly (no error toasts), never blocks the app.
+let trackQ=[], trackT=null;
+function track(ev,action){
+  if(!ev||!sb) return;
+  trackQ.push({ event_id:eidOf(ev), event_title:ev.title||null, action, neighborhood:ev.area||ev.hood||null, category:ev.category||null });
+  clearTimeout(trackT); trackT=setTimeout(flushTrack,4000);
+}
+async function flushTrack(){
+  if(!trackQ.length) return; const q=trackQ; trackQ=[];
+  const u=await dbUser(); if(!u) return;
+  const { error } = await sb.from('event_actions').insert(q.map(r=>({...r,user_id:u.id})));
+  if(error) console.warn('Supabase tracking save failed', error);
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') flushTrack(); });
 async function dbCheckin(ev){
   const u=await dbUser(); if(!u) return;
   const { error } = await sb.from('checkins').insert({ user_id:u.id, event_id:eidOf(ev), event_title:ev.title, venue:ev.venue||null,
