@@ -480,6 +480,7 @@ img{ max-width:100% }
         <div class="h2">Patches</div>
         <div class="patches" id="patchList"></div>
         <div class="h2" id="lbTitle">Top 5 explorers</div>
+        <div class="hand" style="font-size:21px;color:var(--red);margin:-2px 0 8px;line-height:1.15">Top 5 at the end of the month win gift cards to their favorite spots!</div>
         <div class="lb" id="lbList"></div>
       </div>
     </section>
@@ -871,7 +872,7 @@ function kitSlides(){
     `<div class="k">A few more things</div><div class="h1" id="kitTitle">You're all set.</div>
      <ol class="kitsteps">
       <li><div><b>Your daily Top 4</b><span>Every day we pick four things near you: a Headliner, a Staple, a Hidden Gem and a Pop-up.</span></div></li>
-      <li><div><b>Climb the leaderboard</b><span>See how you stack up against other ${hood} explorers. The top five neighborhood leaders at the end of each month get gift cards to their favorite spots (you need at least 3 check-ins that month to qualify).</span></div></li>
+      <li><div><b>Win gift cards</b><span class="hand" style="display:block;font-size:22px;color:var(--red);line-height:1.15;margin:2px 0 4px">The top 5 in ${hood} each month win gift cards to their favorite spots!</span><span>Check in to at least 3 events that month to qualify.</span></div></li>
       <li><div><b>Know about something cool?</b><span>Add it with the + tab. Once we approve it, it goes on the map and you get +25 points (up to 3 events a week), plus +25 for everyone who checks in. Events already on the map can't be added again.</span></div></li>
      </ol>`
   ];
@@ -1393,7 +1394,7 @@ async function loadMyPoints(){
 /* ---------- neighborhood leaderboard (real points this month, from Supabase) ---------- */
 async function loadLeaderboard(){
   const el=document.getElementById('lbList'), me=shortName();
-  const empty=`<div class="empty">No points in ${escH(S.nb||'your neighborhood')} yet this month. Save, check in or add an event to get on the board. Top five at month's end (with at least 3 check-ins) win gift cards to their favorite spots.</div>`;
+  const empty=`<div class="empty">No points in ${escH(S.nb||'your neighborhood')} yet this month. Save, check in or add an event to get on the board. You need 3 check-ins this month to qualify.</div>`;
   if(!sb){ el.innerHTML=empty; return; }
   try{
     const u=(await sb.auth.getSession()).data.session?.user;
